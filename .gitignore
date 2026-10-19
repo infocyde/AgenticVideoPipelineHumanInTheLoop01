@@ -1,0 +1,48 @@
+# --- Dependencies & tooling ---
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+
+# --- Secrets (REPLICATE_API_TOKEN etc.) ---
+.env
+.env.*
+!.env.example
+keys.txt
+*.keys.txt
+
+# --- Build output: renders, thumbnails, descriptions, raw FLUX images ---
+out/
+
+# --- Episode work (local only) ---
+# Each episode's article, script, voiceover and notes
+episodes/*/
+# Each episode's media, timing, assets and credits
+public/episodes/
+# Generated index that imports the local episodes (rebuilt by `npm run sync`,
+# which new/align/assets/preview/render/thumb run automatically)
+src/episodes.generated.ts
+
+# Stray media anywhere else (the shared library in public/library/ is kept)
+*.mp3
+*.wav
+*.m4a
+*.mp4
+*.mov
+*.webm
+!public/library/**
+
+# --- Remotion ---
+.remotion/
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# --- Claude Code: keep project skills, drop personal settings ---
+.claude/settings.local.json

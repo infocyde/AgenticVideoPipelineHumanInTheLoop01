@@ -1,0 +1,695 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "description": "e.g. 'The week in 10 flashpoints'"
+    },
+    "theme": {
+      "default": "threat-brief",
+      "description": "Theme id from src/kit/themes/",
+      "type": "string",
+      "enum": [
+        "threat-brief",
+        "clean-light",
+        "after-dark",
+        "military",
+        "military-comparisons"
+      ]
+    },
+    "format": {
+      "default": "countdown",
+      "type": "string",
+      "enum": [
+        "countdown",
+        "list"
+      ]
+    },
+    "aspect": {
+      "default": "16:9",
+      "type": "string",
+      "const": "16:9"
+    },
+    "brand": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Top-bar brand, e.g. 'GLOBAL THREAT BRIEF'"
+        },
+        "tagline": {
+          "description": "e.g. '// WEEKLY'",
+          "type": "string"
+        },
+        "dateLabel": {
+          "type": "string",
+          "minLength": 1,
+          "description": "e.g. 'OCT 2026' or 'WEEK OF OCT 11–17, 2026'"
+        }
+      },
+      "required": [
+        "name",
+        "dateLabel"
+      ]
+    },
+    "audio": {
+      "type": "object",
+      "properties": {
+        "voiceover": {
+          "default": "voiceover.mp3",
+          "description": "File in public/episodes/<slug>/",
+          "type": "string"
+        },
+        "music": {
+          "type": "object",
+          "properties": {
+            "file": {
+              "type": "string",
+              "description": "Music name from the library or episode (e.g. 'bed'), or a path under public/"
+            },
+            "level": {
+              "default": 0.22,
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "duck": {
+              "default": true,
+              "description": "Dip under speech, swell in gaps and on slams",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "file"
+          ]
+        },
+        "sfxPreset": {
+          "default": "intense",
+          "type": "string",
+          "enum": [
+            "intense",
+            "calm",
+            "none"
+          ]
+        },
+        "sfxOff": {
+          "default": [],
+          "description": "Preset events to silence for this episode only, e.g. [\"stampBeat\"] drops the alert under the cold-open stamps",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "open",
+              "beatCut",
+              "stampBeat",
+              "title",
+              "coldOpenEnd",
+              "segment",
+              "section",
+              "slam",
+              "slamTop",
+              "top",
+              "stat",
+              "visualCut",
+              "mapExit",
+              "outro",
+              "outroLine",
+              "cta"
+            ]
+          }
+        },
+        "sfxExtra": {
+          "default": [],
+          "description": "One-off sounds on top of the preset, each placed on a spoken cue",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "sfx": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Sound name from the library or the episode's sfx/ folder, e.g. 'glitch'"
+              },
+              "cue": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Spoken phrase the sound lands on (searched through the whole script)"
+              },
+              "offset": {
+                "default": 0,
+                "description": "Seconds relative to the cue's first word",
+                "type": "number"
+              },
+              "volume": {
+                "default": 0.5,
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            },
+            "required": [
+              "sfx",
+              "cue"
+            ]
+          }
+        }
+      }
+    },
+    "coldOpen": {
+      "type": "object",
+      "properties": {
+        "beats": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "cue": {
+                "type": "string",
+                "minLength": 1,
+                "description": "A short spoken phrase from voiceover.txt (case- and accent-insensitive; the last word may be a prefix, e.g. 'kiwi' matches 'kiwifruit'). Times are found by searching the aligned words forward."
+              },
+              "visual": {
+                "type": "string",
+                "pattern": "^[a-z0-9_-]+$",
+                "description": "Basename of a file in public/episodes/<slug>/clips/ (preferred) or images/"
+              },
+              "note": {
+                "type": "string"
+              },
+              "stamp": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Big stamped text, or the headline over the map for a map beat"
+              },
+              "accent": {
+                "description": "Map beats only: trailing word(s) drawn in the accent color, e.g. stamp 'EVERY' + accent 'FRONT'",
+                "type": "string"
+              },
+              "sub": {
+                "type": "string"
+              },
+              "map": {
+                "description": "Show the world map with every segment's first pin instead of a visual",
+                "type": "string",
+                "const": "all-pins"
+              }
+            },
+            "required": [
+              "cue",
+              "stamp"
+            ]
+          }
+        },
+        "title": {
+          "type": "object",
+          "properties": {
+            "cue": {
+              "type": "string",
+              "minLength": 1,
+              "description": "A short spoken phrase from voiceover.txt (case- and accent-insensitive; the last word may be a prefix, e.g. 'kiwi' matches 'kiwifruit'). Times are found by searching the aligned words forward."
+            },
+            "bigCue": {
+              "description": "Phrase the big number slams on, e.g. 'ten stories'; default 0.3s after the title cue",
+              "type": "string",
+              "minLength": 1
+            },
+            "kicker": {
+              "type": "string",
+              "description": "e.g. 'THE WEEK IN'"
+            },
+            "big": {
+              "type": "string",
+              "description": "e.g. '10'"
+            },
+            "small": {
+              "type": "string",
+              "description": "e.g. 'FLASH\\nPOINTS' (\\n breaks the line)"
+            }
+          },
+          "required": [
+            "cue",
+            "kicker",
+            "big",
+            "small"
+          ]
+        }
+      },
+      "required": [
+        "beats",
+        "title"
+      ]
+    },
+    "segments": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "description": "Omit for a numbered segment (or set 'item'); use 'text' for an unnumbered text section",
+                "type": "string",
+                "const": "item"
+              },
+              "marker": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Spoken phrase that starts the segment, e.g. 'Number ten'"
+              },
+              "num": {
+                "description": "Shown number; defaults to N..1 for countdown, 1..N for list",
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "region": {
+                "type": "string",
+                "minLength": 1
+              },
+              "headline": {
+                "type": "string",
+                "minLength": 1,
+                "description": "6 words or fewer"
+              },
+              "emphasis": {
+                "description": "Alarm treatment, usually on #1",
+                "type": "string",
+                "const": "top"
+              },
+              "emphasisLabel": {
+                "description": "Badge text for emphasis; defaults to the theme's (e.g. 'TOP THREAT')",
+                "type": "string"
+              },
+              "stats": {
+                "default": [],
+                "description": "Overlay themes show one at a time; split themes stack them into spec-sheet panels of 5",
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "value": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "Big number or keyword, e.g. '>90%', 'OCT 25'"
+                    },
+                    "label": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "Typed-out caption under the value"
+                    },
+                    "cue": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "A short spoken phrase from voiceover.txt (case- and accent-insensitive; the last word may be a prefix, e.g. 'kiwi' matches 'kiwifruit'). Times are found by searching the aligned words forward."
+                    }
+                  },
+                  "required": [
+                    "value",
+                    "label",
+                    "cue"
+                  ]
+                }
+              },
+              "visuals": {
+                "default": [],
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9_-]+$",
+                      "description": "Basename of a file in public/episodes/<slug>/clips/ (preferred) or images/"
+                    },
+                    "cue": {
+                      "description": "Required for every visual after the first: the spoken phrase it cuts on",
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "note": {
+                      "description": "On-screen tag for footage that isn't of the event, e.g. 'FILE FOOTAGE · LVIV, UKRAINE, 2022'",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "name"
+                  ]
+                }
+              },
+              "map": {
+                "type": "object",
+                "properties": {
+                  "bbox": {
+                    "type": "array",
+                    "prefixItems": [
+                      {
+                        "type": "array",
+                        "prefixItems": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "number"
+                          }
+                        ],
+                        "items": false,
+                        "minItems": 2,
+                        "maxItems": 2
+                      },
+                      {
+                        "type": "array",
+                        "prefixItems": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "number"
+                          }
+                        ],
+                        "items": false,
+                        "minItems": 2,
+                        "maxItems": 2
+                      }
+                    ],
+                    "items": false,
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "description": "[[west, south], [east, north]] in degrees"
+                  },
+                  "highlight": {
+                    "default": [],
+                    "description": "Country names as spelled in world-atlas 110m, e.g. 'United States of America'",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "hostile": {
+                    "description": "Countries tinted with the hostile color",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "pins": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "lon": {
+                          "type": "number",
+                          "minimum": -180,
+                          "maximum": 180
+                        },
+                        "lat": {
+                          "type": "number",
+                          "minimum": -90,
+                          "maximum": 90
+                        },
+                        "label": {
+                          "type": "string",
+                          "description": "Short uppercase label, e.g. 'HORMUZ'"
+                        }
+                      },
+                      "required": [
+                        "lon",
+                        "lat",
+                        "label"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "bbox",
+                  "pins"
+                ]
+              }
+            },
+            "required": [
+              "marker",
+              "region",
+              "headline"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "text",
+                "description": "An unnumbered text section (intro, summary, recap) between or around the numbered segments"
+              },
+              "marker": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Spoken phrase that starts the section"
+              },
+              "label": {
+                "description": "Small tag above the heading, e.g. 'INTRODUCTION' or 'THE BOTTOM LINE'",
+                "type": "string"
+              },
+              "heading": {
+                "type": "string",
+                "minLength": 1,
+                "description": "8 words or fewer"
+              },
+              "body": {
+                "description": "One short paragraph summing up what is said (≤ 200 characters); facts from the article only",
+                "type": "string"
+              },
+              "visuals": {
+                "default": [],
+                "description": "1–4 clips or stills behind the text; every visual after the first needs a cue",
+                "maxItems": 4,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9_-]+$",
+                      "description": "Basename of a file in public/episodes/<slug>/clips/ (preferred) or images/"
+                    },
+                    "cue": {
+                      "description": "Required for every visual after the first: the spoken phrase it cuts on",
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "note": {
+                      "description": "On-screen tag for footage that isn't of the event, e.g. 'FILE FOOTAGE · LVIV, UKRAINE, 2022'",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "name"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "kind",
+              "marker",
+              "heading"
+            ]
+          }
+        ]
+      },
+      "description": "Scenes in spoken order: numbered segments, plus optional text sections (`kind: \"text\"`) anywhere among them"
+    },
+    "outro": {
+      "type": "object",
+      "properties": {
+        "cue": {
+          "type": "string",
+          "minLength": 1,
+          "description": "A short spoken phrase from voiceover.txt (case- and accent-insensitive; the last word may be a prefix, e.g. 'kiwi' matches 'kiwifruit'). Times are found by searching the aligned words forward."
+        },
+        "lines": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string",
+                "minLength": 1
+              },
+              "accent": {
+                "description": "Trailing word(s) in the accent color",
+                "type": "string"
+              },
+              "cue": {
+                "description": "When this line slams in; the first line defaults to the outro start",
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "text"
+            ]
+          }
+        },
+        "cta": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string"
+            },
+            "cue": {
+              "type": "string",
+              "minLength": 1,
+              "description": "A short spoken phrase from voiceover.txt (case- and accent-insensitive; the last word may be a prefix, e.g. 'kiwi' matches 'kiwifruit'). Times are found by searching the aligned words forward."
+            }
+          },
+          "required": [
+            "cue"
+          ]
+        },
+        "sourcesCard": {
+          "default": {
+            "seconds": 7
+          },
+          "description": "On by default: after the voiceover, list the episode's `sources` on screen for this many seconds. `false` turns it off.",
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "seconds": {
+                  "default": 7,
+                  "type": "number",
+                  "minimum": 3,
+                  "maximum": 20
+                }
+              }
+            },
+            {
+              "type": "boolean",
+              "const": false
+            }
+          ]
+        },
+        "creditsCard": {
+          "default": {
+            "seconds": 8
+          },
+          "description": "On by default: after the sources card, roll the media credits (footage, images, music, sound, map data) from credits.json. `false` turns it off.",
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "seconds": {
+                  "default": 8,
+                  "type": "number",
+                  "minimum": 4,
+                  "maximum": 20
+                }
+              }
+            },
+            {
+              "type": "boolean",
+              "const": false
+            }
+          ]
+        },
+        "endScreen": {
+          "description": "Hold a branded end card this long after the voiceover, with empty slots for YouTube end-screen elements",
+          "type": "object",
+          "properties": {
+            "seconds": {
+              "type": "number",
+              "minimum": 5,
+              "maximum": 20
+            }
+          },
+          "required": [
+            "seconds"
+          ]
+        }
+      },
+      "required": [
+        "cue",
+        "lines"
+      ]
+    },
+    "ticker": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "description": "Defaults to the theme's, e.g. 'THIS WEEK'",
+          "type": "string"
+        },
+        "items": {
+          "description": "Defaults to 'REGION — HEADLINE' per segment",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "thumbnail": {
+      "type": "object",
+      "properties": {
+        "big": {
+          "description": "Defaults to coldOpen.title.big",
+          "type": "string"
+        },
+        "title": {
+          "description": "Defaults to coldOpen.title.small",
+          "type": "string"
+        },
+        "visual": {
+          "description": "Background image or clip frame",
+          "type": "string",
+          "pattern": "^[a-z0-9_-]+$"
+        },
+        "frame": {
+          "description": "Seconds into the clip to grab when `visual` is a clip",
+          "type": "number"
+        }
+      }
+    },
+    "sources": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "required": [
+          "title",
+          "url"
+        ]
+      }
+    }
+  },
+  "required": [
+    "slug",
+    "title",
+    "brand",
+    "audio",
+    "coldOpen",
+    "segments",
+    "outro"
+  ]
+}

@@ -1,0 +1,99 @@
+<style>
+  .frame { position: relative; aspect-ratio: 16/9; width: 100%; background: #0a0d08; overflow: hidden; font-family: 'Arial Narrow', Arial, sans-serif; color: #e4dcc3; border: 1px solid #333; }
+  .vid { position: absolute; top: 0; bottom: 0; left: 0; background: repeating-linear-gradient(135deg, #2c3420 0 14px, #252c1b 14px 28px); display: flex; align-items: center; justify-content: center; color: rgba(228,220,195,.45); font: 12px monospace; letter-spacing: 2px; }
+  .panel { position: absolute; top: 0; bottom: 0; right: 0; background: #0e120b; padding: 7% 3.5% 0; box-sizing: border-box; }
+  .num { font: 900 46px Impact, sans-serif; color: #ff9f1c; line-height: .85; }
+  .region { font: 11px monospace; letter-spacing: 3px; color: #b4f5a2; margin-top: 6px; }
+  .head { font: 900 20px Impact, sans-serif; text-transform: uppercase; margin: 4px 0 10px; line-height: 1; }
+  .stat .v { font: 900 26px Impact, sans-serif; color: #b4f5a2; line-height: 1; }
+  .stat .bar { height: 3px; width: 60px; background: #ff9f1c; margin: 3px 0; }
+  .stat .l { font: 9px monospace; letter-spacing: 1.5px; text-transform: uppercase; }
+  .row { display: flex; align-items: baseline; gap: 10px; border-top: 1px solid rgba(228,220,195,.16); padding: 5px 0; }
+  .row .v { font: 900 22px Impact, sans-serif; color: #b4f5a2; min-width: 38%; }
+  .row .l { font: 9px monospace; letter-spacing: 1.5px; text-transform: uppercase; }
+  .page { position: absolute; bottom: 9%; right: 4%; font: 9px monospace; letter-spacing: 2px; color: rgba(228,220,195,.6); }
+  .cap { position: absolute; bottom: 9%; font: 700 14px Arial; text-align: center; text-shadow: 0 2px 6px #000; }
+  .topbar { position: absolute; top: 3%; left: 3%; right: 3%; font: 9px monospace; letter-spacing: 2px; color: rgba(228,220,195,.6); display: flex; justify-content: space-between; z-index: 3; }
+  .ticker { position: absolute; left: 0; right: 0; bottom: 0; height: 5%; background: rgba(8,11,7,.93); border-top: 1px solid #ff9f1c; font: 9px monospace; color: rgba(228,220,195,.6); padding-left: 2%; display: flex; align-items: center; letter-spacing: 2px; }
+  .map { position: absolute; top: 18%; left: 4%; width: 34%; aspect-ratio: 580/420; background: #1b2314; border: 1px solid rgba(228,220,195,.3); font: 9px monospace; color: rgba(228,220,195,.6); padding: 4px 6px; box-sizing: border-box; }
+  .map::after { content: "◀ slides off left"; position: absolute; right: -80px; top: 45%; color: #ff9f1c; font: 10px monospace; }
+  .brk { position: absolute; width: 14px; height: 14px; border: 2px solid #ff9f1c; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
+</style>
+
+<h2>Which split looks right for a segment?</h2>
+<p class="subtitle">All three show the moment after the map has left, with 4 stats built up. The map would first appear over the video on the left, then glitch and slide off to the left. The ticker and top bar stay as they are now.</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="frame">
+        <div class="topbar"><span>■ BRIEF KIT</span><span>03 / 05</span></div>
+        <div class="vid" style="width:50%">VIDEO / STILL</div>
+        <div class="panel" style="width:50%; border-left: 3px solid #ff9f1c">
+          <div class="num">03</div>
+          <div class="region">EASTERN EUROPE</div>
+          <div class="head">Drone swarms outpace defenses</div>
+          <div class="grid2">
+            <div class="stat"><div class="v">1,200</div><div class="bar"></div><div class="l">drones a month</div></div>
+            <div class="stat"><div class="v">$40K</div><div class="bar"></div><div class="l">cost per unit</div></div>
+            <div class="stat"><div class="v">3X</div><div class="bar"></div><div class="l">since 2024</div></div>
+            <div class="stat"><div class="v">90%</div><div class="bar" style="width:20px"></div><div class="l">intercepted</div></div>
+          </div>
+        </div>
+        <div class="cap" style="left:0; width:50%">ninety percent are intercepted</div>
+        <div class="ticker">SITREP ▸ ...</div>
+      </div>
+    </div>
+    <div class="card-body"><h3>A · Half and half, stat grid</h3><p>Hard 50/50 split. Stats fill a 2×2 grid; a 5th stat starts panel 2. Big numbers, fewer per panel.</p></div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="frame">
+        <div class="topbar"><span>■ BRIEF KIT</span><span>03 / 05</span></div>
+        <div class="vid" style="width:60%; clip-path: polygon(0 0, 100% 0, 92% 100%, 0 100%)">VIDEO / STILL</div>
+        <div class="panel" style="width:44%; background: transparent">
+          <div class="num">03</div>
+          <div class="region">EASTERN EUROPE</div>
+          <div class="head">Drone swarms outpace defenses</div>
+          <div class="row"><span class="v">1,200</span><span class="l">drones a month</span></div>
+          <div class="row"><span class="v">$40K</span><span class="l">cost per unit</span></div>
+          <div class="row"><span class="v">3X</span><span class="l">since 2024</span></div>
+          <div class="row"><span class="v">90%</span><span class="l">intercepted</span></div>
+        </div>
+        <div class="page">PANEL 1 / 2</div>
+        <div class="cap" style="left:0; width:58%">ninety percent are intercepted</div>
+        <div class="ticker">SITREP ▸ ...</div>
+      </div>
+    </div>
+    <div class="card-body"><h3>B · Wide video, spec-sheet rows</h3><p>Video gets ~60% with an angled edge. Stats stack as table rows (value | label), up to 5 per panel, with a panel counter.</p></div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="frame">
+        <div class="topbar"><span>■ BRIEF KIT</span><span>03 / 05</span></div>
+        <div class="vid" style="left:3%; top:12%; bottom:16%; width:52%; outline: 1px solid rgba(228,220,195,.3)">VIDEO / STILL</div>
+        <div class="brk" style="left:2.3%; top:10.8%; border-right:0; border-bottom:0"></div>
+        <div class="brk" style="left:54.2%; top:10.8%; border-left:0; border-bottom:0"></div>
+        <div class="brk" style="left:2.3%; bottom:14.8%; border-right:0; border-top:0"></div>
+        <div class="brk" style="left:54.2%; bottom:14.8%; border-left:0; border-top:0"></div>
+        <div class="panel" style="width:42%; background: transparent; padding-top: 9%">
+          <div class="num">03</div>
+          <div class="region">EASTERN EUROPE</div>
+          <div class="head">Drone swarms outpace defenses</div>
+          <div class="row"><span class="v">1,200</span><span class="l">drones a month</span></div>
+          <div class="row"><span class="v">$40K</span><span class="l">cost per unit</span></div>
+          <div class="row"><span class="v">3X</span><span class="l">since 2024</span></div>
+          <div class="row"><span class="v">90%</span><span class="l">intercepted</span></div>
+        </div>
+        <div class="cap" style="left:3%; width:52%; bottom: 7%">ninety percent are intercepted</div>
+        <div class="ticker">SITREP ▸ ...</div>
+      </div>
+    </div>
+    <div class="card-body"><h3>C · Framed monitor, HUD brackets</h3><p>Video sits in a bordered "feed" with corner brackets on the dark background, like a command-center screen. Stats as rows on the right.</p></div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:18px">My guess in all three: captions sit under the video on the left so they don't collide with the stats. Tell me if you'd rather keep them centered full-width.</p>

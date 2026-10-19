@@ -1,0 +1,92 @@
+[
+  {
+    "file": "sfx/whoosh.mp3",
+    "title": "wipe2.wav",
+    "author": "Sclolex",
+    "license": "CC0",
+    "licenseVersion": "1.0",
+    "sourceUrl": "https://freesound.org/people/Sclolex/sounds/179779",
+    "originalUrl": "https://cdn.freesound.org/previews/179/179779_985466-hq.mp3",
+    "notes": "Freesound via Openverse. Processed: leading silence removed, loudness-normalized. Duration 0.92s."
+  },
+  {
+    "file": "sfx/whoosh2.mp3",
+    "title": "Deep Whoosh #1",
+    "author": "Kinoton",
+    "license": "CC0",
+    "licenseVersion": "1.0",
+    "sourceUrl": "https://freesound.org/people/Kinoton/sounds/351256",
+    "originalUrl": "https://cdn.freesound.org/previews/351/351256_2247456-hq.mp3",
+    "notes": "Freesound via Openverse. Processed: leading silence removed, loudness-normalized. Duration 1.5s."
+  },
+  {
+    "file": "sfx/impact.mp3",
+    "title": "Deep Cinematic Impact",
+    "author": "MeijstroAudio",
+    "license": "CC BY",
+    "licenseVersion": "4.0",
+    "sourceUrl": "https://freesound.org/people/MeijstroAudio/sounds/377303",
+    "originalUrl": "https://cdn.freesound.org/previews/377/377303_3513022-hq.mp3",
+    "notes": "Freesound via Openverse. Processed: leading silence removed, loudness-normalized. Duration 1.99s."
+  },
+  {
+    "file": "sfx/riser.mp3",
+    "title": "Metallic Horror Riser FX.wav",
+    "author": "eldiariosonoro_",
+    "license": "CC0",
+    "licenseVersion": "1.0",
+    "sourceUrl": "https://freesound.org/people/eldiariosonoro_/sounds/545798",
+    "originalUrl": "https://cdn.freesound.org/previews/545/545798_11961848-hq.mp3",
+    "notes": "Freesound via Openverse. Processed: leading silence removed, loudness-normalized. Duration 2.77s."
+  },
+  {
+    "file": "sfx/glitch.mp3",
+    "title": "Glitch Corruption",
+    "author": "dotY21",
+    "license": "CC0",
+    "licenseVersion": "1.0",
+    "sourceUrl": "https://freesound.org/people/dotY21/sounds/348585",
+    "originalUrl": "https://cdn.freesound.org/previews/348/348585_5048136-hq.mp3",
+    "notes": "Freesound via Openverse. Processed: leading silence removed, loudness-normalized. Duration 1.33s."
+  },
+  {
+    "file": "sfx/tick.mp3",
+    "title": "mab-clock-tick-1-20080713.wav",
+    "author": "mab",
+    "license": "CC BY",
+    "licenseVersion": "3.0",
+    "sourceUrl": "https://freesound.org/people/mab/sounds/57211",
+    "originalUrl": "https://cdn.freesound.org/previews/57/57211_127220-hq.mp3",
+    "notes": "Freesound via Openverse. Processed: leading silence removed, loudness-normalized. Duration 0.13s."
+  },
+  {
+    "file": "sfx/typing.mp3",
+    "title": "teletype_fast_speed.wav",
+    "author": "stratcat322",
+    "license": "CC BY",
+    "licenseVersion": "3.0",
+    "sourceUrl": "https://freesound.org/people/stratcat322/sounds/169260",
+    "originalUrl": "https://cdn.freesound.org/previews/169/169260_1808829-hq.mp3",
+    "notes": "Freesound via Openverse. Processed: leading silence removed, loudness-normalized. Duration 3.5s."
+  },
+  {
+    "file": "sfx/alarm.mp3",
+    "title": "Beep warning",
+    "author": "SamsterBirdies",
+    "license": "CC0",
+    "licenseVersion": "1.0",
+    "sourceUrl": "https://freesound.org/people/SamsterBirdies/sounds/467882",
+    "originalUrl": "https://cdn.freesound.org/previews/467/467882_5487341-hq.mp3",
+    "notes": "Freesound via Openverse. Processed: leading silence removed, loudness-normalized. Duration 1.72s."
+  },
+  {
+    "file": "music/bed.mp3",
+    "title": "INTENSE AMBEINT RHYTHMIC PULSE.WAV",
+    "author": "metrostock99",
+    "license": "CC0",
+    "licenseVersion": "1.0",
+    "sourceUrl": "https://freesound.org/people/metrostock99/sounds/203725",
+    "originalUrl": "https://cdn.freesound.org/previews/203/203725_1256155-hq.mp3",
+    "notes": "Freesound via Openverse. Processed: leading silence removed, loudness-normalized. Duration 203.0s."
+  }
+]

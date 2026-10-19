@@ -1,0 +1,43 @@
+{
+  "name": "brief-kit",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Reusable narrated-countdown video kit (Remotion). One folder of data per episode.",
+  "type": "module",
+  "scripts": {
+    "new": "tsx scripts/new.ts",
+    "sync": "tsx scripts/sync.ts",
+    "align": "tsx scripts/align.ts",
+    "setup:align": "tsx scripts/setup-align.ts",
+    "assets": "tsx scripts/assets.ts",
+    "generate": "tsx scripts/generate.ts",
+    "check": "tsx scripts/check.ts",
+    "dev": "tsx scripts/sync.ts && remotion studio",
+    "preview": "tsx scripts/preview.ts",
+    "render": "tsx scripts/render.ts",
+    "master": "tsx scripts/master.ts",
+    "thumb": "tsx scripts/thumb.ts",
+    "credits": "tsx scripts/credits.ts",
+    "kill": "tsx scripts/kill.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.536",
+    "@remotion/google-fonts": "4.0.536",
+    "d3-geo": "^3.1.1",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "remotion": "4.0.536",
+    "topojson-client": "^3.1.0",
+    "world-atlas": "^2.0.2",
+    "zod": "4.5.4"
+  },
+  "devDependencies": {
+    "@types/d3-geo": "^3.1.0",
+    "@types/node": "^22.15.0",
+    "@types/react": "^19.1.0",
+    "@types/topojson-client": "^3.1.5",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3"
+  }
+}
