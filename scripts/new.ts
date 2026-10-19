@@ -1,5 +1,5 @@
 // Scaffold a new episode: episodes/<slug>/ (data) and public/episodes/<slug>/ (media), then sync.
-// Usage: npm run new -- <slug> [--format countdown|list] [--count N] [--theme threat-brief|clean-light|after-dark|military|military-comparisons]
+// Usage: npm run new -- <slug> [--format countdown|list] [--count N] [--theme threat-brief|clean-light|after-dark|military|military-comparisons|erotic]
 // Brand, theme and audio settings carry over from the most recent episode of the same format, if any.
 import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";

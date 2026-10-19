@@ -8,7 +8,7 @@ This repo turns an article plus a voiceover into a short narrated YouTube video 
 
 1. **Never edit `.tsx`, `src/kit/**` or `scripts/**` to make an episode.** If something can't be expressed in `episode.json`, tell the user what's missing; don't patch a component. The only files you write are under `episodes/<slug>/` and `public/episodes/<slug>/`.
 2. **Facts come only from the article** (`episodes/<slug>/article.md`), **as corrected by the fact-check** (step 1b of the `new-episode` skill: verify the article's figures on the web before scripting, replace wrong ones with sourced figures, cut what can't be verified, and log every change in `notes.md`). Narration and on-screen text (headlines, stats, stamps, regions, outro) must not go beyond these. If you want added context (a date, a definition, background), flag it to the user and get approval. Record approved additions in `notes.md`.
-3. **Licenses: PD, CC0, CC BY or CC BY-SA only** (plus `OWN WORK` for material the user made or owns, e.g. their own music, credited as they specify), and every media file needs a `credits.json` entry. No NC, ND, "editorial use only" or unknown licenses. No Pexels or Pixabay. If footage isn't of the event described, give that visual a `note` ("FILE FOOTAGE · LVIV, UKRAINE, 2022") and tell the user. The one exception is stills from `npm run generate` (FLUX 3), which are credited as `AI-GENERATED`. They're a fallback when licensed footage is missing or a poor stand-in, follow the **generate-image** skill's rules (no real identifiable people, no fake record of a specific event, never a copy of a specific photo), and always carry `"note": "AI-GENERATED ILLUSTRATION"`.
+3. **Licenses: PD, CC0, CC BY or CC BY-SA only** (plus `OWN WORK` for material the user made or owns, e.g. their own music, credited as they specify), and every media file needs a `credits.json` entry. No NC, ND, "editorial use only" or unknown licenses. No Pexels or Pixabay. If footage isn't of the event described, give that visual a `note` ("FILE FOOTAGE · LVIV, UKRAINE, 2022") and tell the user. Web-page screenshots (`npm run shot`) follow the same rule: the page must be PD, CC0, CC BY or CC BY-SA (Wikipedia text is CC BY-SA), never a commercial news site, and photos or logos on the page need their own license or must be cropped out. Infographics from `npm run infographic` are credited `OWN WORK`, and their numbers must come from the script and fact-check. The one exception is stills from `npm run generate` (FLUX 3), which are credited as `AI-GENERATED`. They're a fallback when licensed footage is missing or a poor stand-in, follow the **generate-image** skill's rules (no real identifiable people, no fake record of a specific event, never a copy of a specific photo), and always carry `"note": "AI-GENERATED ILLUSTRATION"`.
 4. **`npm run check -- <slug>` must show 0 errors before rendering.** Fix the cause; don't work around it. `render` refuses to start otherwise.
 5. **Captions show what was said.** If the recording differs from `voiceover.txt`, update `voiceover.txt` to match the audio (see `heard.txt`) and re-run align. Never the other way round.
 6. **Wait for the user** at the three handoffs: script approval, the recorded MP3, and preview approval.
@@ -17,10 +17,12 @@ This repo turns an article plus a voiceover into a short narrated YouTube video 
 ## Commands (all take the episode slug)
 
 ```
-npm run new -- <slug> [--format countdown|list] [--count N] [--theme threat-brief|clean-light|after-dark|military|military-comparisons]
+npm run new -- <slug> [--format countdown|list] [--count N] [--theme threat-brief|clean-light|after-dark|military|military-comparisons|erotic]
 npm run align -- <slug> [--estimate]      # timing.json from voiceover.mp3 (or rough, from text only)
 npm run assets -- <slug>                  # assets.json from clips/, images/, library sfx/music
 npm run generate -- <slug> <name> --prompt "..."   # last-resort FLUX 3 still (see generate-image skill)
+npm run shot -- <slug> <name> --url <url> [--selector "<css>"] [--license PD]   # web-page screenshot still (PD/CC pages only)
+npm run infographic -- <slug> <name> [--still]     # render episodes/<slug>/infographics/<name>.html (see infographic skill)
 npm run check -- <slug>                   # 0 errors required
 npm run preview -- <slug>                 # check, start Studio, open the browser on this episode (run in background)
 npm run render -- <slug>                  # only after the user approves the preview -> out/<slug>/youtube.mp4

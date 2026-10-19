@@ -42,6 +42,8 @@ You don't need the commands, slugs or file paths in the rest of this README. Cla
 - *"Verify those facts on the web and update the sources"*
 - *"I added the voice MP3 and a music track"*
 - *"Favor Russian footage, cap the search at 45 minutes, and use FLUX for anything you can't find"*
+- *"Make an infographic comparing the ranges for the Geran segment"*
+- *"Screenshot the Wikipedia infobox for the Shahed as b-roll"*
 - *"The artillery shot in the Lancet segment runs too long, use a Lancet clip"*
 - *"Open the preview"* / *"Render it"*
 - *"Re-render last week's episode with a new thumbnail"*
@@ -52,13 +54,15 @@ To come back to an older episode, describe it (*"the Russian drone one"*). Claud
 
 ## One-time setup
 
-You need Node 22, ffmpeg on `PATH`, Python 3.10+ (used only for alignment), and Claude Code.
+You need Node 22, ffmpeg on `PATH`, Python 3.10+ (for alignment and the image lead finder), and Claude Code.
 
 ```powershell
 npm install
-npm run setup:align      # creates .venv with faster-whisper; the Whisper model (~1.5 GB) downloads on first align
+npm run setup:align      # creates .venv and installs requirements.txt; the Whisper model (~1.5 GB) downloads on first align
 copy .env.example .env   # optional: add REPLICATE_API_TOKEN for the AI-image fallback (see the comments in the file)
 ```
+
+Python packages are pinned in `requirements.txt`: faster-whisper and numpy for `align`, and ddgs for the find-media skill's DuckDuckGo lead finder. To install them by hand, run `.venv\Scripts\python.exe -m pip install -r requirements.txt`. `npm run shot` and `npm run infographic` drive the headless Chrome that Remotion already downloads (through `playwright-core`), so they need no extra browser.
 
 The rest of this README is reference: the commands and files Claude uses at each step. You only need it to see how things work, or to run a step yourself without Claude.
 
@@ -157,6 +161,22 @@ Every field is documented in `src/kit/schema.ts`. Editors that read JSON Schema 
   ```
 
   This needs `REPLICATE_API_TOKEN` in the environment or in a `.env` file in this folder or a parent folder. It writes `images/<name>.jpg` (1920×1080) and a credits entry with license `AI-GENERATED`, plus the exact prompt and prediction id. A generated visual must carry `"note": "AI-GENERATED ILLUSTRATION"` (check enforces this). If it looks realistic, tick YouTube's "altered or synthetic content" box when uploading. Each run is a paid API call. Prompt rules are in `.claude/skills/generate-image/SKILL.md`.
+- **A web page as b-roll** (an encyclopedia infobox, an official notice, a data table): screenshot part of it.
+
+  ```powershell
+  npm run shot -- <slug> wiki_shahed --url https://en.wikipedia.org/wiki/HESA_Shahed_136 --selector "table.infobox"
+  npm run shot -- <slug> dod_notice --url https://www.defense.gov/News/... --license PD --author "U.S. Department of Defense" --scroll-to "h1" --highlight "one-way attack"
+  ```
+
+  It writes `images/<name>.png` (1920×1080) and a credits entry with the page as the source. By default the capture sits centered on a blurred copy of itself; `--fit cover` and `--fit raw` are the alternatives. The page has to meet the same license rules as any media: PD, CC0, CC BY or CC BY-SA. Wikipedia text is filled in as CC BY-SA 4.0 automatically. Every other site needs `--license`, plus `--author` for CC BY and CC BY-SA. Commercial news sites are not allowed. Photos and logos on a page carry their own licenses, so crop them out or check them. Other options: `--clip x,y,w,h`, `--full`, `--hide "<css>"` (cookie banners are hidden by default), `--width`/`--height` (a narrower viewport gives bigger text) and `--dark`. Give the visual a `note` naming the site, e.g. `"SOURCE · EN.WIKIPEDIA.ORG"`.
+- **An infographic** (bar comparison, big number, timeline, versus card): write a small HTML page in `episodes/<slug>/infographics/<name>.html`, starting from `.claude/skills/infographic/template.html`, and render it in the episode's theme:
+
+  ```powershell
+  npm run infographic -- <slug> range_bars             # clips/range_bars.mp4, 12 s: animates in, then holds
+  npm run infographic -- <slug> range_bars --still     # images/range_bars.png
+  ```
+
+  The page gets the theme's colors and fonts as CSS variables (`--accent`, `--highlight`, `--font-display`…). The renderer steps CSS animations and an optional `window.bkSeek(ms)` through the clip frame by frame, so motion lands exactly on each frame. The credit is `OWN WORK`, with the data sources from `<meta name="sources">` in its notes. Like everything else on screen, the numbers must come from the script and the fact-check. Rules and layout patterns are in `.claude/skills/infographic/SKILL.md`.
 - Sound effects and the music bed are shared across episodes in `public/library/` (credited in `public/library/credits.json`). An episode can override one by adding `sfx/<name>.mp3` or `music/<name>.mp3` to its own folder.
 
 Then:
@@ -198,6 +218,8 @@ For a quick partial render, pass Remotion flags after a second `--`: `npm run re
 | `npm run align -- <slug> [--estimate]` | Write `timing.json` from the voiceover (or from text only) |
 | `npm run assets -- <slug>` | Write `assets.json` |
 | `npm run generate -- <slug> <name> --prompt "..." [--aspect 16:9] [--resolution 2k] [--force]` | Last-resort FLUX 3 still, with credit and provenance |
+| `npm run shot -- <slug> <name> --url <url> [--selector "<css>"] [--license PD] [--highlight "..."]` | Screenshot part of a web page as a still, with credit |
+| `npm run infographic -- <slug> <name> [--seconds 12] [--still]` | Render `episodes/<slug>/infographics/<name>.html` as a themed clip or still, with credit |
 | `npm run check -- <slug>` | Validate schema, cues, visuals, licenses, text lengths, maps and generated files |
 | `npm run preview -- <slug> [--port N] [--no-open]` | Check, start Remotion Studio and open the browser on this episode (stop with Ctrl+C) |
 | `npm run dev` | Remotion Studio, all episodes |
@@ -240,6 +262,7 @@ It stops only processes whose executable lives in this repo, plus node processes
 - `after-dark`: neon-noir, magenta and cyan on violet-black, with Bebas Neue, Space Mono and Sora.
 - `military`: tactical briefing, sand text on olive-black with a signal-amber accent and phosphor-green readouts, with Big Shoulders Stencil, Share Tech Mono and Barlow Condensed.
 - `military-comparisons`: weapons-system spec briefing in the **split layout**. Footage plays in a bracketed frame on the left; the number, headline and stats sit on the right, and the stats build into a spec sheet that stays up (5 rows a panel, then panel 2, 3). The map card shows briefly over the footage and slides off to the left. Cool white on gunmetal, HUD-cyan readouts, signal-orange accent, with Teko, IBM Plex Mono and Saira Condensed.
+- `erotic`: a boudoir-editorial comparison sheet in the same **split layout** as `military-comparisons`. Blush cream on wine-black, lipstick-crimson accent, champagne-gold readouts, a warm low-key b-roll grade and soft grain with no scanlines. Fonts are Playfair Display, Josefin Sans and Jost. Default labels: AFTER HOURS ticker, TOP PICK, PROFILE panels. The mood comes from color and type only. The theme has no imagery of its own, and b-roll still has to pass YouTube's rules and the license gate.
 
 A theme controls colors, fonts, b-roll treatment, glows, grain and default wording (ticker label, CTA, emphasis badge), and picks a segment layout (`overlay` or `split`, set in `THEME_LAYOUT` in `src/kit/themes/ids.ts`). To add one, copy `src/kit/themes/threat-brief.ts`, then register it in `src/kit/themes/index.ts` and `src/kit/themes/ids.ts`.
 
@@ -259,6 +282,10 @@ src/kit/lib/                     cue resolution, captions, sfx presets, music du
 src/kit/components/              WorldMap, Backdrop, Headline, cards, titles, chrome, audio
 src/kit/scenes/                  ColdOpen, Segment, SplitSegment, TextSection, Outro, EndCard
 src/kit/formats/                 Countdown, List
-src/kit/themes/                  threat-brief, clean-light, after-dark, military, military-comparisons
+src/kit/themes/                  threat-brief, clean-light, after-dark, military, military-comparisons, erotic
 scripts/                         the npm commands (TypeScript, run with tsx) + align.py
+scripts/lib/browser.ts           headless Chrome for shot and infographic (Remotion's chrome-headless-shell via playwright-core)
+episodes/<slug>/infographics/    HTML sources for npm run infographic
+requirements.txt                 Python packages for .venv (align, find-media lead finder)
+.claude/skills/                  new-episode, find-media, generate-image, infographic
 ```

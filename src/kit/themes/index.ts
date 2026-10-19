@@ -1,6 +1,7 @@
 // Theme registry. To add a theme, create a file like threat-brief.ts and list it here (and in ids.ts).
 import { afterDark } from "./after-dark";
 import { cleanLight } from "./clean-light";
+import { erotic } from "./erotic";
 import { military } from "./military";
 import { militaryComparisons } from "./military-comparisons";
 import { threatBrief } from "./threat-brief";
@@ -13,6 +14,7 @@ export const themes: Record<ThemeId, Theme> = {
   "after-dark": afterDark,
   military,
   "military-comparisons": militaryComparisons,
+  erotic,
 };
 export const DEFAULT_THEME: ThemeId = "threat-brief";
 

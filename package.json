@@ -19,7 +19,9 @@
     "thumb": "tsx scripts/thumb.ts",
     "credits": "tsx scripts/credits.ts",
     "kill": "tsx scripts/kill.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "shot": "tsx scripts/shot.ts",
+    "infographic": "tsx scripts/infographic.ts"
   },
   "dependencies": {
     "@remotion/cli": "4.0.536",
@@ -37,6 +39,7 @@
     "@types/node": "^22.15.0",
     "@types/react": "^19.1.0",
     "@types/topojson-client": "^3.1.5",
+    "playwright-core": "^1.56.1",
     "tsx": "^4.20.3",
     "typescript": "^5.8.3"
   }

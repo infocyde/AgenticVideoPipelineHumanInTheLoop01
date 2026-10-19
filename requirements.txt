@@ -1,0 +1,11 @@
+# Python dependencies for Brief Kit, installed into .venv by `npm run setup:align`
+# (or by hand: .venv/Scripts/python.exe -m pip install -r requirements.txt).
+# Direct dependencies only; pip resolves the rest. Versions are the ones tested with the kit.
+
+# npm run align: word timing from voiceover.mp3 (scripts/align.py)
+faster-whisper==1.2.1
+numpy==2.5.4
+
+# find-media skill: DuckDuckGo/Bing image lead finder (.claude/skills/find-media/ddg_images.py)
+ddgs==9.16.0
+primp==2.0.1

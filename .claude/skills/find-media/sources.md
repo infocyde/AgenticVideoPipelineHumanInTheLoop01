@@ -143,7 +143,7 @@ https://ccmixter.org/api/query?f=json&tags=instrumental&lic=by&limit=20       # 
 
 ## 13. DuckDuckGo (lead finder, images only) — keyless, via `ddgs` in `.venv`
 
-A way to **find** federal-site photos and odd one-offs that the archives above miss. It is **never a license source**: DDG's results and license filter come from Bing, which guesses the license from page metadata. In testing, Bing's "public domain" filter for "Tu-160 bomber" returned 32 of 35 hits from wallpaperflare, whose pages say "for personal desktop wallpaper use only". Install once with `.venv/Scripts/python.exe -m pip install ddgs` (tested with 9.16.0).
+A way to **find** federal-site photos and odd one-offs that the archives above miss. It is **never a license source**: DDG's results and license filter come from Bing, which guesses the license from page metadata. In testing, Bing's "public domain" filter for "Tu-160 bomber" returned 32 of 35 hits from wallpaperflare, whose pages say "for personal desktop wallpaper use only". Installed into `.venv` by `npm run setup:align` from `requirements.txt` (pinned to 9.16.0); by hand: `.venv/Scripts/python.exe -m pip install -r requirements.txt`.
 
 ```bash
 H=".venv/Scripts/python.exe -I -X utf8 .claude/skills/find-media/ddg_images.py"

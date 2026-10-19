@@ -76,7 +76,7 @@ Replace every placeholder. The schema with docs is in `src/kit/schema.ts`; timin
   - `map`: `bbox` [[w,s],[e,n]] around the places, `highlight` and optional `hostile` country names (world-atlas spelling), 1–3 `pins` with uppercase labels.
 - Countdown: put `"emphasis": "top"` on #1.
 - Text sections: an entry in `segments` with `"kind": "text"`, `marker`, optional `label` (≤ 28 chars, e.g. "INTRODUCTION"), `heading` (≤ 8 words), optional `body` (≤ 200 chars, one short paragraph summing up what's said, article facts only) and 1–4 `visuals` (cue rules as for segments). No number, stats or map.
-- **Split-layout themes** (`military-comparisons`): b-roll sits framed on the left and the stats build into a spec sheet on the right and stay up, so use more of them: one per spec the article gives (range, warhead, guidance, cost, production…). Five fit a panel; a sixth starts panel 2 (up to 3 panels). Keep `value` short ("1,500 KM", "GPS/INS", "$6–10K") and put the spec name in `label` ("RANGE", "UNIT COST"). The map card shows briefly over the footage and exits left.
+- **Split-layout themes** (`military-comparisons`, `erotic`): b-roll sits framed on the left and the stats build into a spec sheet on the right and stay up, so use more of them: one per spec the article gives (range, warhead, guidance, cost, production…). Five fit a panel; a sixth starts panel 2 (up to 3 panels). Keep `value` short ("1,500 KM", "GPS/INS", "$6–10K") and put the spec name in `label` ("RANGE", "UNIT COST"). The map card shows briefly over the footage and exits left.
 - `outro.lines`: the first line has no cue ("ANY ONE COULD" + accent "BOIL OVER"); the next gets `cue: "That's the week"`. `cta.cue` = "Subscribe".
 - `sources`: title and URL of each source the script relies on (required). Every video ends with a sources scene and a credits roll, both on by default (`outro.sourcesCard`, `outro.creditsCard`; only set `false` if the user asks). `npm run credits` also writes the sources to `out/<slug>/REFERENCES.md`.
 - Optional: `outro.endScreen: { "seconds": 12 }` if the user wants YouTube end-screen slots. Use `thumbnail` to override the thumbnail text or background.
@@ -96,7 +96,7 @@ When they report back:
 
 1. Review their tables. Every file needs a normalized `credits.json` entry with an allowed license.
 2. Footage that isn't of the event described (a different place, year or weapon) gets a `note` on that visual: `"FILE FOOTAGE · <place>, <year>"`. Record it in `notes.md`.
-3. If a shot couldn't be found, or the only licensed footage is a poor stand-in, generate a still of the right subject with the **generate-image** skill (`npm run generate`), reuse another asset, or drop it (the segment falls back to its map). Generated images always get `"note": "AI-GENERATED ILLUSTRATION"`.
+3. If a shot couldn't be found, or the only licensed footage is a poor stand-in: for a beat about a number or a comparison, make an infographic with the **infographic** skill (`npm run infographic`). For a document or reference page (an infobox, an official notice), screenshot it with `npm run shot` (PD/CC pages only). Otherwise generate a still of the right subject with the **generate-image** skill (`npm run generate`), reuse another asset, or drop it (the segment falls back to its map). Generated images always get `"note": "AI-GENERATED ILLUSTRATION"`.
 4. Run `npm run assets -- <slug>`, then `npm run check -- <slug>` until it reports **0 errors**. Look at the warnings too.
 
 ## 6. Preview, then render
