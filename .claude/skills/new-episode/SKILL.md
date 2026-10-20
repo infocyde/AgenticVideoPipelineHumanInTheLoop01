@@ -49,7 +49,10 @@ Shape (the scaffolded file shows it):
 
 Optionally run `npm run align -- <slug> --estimate` and draft `episode.json` against the estimated timing, so the user can preview the layout before recording.
 
-**Stop.** Give the user the script. Wait for approval, then for the MP3 at `public/episodes/<slug>/voiceover.mp3`.
+**Stop.** Give the user the script and wait for approval. Then read `config.yaml`:
+
+- **`voice.enabled: true`:** voice it yourself: `npm run voice -- <slug>`. It writes `public/episodes/<slug>/voiceover.mp3` with the configured engine and voice, then runs align (step 3). Don't wait for an MP3. If it fails because the reference clip (`voices/narrator.wav`) is missing, tell the user (`voices/README.md` explains how to record one), or offer `--engine kokoro` for now.
+- **`voice.enabled: false`:** wait for the user's MP3 at `public/episodes/<slug>/voiceover.mp3`.
 
 ## 3. Align
 
@@ -58,6 +61,7 @@ npm run align -- <slug>
 ```
 
 - Every segment marker and the outro cue must show ✔.
+- **Local TTS:** most mismatches are Whisper writing numbers as digits ("ten" becomes "10"), and those are fine. Look for real misreads in the report and `heard.txt` (a name said wrong, a dropped word). Respell the word in `voiceover.txt` for the ear and re-voice with `npm run voice -- <slug> --force`. Try `--seed <n>` for a different read of a flat or garbled line. Log respellings in `notes.md`.
 - **Under 90% matched** usually means the recording differs from the script (lines changed in ElevenLabs, ad-libs). Read `episodes/<slug>/heard.txt` (Whisper's raw transcript), edit `voiceover.txt` to match **what was actually said** (keeping the script's spelling for names), and run align again. Captions must show what was said.
 - If a marker is missing, the speaker probably said it differently ("Number 10" read as "Number ten" is fine; "At number ten" changes the marker). Fix `voiceover.txt` to match the audio, or change the `marker` in `episode.json`.
 
@@ -88,7 +92,7 @@ Run `npm run check -- <slug>`. Asset and license errors are expected at this poi
 List the visuals `episode.json` needs and what each should show. Then dispatch **parallel subagents** with the prompts in [asset-prompts.md](asset-prompts.md):
 
 - **A. Clips and images** (always), split across 2–3 agents if there are more than ~8 shots.
-- **B. Sound effects and music** only when `check` reports a sound missing from `public/library/`, or the user asks for a new bed.
+- **B. Sound effects and music** only when `check` reports a sound missing from `public/library/`, or the user asks for a new bed. For a one-off effect the library lacks (a sonar ping, a heavier stamp, a radio blip), synthesizing it with `npm run sfx -- <slug> <name> --sound … | --recipe` is usually faster than sourcing it, and it needs no license check (`OWN WORK`).
 
 The **find-media** skill (`.claude/skills/find-media/`) has the license gate, every source's tested API and the optional keys. The prompts point subagents to it, and you can use it directly for a single missing shot.
 

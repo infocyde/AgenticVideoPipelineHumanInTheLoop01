@@ -3,19 +3,19 @@
 A template for short, narrated countdown and list videos (Remotion + React). Each video is an **episode**: one folder of data and media. The components, scenes, sound design, captions, mastering and checks are already built, so making an episode never means editing a `.tsx` file.
 
 ```
-article  ──►  fact-check  ──►  voiceover.txt  ──►  (you record) voiceover.mp3  ──►  align  ──►  episode.json + media  ──►  check  ──►  render
+article  ──►  fact-check  ──►  voiceover.txt  ──►  voiceover.mp3 (local TTS, or you record it)  ──►  align  ──►  episode.json + media  ──►  check  ──►  render
 ```
 
 ## Working with Claude (the usual way)
 
-Brief Kit is built to be run with [Claude Code](https://claude.com/claude-code) as your production partner. **You bring two things: the article and the voiceover.** Claude does the rest and stops at three points for your decision.
+Brief Kit is built to be run with [Claude Code](https://claude.com/claude-code) as your production partner. **You bring the article** (and, if local TTS is off in `config.yaml`, the voiceover). Claude does the rest and stops at three points for your decision.
 
 | Step | You | Claude |
 |---|---|---|
 | 1. Intake | Paste the article text (or a file path) and say *"let's start a new episode"*. Answer a few questions: format, item count, length, theme. | Scaffolds the episode and saves the article. |
 | 2. Fact-check | — | Sends research agents to check every figure against reputable sources. Wrong numbers are replaced with sourced ones, unverifiable claims cut, and the sources list rebuilt. Every change goes in `notes.md`. |
 | 3. Script | **Approve** the script, or ask for changes. | Writes `voiceover.txt` for text-to-speech, with a table of what the fact-check changed. |
-| 4. Voiceover | Record the script (e.g. ElevenLabs) and drop the MP3 in the episode folder. Optionally add your own music track (`.wav` or `.mp3`). | Moves the MP3 into place, aligns every word to the audio, and builds a music bed from your track. |
+| 4. Voiceover | With `voice.enabled: true` in `config.yaml`: nothing (you hear it in the preview). Otherwise record the script (e.g. ElevenLabs) and drop the MP3 in the episode folder. Optionally add your own music track (`.wav` or `.mp3`). | Voices the script locally with `npm run voice` (Chatterbox or Kokoro on your GPU), or moves your MP3 into place. Aligns every word to the audio, and builds a music bed from your track. |
 | 5. Build | — | Writes `episode.json` and sends sourcing agents for licensed b-roll (PD / CC0 / CC BY / CC BY-SA only). Generates a labeled FLUX still for any shot it can't find, and runs `check` until it reports 0 errors. You can set the rules: "favor Russian footage", "cap the search at 45 minutes". |
 | 6. Preview | **Watch** the preview Claude opens in your browser and say what to change. | Applies the changes live in Remotion Studio. |
 | 7. Render | **Approve**, and confirm you're on AC power. | Renders, masters to YouTube loudness, and writes the thumbnail and `DESCRIPTION.md`. |
@@ -62,7 +62,14 @@ npm run setup:align      # creates .venv and installs requirements.txt; the Whis
 copy .env.example .env   # optional: add REPLICATE_API_TOKEN for the AI-image fallback (see the comments in the file)
 ```
 
-Python packages are pinned in `requirements.txt`: faster-whisper and numpy for `align`, and ddgs for the find-media skill's DuckDuckGo lead finder. To install them by hand, run `.venv\Scripts\python.exe -m pip install -r requirements.txt`. `npm run shot` and `npm run infographic` drive the headless Chrome that Remotion already downloads (through `playwright-core`), so they need no extra browser.
+Optional, for local text-to-speech instead of ElevenLabs (needs [uv](https://docs.astral.sh/uv/); an NVIDIA GPU with 6 GB+ is strongly recommended):
+
+```powershell
+npm run setup:voice      # creates .venv-tts (Python 3.12) and installs requirements-tts.txt: CUDA PyTorch, Chatterbox, Kokoro (~4 GB)
+npm run setup:voice -- --qwen   # optional third engine: .venv-qwen + requirements-qwen.txt (Qwen3-TTS; model ~4.5 GB on first use)
+```
+
+Python packages are pinned in `requirements.txt`: faster-whisper and numpy for `align`, and ddgs for the find-media skill's DuckDuckGo lead finder. The TTS packages are pinned separately in `requirements-tts.txt`, because Kokoro needs Python 3.12 and PyTorch brings its own numpy. To install them by hand, run `.venv\Scripts\python.exe -m pip install -r requirements.txt`. `npm run shot` and `npm run infographic` drive the headless Chrome that Remotion already downloads (through `playwright-core`), so they need no extra browser.
 
 The rest of this README is reference: the commands and files Claude uses at each step. You only need it to see how things work, or to run a step yourself without Claude.
 
@@ -101,7 +108,51 @@ The new episode is a complete placeholder that previews straight away in `npm ru
    - Don't state anything that neither the article nor your fact-check supports.
 4. Optional: `npm run align -- <slug> --estimate` gives rough timing from the text alone, so you can preview the layout before recording.
 
-### 3. Record and align
+### 3. Voice and align
+
+**Local TTS** (`voice.enabled: true` in `config.yaml`):
+
+```powershell
+npm run voice -- <slug>                                # voiceover.txt -> public/episodes/<slug>/voiceover.mp3, then align
+npm run voice -- <slug> --force                        # a new take (the old one is kept as voiceover.prev.mp3)
+npm run voice -- <slug> --engine kokoro --voice bm_george --force
+npm run voice -- --sample "A line to try."             # out/voice-samples/, to audition a voice or setting
+npm run voice -- --voices                              # Kokoro's preset voices
+npm run voice -- <slug> --ignore-off                   # one episode while voice.enabled is false (never overwrites without --force)
+```
+
+It reads the script sentence by sentence, joins the sentences with short pauses (longer at paragraph breaks), writes the settings it used to `episodes/<slug>/voice.json`, and runs `align`. With a fixed `seed`, the same text gives the same take; change the seed for a different read. A word it says wrong shows up in align's mismatch report and in `heard.txt`: respell it in `voiceover.txt` the way it should sound and voice it again.
+
+| Engine | License | Voice | Speed on an RTX 4070 Laptop (8 GB) | VRAM |
+|---|---|---|---|---|
+| `chatterbox` + `turbo` (default) | MIT | clones `voices/narrator.wav` (your voice) | ~3× realtime (a 2:50 script in under a minute) | ~3.2 GB |
+| `chatterbox` + `standard` | MIT | built-in voice, or a clone; `exaggeration` / `cfg_weight` controls | ~1× realtime | ~3.1 GB |
+| `kokoro` | Apache-2.0 | 28 English presets (`am_michael`, `bm_george`, `af_heart`…) | ~5× realtime | ~0.7 GB |
+| `qwen` (1.7B or 0.6B) | Apache-2.0 | clones `voices/<name>.wav` + its transcript `voices/<name>.txt` | ~0.1× realtime in Balanced power mode (see the note below) | ~4.6 GB (1.7B), ~2.8 GB (0.6B) |
+
+Models download on first use (Chatterbox ~2 GB, Kokoro ~330 MB, Qwen 1.7B ~4.5 GB) into the Hugging Face cache. Chatterbox output carries Resemble's inaudible Perth watermark, which marks the audio as AI-generated. How to record a reference clip and what you may clone: `voices/README.md`.
+
+> **Note: Qwen3-TTS and foreign names (added 2026-10-19).** Chatterbox and Kokoro are English-only, so they guess at Russian and Ukrainian names ("Zaporizhzhia", "Syrskyi", "Novorossiysk") from English spelling rules. ElevenLabs, which is multilingual, says them better. Chatterbox `standard` does slightly better than `turbo`. **Qwen3-TTS** (`engine: qwen`, Apache-2.0, Alibaba's Qwen team) is a multilingual model that includes Russian (not Ukrainian), so it is the local engine most likely to get these names right. It runs in its own `.venv-qwen` (`npm run setup:voice -- --qwen`), because it pins a different `transformers` than Chatterbox.
+>
+> - **Transcript:** it clones from the reference clip *and* a transcript of it, `voices/<name>.txt`. The first run makes that file with Whisper; correct it by hand if a word is wrong, since a wrong transcript hurts the clone.
+> - **Speed:** on the RTX 4070 Laptop it fits easily (4.6 GB for 1.7B, 2.8 GB for 0.6B), but it is slow, about 0.1× realtime (a 3-minute script takes roughly half an hour), at both sizes and with either attention setting. The bottleneck is not the GPU: during generation the GPU sits at 35–40% in a low power state while the Python process holds one CPU core at ~93%, feeding the model one step at a time. That makes it very sensitive to single-core CPU speed. Measured with Windows power mode on **Balanced**; switching to **Best performance** (Settings → System → Power) and the laptop vendor's performance profile (MSI Center: *Extreme Performance*), on AC power with other GPU apps closed, should speed it up noticeably, and helps Chatterbox too (it dropped from 2.7× to about 1× realtime on the same evening). Untested beyond that; flash-attention isn't available on Windows.
+> - **Use it** for name-heavy scripts or single lines: `npm run voice -- --sample "…" --engine qwen`, or `npm run voice -- <slug> --engine qwen --out <file>.mp3` to try a whole episode without touching its voiceover.
+
+**config.yaml** turns it on or off and sets the defaults; any setting can be overridden per run (`--engine`, `--model`, `--reference`, `--voice`, `--speed`, `--seed`, `--pause`):
+
+```yaml
+voice:
+  enabled: true            # false: you bring voiceover.mp3 yourself (ElevenLabs, a mic), as before
+  engine: chatterbox       # chatterbox | qwen | kokoro
+  reference: voices/narrator.wav   # the voice chatterbox and qwen clone
+  chatterbox: { model: turbo, exaggeration: 0.5, cfg_weight: 0.5 }   # model: turbo (default) | standard
+  qwen: { size: 1.7B, language: English }
+  kokoro: { voice: am_michael, speed: 1.0 }
+  pause: 0.3
+  seed: 7
+```
+
+**Your own recording** (`voice.enabled: false`, or any time):
 
 1. Record or generate the voiceover (e.g. ElevenLabs) and save it as `public/episodes/<slug>/voiceover.mp3`.
 2. Run:
@@ -177,7 +228,9 @@ Every field is documented in `src/kit/schema.ts`. Editors that read JSON Schema 
   ```
 
   The page gets the theme's colors and fonts as CSS variables (`--accent`, `--highlight`, `--font-display`…). The renderer steps CSS animations and an optional `window.bkSeek(ms)` through the clip frame by frame, so motion lands exactly on each frame. The credit is `OWN WORK`, with the data sources from `<meta name="sources">` in its notes. Like everything else on screen, the numbers must come from the script and the fact-check. Rules and layout patterns are in `.claude/skills/infographic/SKILL.md`.
+- **An illustrated explainer** (Manga Page, Military HUD…): a canvas animation in a named style with a synthesized sound score, storyboarded first. `npm run explainer -- new <name> --style <id> --episode <slug>` scaffolds `episodes/<slug>/infographics/<name>.html`, and the same `npm run infographic` renders it as silent b-roll. Without `--episode` it is a standalone piece, and `npm run explainer -- render <name>` gives an MP4 with sound in `out/explainers/<name>/`. See `.claude/skills/explainer/SKILL.md`.
 - Sound effects and the music bed are shared across episodes in `public/library/` (credited in `public/library/credits.json`). An episode can override one by adding `sfx/<name>.mp3` or `music/<name>.mp3` to its own folder.
+- **A new sound effect** can be synthesized instead of sourced: `npm run sfx -- <slug> sonar_ping --recipe` renders `episodes/<slug>/sfx/sonar_ping.js` (a function of the explainer sound kit: `(k) => { k.tone(0, { f: 1400, dur: 1.6, verb: 0.6 }); }`), and `--sound stamp --dur 0.3` renders one ready-made kit sound. `npm run sfx -- list` shows them. The MP3 lands in the episode's `sfx/`, normalized to the library's level and credited `OWN WORK`, ready for `audio.sfxExtra`. `--library` puts it in `public/library/` for all episodes.
 
 Then:
 
@@ -215,11 +268,16 @@ For a quick partial render, pass Remotion flags after a second `--`: `npm run re
 |---|---|
 | `npm run new -- <slug> [--format list] [--count N] [--theme id]` | Scaffold an episode with placeholder content |
 | `npm run sync` | Regenerate `src/episodes.generated.ts` (run by `new`, `dev`, `render`, `align`) |
+| `npm run voice -- <slug> [--engine chatterbox\|kokoro] [--reference voices/x.wav] [--voice id] [--seed N] [--force]` | Local TTS: voice `voiceover.txt` to `voiceover.mp3`, then align (settings in `config.yaml`) |
+| `npm run voice -- --sample "text"` / `--voices` | Audition a voice or setting / list Kokoro voices |
+| `npm run setup:voice [--cpu]` | One-time: create `.venv-tts` and install `requirements-tts.txt` |
 | `npm run align -- <slug> [--estimate]` | Write `timing.json` from the voiceover (or from text only) |
 | `npm run assets -- <slug>` | Write `assets.json` |
 | `npm run generate -- <slug> <name> --prompt "..." [--aspect 16:9] [--resolution 2k] [--force]` | Last-resort FLUX 3 still, with credit and provenance |
 | `npm run shot -- <slug> <name> --url <url> [--selector "<css>"] [--license PD] [--highlight "..."]` | Screenshot part of a web page as a still, with credit |
 | `npm run infographic -- <slug> <name> [--seconds 12] [--still]` | Render `episodes/<slug>/infographics/<name>.html` as a themed clip or still, with credit |
+| `npm run explainer -- <styles\|new\|storyboard\|frames\|render> <name> [--episode <slug>]` | Illustrated explainers: scaffold in a style, storyboard, check frames, render with sound |
+| `npm run sfx -- <slug> <name> --sound <kit sound> \| --recipe [file.js]` | Synthesize a sound effect into the episode's `sfx/` (or `--library`), credited OWN WORK |
 | `npm run check -- <slug>` | Validate schema, cues, visuals, licenses, text lengths, maps and generated files |
 | `npm run preview -- <slug> [--port N] [--no-open]` | Check, start Remotion Studio and open the browser on this episode (stop with Ctrl+C) |
 | `npm run dev` | Remotion Studio, all episodes |
@@ -287,5 +345,9 @@ scripts/                         the npm commands (TypeScript, run with tsx) + a
 scripts/lib/browser.ts           headless Chrome for shot and infographic (Remotion's chrome-headless-shell via playwright-core)
 episodes/<slug>/infographics/    HTML sources for npm run infographic
 requirements.txt                 Python packages for .venv (align, find-media lead finder)
-.claude/skills/                  new-episode, find-media, generate-image, infographic
+requirements-tts.txt             Python packages for .venv-tts (npm run voice: PyTorch, Chatterbox, Kokoro)
+requirements-qwen.txt            Python packages for .venv-qwen (npm run voice with engine: qwen)
+config.yaml                      kit settings: voice (local TTS on/off, engine, voice)
+voices/                          reference clips for voice cloning (git-ignored except README.md)
+.claude/skills/                  new-episode, find-media, generate-image, infographic, explainer
 ```

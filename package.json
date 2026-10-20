@@ -9,6 +9,8 @@
     "sync": "tsx scripts/sync.ts",
     "align": "tsx scripts/align.ts",
     "setup:align": "tsx scripts/setup-align.ts",
+    "setup:voice": "tsx scripts/setup-voice.ts",
+    "voice": "tsx scripts/voice.ts",
     "assets": "tsx scripts/assets.ts",
     "generate": "tsx scripts/generate.ts",
     "check": "tsx scripts/check.ts",
@@ -21,7 +23,9 @@
     "kill": "tsx scripts/kill.ts",
     "typecheck": "tsc --noEmit",
     "shot": "tsx scripts/shot.ts",
-    "infographic": "tsx scripts/infographic.ts"
+    "infographic": "tsx scripts/infographic.ts",
+    "explainer": "tsx scripts/explainer.ts",
+    "sfx": "tsx scripts/sfx.ts"
   },
   "dependencies": {
     "@remotion/cli": "4.0.536",
@@ -41,6 +45,7 @@
     "@types/topojson-client": "^3.1.5",
     "playwright-core": "^1.56.1",
     "tsx": "^4.20.3",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "yaml": "^2.8.1"
   }
 }

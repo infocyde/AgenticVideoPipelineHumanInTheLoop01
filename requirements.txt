@@ -1,6 +1,8 @@
 # Python dependencies for Brief Kit, installed into .venv by `npm run setup:align`
 # (or by hand: .venv/Scripts/python.exe -m pip install -r requirements.txt).
 # Direct dependencies only; pip resolves the rest. Versions are the ones tested with the kit.
+# Local text-to-speech (npm run voice) has its own file, requirements-tts.txt, installed into .venv-tts by
+# `npm run setup:voice`: Kokoro needs Python 3.12 and PyTorch pins its own numpy, so it can't share this .venv.
 
 # npm run align: word timing from voiceover.mp3 (scripts/align.py)
 faster-whisper==1.2.1

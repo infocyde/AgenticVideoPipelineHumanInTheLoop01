@@ -1,0 +1,43 @@
+{
+  "name": "Military HUD",
+  "family": "Motion graphics",
+  "default": "military",
+  "variants": {
+    "military": {
+      "fontsHref": "https://fonts.googleapis.com/css2?family=Big+Shoulders+Stencil:wght@800&family=Share+Tech+Mono&family=Barlow+Condensed:wght@600;800&display=block",
+      "fontSpecs": ["800 48px \"Big Shoulders Stencil\"", "28px \"Share Tech Mono\"", "600 32px \"Barlow Condensed\"", "800 32px \"Barlow Condensed\""],
+      "vars": {
+        "palette": {
+          "bg": "#0a0d08", "panel": "rgba(14, 18, 11, 0.82)", "line": "rgba(228,220,195,0.16)",
+          "text": "#e4dcc3", "dim": "rgba(228,220,195,0.62)", "accent": "#ff9f1c", "accentDeep": "#4b5634",
+          "highlight": "#b4f5a2", "onAccent": "#0a0d08", "hostile": "#c8483c", "land": "#1b2314", "landEdge": "#36412a",
+          "grid": "rgba(180,245,162,0.09)", "glitch": ["rgba(255,159,28,0.5)", "rgba(180,245,162,0.35)"],
+          "flash": "#f3ecd6", "vignette": "4,7,3", "grain": 0.1, "scan": 0.32
+        },
+        "fonts": {
+          "display": { "family": "Big Shoulders Stencil", "weight": 800 },
+          "mono": { "family": "Share Tech Mono", "weight": 400 },
+          "body": { "family": "Barlow Condensed", "weight": 600 }
+        }
+      }
+    },
+    "military-comparisons": {
+      "fontsHref": "https://fonts.googleapis.com/css2?family=Teko:wght@600&family=IBM+Plex+Mono:wght@500;700&family=Saira+Condensed:wght@600;800&display=block",
+      "fontSpecs": ["600 48px \"Teko\"", "500 28px \"IBM Plex Mono\"", "700 28px \"IBM Plex Mono\"", "600 32px \"Saira Condensed\"", "800 32px \"Saira Condensed\""],
+      "vars": {
+        "palette": {
+          "bg": "#0a0f13", "panel": "rgba(11, 17, 22, 0.86)", "line": "rgba(227,233,236,0.16)",
+          "text": "#e3e9ec", "dim": "rgba(227,233,236,0.6)", "accent": "#ff5a1f", "accentDeep": "#2a4152",
+          "highlight": "#5ce1e6", "onAccent": "#0a0f13", "hostile": "#e0453a", "land": "#15202a", "landEdge": "#2c3f4d",
+          "grid": "rgba(92,225,230,0.08)", "glitch": ["rgba(255,90,31,0.5)", "rgba(92,225,230,0.4)"],
+          "flash": "#eef4f6", "vignette": "3,6,8", "grain": 0.08, "scan": 0.22
+        },
+        "fonts": {
+          "display": { "family": "Teko", "weight": 600 },
+          "mono": { "family": "IBM Plex Mono", "weight": 500 },
+          "body": { "family": "Saira Condensed", "weight": 600 }
+        }
+      }
+    }
+  }
+}

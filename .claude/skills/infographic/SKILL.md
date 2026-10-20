@@ -73,4 +73,6 @@ Each is a small change to the template. Keep the template's `.safe`, `.kicker`, 
 - **Proportion grid:** a 10×10 grid of squares (`--panel`), filling N of them with `--highlight` in sequence for "N in 100" or "N percent". Fill in `bkSeek`: `i < Math.round(ease(t) * N)`.
 - **Line trend:** an inline SVG `<path>` with `stroke-dasharray`/`stroke-dashoffset` set from `bkSeek`, axis labels in `--font-mono`, the last point labelled with its value. At most 8 points; label the start and end values and skip the gridlines.
 
+For an illustrated, styled piece (manga, tactical HUD) that explains a mechanism rather than charting a number, use the **explainer** skill instead. It renders through the same `npm run infographic`.
+
 For chart-design judgement (which form fits the data, how to label, and keeping one accent per graphic), the `dataviz` skill applies too. Ignore its palette and use the theme variables.

@@ -1,0 +1,42 @@
+# Brief Kit settings, read by the pipeline scripts. Edit freely; comments are fine.
+
+voice:
+  # Local text-to-speech for the voiceover, instead of ElevenLabs or a recording.
+  #   true:  after script approval the producer runs `npm run voice -- <slug>`, which reads voiceover.txt and writes
+  #          public/episodes/<slug>/voiceover.mp3 (then aligns it).
+  #   false: you bring voiceover.mp3 yourself, as before. `npm run voice -- <slug>` refuses unless you pass --ignore-off
+  #          (--sample auditions always work, so you can try voices before turning this on).
+  enabled: false
+
+  # chatterbox: Resemble AI Chatterbox (MIT). Clones the voice in `reference`. English only.
+  # qwen:       Qwen3-TTS (Apache-2.0). Clones the voice in `reference`. Multilingual model (incl. Russian), so it
+  #             tends to say Russian/Ukrainian names better. Needs: npm run setup:voice -- --qwen
+  # kokoro:     Kokoro-82M (Apache-2.0). Preset voices only, very fast. Good for drafts and long scripts.
+  engine: chatterbox
+
+  # The voice to clone (chatterbox and qwen): 10-20 s of clean speech, one speaker, no music, in voices/.
+  # Must be your own voice or one you have the rights to. List them: npm run voice -- --voices
+  # One-off: --reference voices/<name>.wav  (or --reference none for Chatterbox standard's built-in voice)
+  reference: voices/narrator.wav
+
+  chatterbox:
+    # turbo (default): 350M, fast (~2-3x realtime here), English. Needs a reference clip.
+    # standard: 500M, about half the speed, reads names a little better (e.g. Russian/Ukrainian places),
+    #           has exaggeration / cfg_weight controls and a built-in default voice. One-off: --model standard
+    model: turbo
+    exaggeration: 0.5   # standard model only: 0.25 flat .. 1.0 dramatic
+    cfg_weight: 0.5     # standard model only: lower = slower, more deliberate delivery
+
+  qwen:
+    size: 1.7B          # 1.7B (better, ~6 GB VRAM) | 0.6B (lighter, ~4 GB). One-off: --size 0.6B
+    language: English   # the narration's language (Chinese, English, Japanese, Korean, German, French, Russian,
+                        # Portuguese, Spanish, Italian). Names inside English text are still read by a model that
+                        # knows Russian. It also needs a transcript of the reference clip: voices/<name>.txt, made
+                        # automatically with Whisper the first time (fix it by hand if a word is wrong).
+
+  kokoro:
+    voice: am_michael   # list them with: npm run voice -- --voices
+    speed: 1.0
+
+  pause: 0.3            # seconds of silence between sentences (paragraph breaks get double)
+  seed: 7               # same seed + same text = same take; change it to get a different read

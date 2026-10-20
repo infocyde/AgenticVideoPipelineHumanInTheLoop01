@@ -1,0 +1,22 @@
+# Python dependencies for local text-to-speech (npm run voice), installed into .venv-tts by `npm run setup:voice`.
+# Separate from requirements.txt / .venv because Kokoro needs Python 3.12 (not 3.13) and PyTorch is large and pins
+# its own numpy. setup:voice uses uv: uv pip install --python .venv-tts/Scripts/python.exe --index-strategy unsafe-best-match -r requirements-tts.txt
+# Direct dependencies only; versions are the ones tested with the kit (RTX 4070 Laptop, 8 GB, CUDA 12.6 wheels).
+--extra-index-url https://download.pytorch.org/whl/cu126
+
+# PyTorch with CUDA 12.6 (setup:voice --cpu swaps in the CPU wheels)
+torch==2.6.0+cu126
+torchaudio==2.6.0+cu126
+
+# Chatterbox (Resemble AI, MIT): voice cloning, Turbo and standard models
+chatterbox-tts==0.1.7
+# its watermarker (resemble-perth) imports pkg_resources, which uv venvs lack and setuptools 81+ dropped
+setuptools==80.9.0
+
+# Kokoro-82M (hexgrad, Apache-2.0): preset voices; misaki[en] phonemizer comes with it
+kokoro==0.9.4
+# spaCy English model for misaki (it would otherwise try to pip-download it at run time; uv venvs have no pip)
+en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl
+
+# WAV writing in scripts/voice.py
+soundfile==0.14.0

@@ -63,6 +63,7 @@ console.log(`
 Next:
   1. Save the source article to episodes/${slug}/article.md
   2. Write episodes/${slug}/voiceover.txt, then preview with estimated timing: npm run align -- ${slug} --estimate
-  3. Record the voiceover to public/episodes/${slug}/voiceover.mp3, then: npm run align -- ${slug}
+  3. Voice it: npm run voice -- ${slug}  (local TTS, if config.yaml has voice.enabled: true)
+     or record public/episodes/${slug}/voiceover.mp3 yourself, then: npm run align -- ${slug}
   4. Fill episodes/${slug}/episode.json, add media, then: npm run assets -- ${slug} && npm run check -- ${slug}
   5. npm run dev  (composition "${slug}" is in Studio now, with placeholder content)`);

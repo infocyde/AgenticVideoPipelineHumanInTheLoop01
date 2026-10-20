@@ -1,0 +1,12 @@
+{
+  "name": "Manga Page",
+  "family": "Illustration",
+  "default": "default",
+  "variants": {
+    "default": {
+      "fontsHref": "https://fonts.googleapis.com/css2?family=Archivo+Black&family=Patrick+Hand&family=VT323&display=block",
+      "fontSpecs": ["48px \"Archivo Black\"", "32px \"Patrick Hand\"", "32px \"VT323\""],
+      "vars": {}
+    }
+  }
+}

@@ -1,6 +1,8 @@
 # --- Dependencies & tooling ---
 node_modules/
 .venv/
+.venv-tts/
+.venv-qwen/
 __pycache__/
 *.pyc
 
@@ -19,6 +21,11 @@ out/
 episodes/*/
 # Each episode's media, timing, assets and credits
 public/episodes/
+# Standalone illustrated explainers (npm run explainer)
+explainers/
+# Voice reference clips for npm run voice (personal recordings)
+voices/*
+!voices/README.md
 # Generated index that imports the local episodes (rebuilt by `npm run sync`,
 # which new/align/assets/preview/render/thumb run automatically)
 src/episodes.generated.ts
@@ -46,3 +53,6 @@ desktop.ini
 
 # --- Claude Code: keep project skills, drop personal settings ---
 .claude/settings.local.json
+
+# --- Playwright MCP session logs and snapshots ---
+.playwright-mcp/

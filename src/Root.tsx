@@ -3,6 +3,7 @@ import { Composition, Folder, Still } from "remotion";
 import { registry } from "./episodes.generated";
 import { type CompositionProps, compositionSchema, loadEpisode, makeEpisodeComponents } from "./kit/Episode";
 import { FPS, HEIGHT, WIDTH } from "./kit/lib/timing";
+import { episodeSchema } from "./kit/schema";
 import { THUMB_HEIGHT, THUMB_WIDTH } from "./kit/Thumbnail";
 
 // One composition (id = slug) and one thumbnail still (id = <slug>-thumb) per folder in episodes/.
@@ -18,7 +19,11 @@ const durationFor = (slug: string, episode: unknown) => {
 export const RemotionRoot: React.FC = () => (
   <>
     {entries.map(({ entry, Video, Thumb }) => {
-      const defaultProps = { episode: entry.episode } as CompositionProps;
+      // Studio's props panel gets the episode with the schema's defaults filled in: it crashes on a list field
+      // that is absent (e.g. audio.sfxOff), instead of treating it as empty. An invalid episode is passed as is,
+      // so the composition can show its errors.
+      const parsed = episodeSchema.safeParse(entry.episode);
+      const defaultProps = { episode: parsed.success ? parsed.data : entry.episode } as CompositionProps;
       return (
         <Folder key={entry.slug} name={entry.slug}>
           <Composition

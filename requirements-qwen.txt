@@ -1,0 +1,12 @@
+# Python dependencies for the Qwen3-TTS engine (npm run voice with engine: qwen), installed into .venv-qwen by
+# `npm run setup:voice -- --qwen`. Separate from .venv-tts because qwen-tts pins transformers 4.57.3 and Chatterbox
+# pins 5.2.0. uv reuses the PyTorch wheels it already downloaded for .venv-tts.
+# Versions are the ones tested with the kit (RTX 4070 Laptop, 8 GB, CUDA 12.6 wheels).
+--extra-index-url https://download.pytorch.org/whl/cu126
+
+torch==2.6.0+cu126
+torchaudio==2.6.0+cu126
+
+# Qwen3-TTS (Alibaba Qwen team, Apache-2.0): 10 languages incl. Russian, voice cloning from a short clip + transcript
+qwen-tts==0.1.1
+soundfile==0.14.0

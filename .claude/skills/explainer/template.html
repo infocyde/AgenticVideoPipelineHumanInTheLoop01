@@ -1,0 +1,193 @@
+<!doctype html>
+<!--
+  Brief Kit explainer (made by `npm run explainer -- new`). One self-contained page with three views:
+    player      (default)       1280x720 canvas, letterboxed, with play/pause, scrub, time, sound toggle and loop
+    storyboard  (#storyboard)    one still panel per BEAT with its timing, text, flow and sounds, then ASSUMPTIONS and SOURCES
+    render      (?render / BK)   bare canvas at 1920x1080 for `npm run explainer -- render` and `npm run infographic`
+  Edit only the EXPLAINER block. The libraries and style helpers above it are copies; the PLAYER block below it is fixed.
+  Every frame is a pure function of t: no Math.random, Date.now, performance.now or timers above the PLAYER block.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__TITLE__</title>
+<meta name="sources" content="">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="__FONTS_HREF__">
+<style>
+  :root { --bg: #f3f2ee; --surface: #ffffff; --fg: #18191b; --muted: #5d6066; --line: #d9d8d2; --accent: #c2410c; --stage: #000; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0f1012; --surface: #191a1d; --fg: #ecebe7; --muted: #a2a5ab; --line: #2c2e33; --accent: #fb923c; } }
+  :root[data-theme="dark"] { --bg: #0f1012; --surface: #191a1d; --fg: #ecebe7; --muted: #a2a5ab; --line: #2c2e33; --accent: #fb923c; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--fg); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  /* player */
+  .player { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
+  #stage { flex: 1; min-height: 0; background: var(--stage); display: grid; place-items: center; overflow: hidden; }
+  #cv { display: block; background: #000; }
+  #bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 10px 16px; background: var(--surface); border-top: 1px solid var(--line); }
+  #bar button { font: inherit; font-weight: 600; min-width: 44px; height: 36px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--fg); cursor: pointer; }
+  #bar button:focus-visible, #bar input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  #scrub { flex: 1 1 220px; accent-color: var(--accent); }
+  #time { font-variant-numeric: tabular-nums; color: var(--muted); min-width: 92px; }
+  #bar label { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
+  /* storyboard */
+  .board { max-width: 1400px; margin: 0 auto; padding: 24px 16px 48px; }
+  .board h1 { font-size: 26px; margin: 0 0 4px; }
+  .board .sub { color: var(--muted); margin: 0 0 20px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 400px), 1fr)); gap: 18px; }
+  .beat { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .beat canvas { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; background: #000; }
+  .beat .cap { padding: 10px 14px 14px; }
+  .beat .hd { display: flex; justify-content: space-between; font-weight: 700; margin-bottom: 6px; }
+  .beat .hd span:last-child { color: var(--muted); font-weight: 500; font-variant-numeric: tabular-nums; }
+  .beat dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; }
+  .beat dt { color: var(--muted); }
+  .beat dd { margin: 0; }
+  .notes { margin-top: 28px; display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); }
+  .notes section { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; }
+  .notes h2 { font-size: 17px; margin: 0 0 8px; }
+  .notes ul { margin: 0; padding-left: 20px; }
+  /* render: bare canvas */
+  html.render, html.render body { background: #000; overflow: hidden; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+/* ===== lib/harness.js (copied unchanged) ===== */
+__HARNESS__
+</script>
+<script>
+/* ===== lib/sound.js (copied unchanged) ===== */
+__SOUND__
+</script>
+<script>
+(function () {
+  'use strict';
+  const STYLE_ID = '__STYLE_ID__';
+  const STYLE_VARIANT = __VARIANT__;
+  const FONT_SPECS = __FONT_SPECS__;
+
+  /* ===== STYLE: styles/__STYLE_ID__/style.js (copied; edit here only if this piece needs a one-off tweak) ===== */
+__STYLE__
+
+  // ===== EXPLAINER =====================================================================================
+  // Fill BEATS first (storyboard), then write explainer() and scoreSound() so each beat draws as storyboarded.
+  const TITLE = document.title;
+  const DURATION = 16; // seconds
+  // One entry per beat. key = the time whose frame the storyboard shows. text = exact on-screen text.
+  // flow = how it gets here from the previous beat (continuous: what carries over and how it moves; or a scene change: which transition and why).
+  const BEATS = [
+    { t0: 0, t1: 2, key: 1.6, text: 'HOOK', flow: 'Opens cold.', sounds: '-' },
+  ];
+  const ASSUMPTIONS = []; // facts or numbers you had to assume (shown under the storyboard)
+  const SOURCES = [];     // where the facts come from (also put them in <meta name="sources">)
+
+  function explainer(ctx, W, H_, t) {
+    styleBase(ctx, W, H_, t);
+    ctx.fillStyle = '#888'; ctx.font = FONT_SPECS[0]; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('STORYBOARD FIRST', W / 2, H_ / 2);
+    styleFinish(ctx, W, H_, t);
+  }
+
+  function scoreSound(k) {
+    // k.play('stamp', 1.2); k.bed('room', 0, DURATION, { gain: 0.6 });
+  }
+  // ===== END EXPLAINER =================================================================================
+
+  // ===== PLAYER (fixed: do not edit) ===================================================================
+  { // block scope: nothing here clashes with names in the EXPLAINER block
+  const params = new URLSearchParams(location.search);
+  const RENDER = !!window.BK || params.has('render');
+  const VIEW = RENDER ? 'render' : (document.documentElement.dataset.view || (location.hash === '#storyboard' ? 'storyboard' : 'player'));
+  const SCALE = RENDER ? Number(params.get('scale') || 1.5) : 1;
+  const W = 1280, H_ = 720;
+  const app = document.getElementById('app');
+
+  function drawAt(c, t, S) {
+    if (c.reset) c.reset(); else c.clearRect(0, 0, c.canvas.width, c.canvas.height);
+    c.setTransform(S, 0, 0, S, 0, 0);
+    explainer(c, W, H_, Math.max(0, Math.min(DURATION, t)));
+  }
+  const fontsReady = Promise.all(FONT_SPECS.map((f) => document.fonts.load(f, 'AaZz09'))).catch(() => {}).then(() => document.fonts.ready);
+
+  window.DURATION = DURATION;
+  window.scoreSound = scoreSound;
+  window.EXPLAINER = { title: TITLE, style: STYLE_ID, beats: BEATS, assumptions: ASSUMPTIONS, sources: SOURCES };
+
+  if (VIEW === 'storyboard') {
+    document.title = TITLE + ' storyboard';
+    const fmt = (s) => s.toFixed(1) + ' s';
+    const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+    app.className = 'board';
+    app.innerHTML = `<h1>${esc(TITLE)}</h1><p class="sub">Storyboard · ${BEATS.length} beats · ${fmt(DURATION)} · style: ${esc(STYLE_ID)}</p>
+      <div class="grid">${BEATS.map((b, i) => `<figure class="beat" style="margin:0"><canvas width="${W}" height="${H_}"></canvas>
+        <figcaption class="cap"><div class="hd"><span>Beat ${i + 1}</span><span>${fmt(b.t0)} – ${fmt(b.t1)}</span></div>
+        <dl><dt>Text</dt><dd>${esc(b.text)}</dd><dt>Flow</dt><dd>${esc(b.flow)}</dd><dt>Sound</dt><dd>${esc(b.sounds)}</dd></dl></figcaption></figure>`).join('')}</div>
+      <div class="notes"><section><h2>Assumed facts and numbers</h2>${ASSUMPTIONS.length ? `<ul>${ASSUMPTIONS.map((a) => `<li>${esc(a)}</li>`).join('')}</ul>` : '<p>None.</p>'}</section>
+      <section><h2>Sources</h2>${SOURCES.length ? `<ul>${SOURCES.map((a) => `<li>${esc(a)}</li>`).join('')}</ul>` : '<p>None listed.</p>'}</section></div>`;
+    window.ready = fontsReady.then(() => {
+      app.querySelectorAll('.beat canvas').forEach((cv, i) => drawAt(cv.getContext('2d', { willReadFrequently: true }), BEATS[i].key ?? (BEATS[i].t0 + BEATS[i].t1) / 2, 1));
+      document.documentElement.dataset.ready = '1';
+    });
+    return;
+  }
+
+  const cv = document.createElement('canvas');
+  cv.id = 'cv'; cv.width = Math.round(W * SCALE); cv.height = Math.round(H_ * SCALE);
+  const ctx = cv.getContext('2d', { willReadFrequently: true });
+  let cur = 0;
+  window.seek = (t) => { cur = t; const a = performance.now(); drawAt(ctx, t, SCALE); window.lastFrameMs = performance.now() - a; };
+  window.bkSeek = (ms) => window.seek(ms / 1000); // npm run infographic drives pages through bkSeek
+
+  if (VIEW === 'render') {
+    document.documentElement.classList.add('render');
+    cv.style.width = cv.width + 'px'; cv.style.height = cv.height + 'px';
+    if (window.BK) { cv.style.width = '1920px'; cv.style.height = '1080px'; }
+    app.appendChild(cv);
+    window.ready = fontsReady.then(() => { window.seek(0); document.documentElement.dataset.ready = '1'; });
+    return;
+  }
+
+  // interactive player
+  app.className = 'player';
+  app.innerHTML = `<div id="stage"></div><div id="bar">
+    <button id="play" aria-label="Play">▶</button>
+    <input id="scrub" type="range" min="0" max="${DURATION}" step="${1 / 30}" value="0" aria-label="Scrub">
+    <span id="time">0.0 / ${DURATION.toFixed(1)}</span>
+    <button id="snd" aria-pressed="true">Sound on</button>
+    <label><input id="loop" type="checkbox" checked> Loop</label></div>`;
+  const stage = document.getElementById('stage'), playB = document.getElementById('play'), scrub = document.getElementById('scrub'),
+    timeEl = document.getElementById('time'), sndB = document.getElementById('snd'), loopEl = document.getElementById('loop');
+  stage.appendChild(cv);
+  const fit = () => { const k = Math.min(stage.clientWidth / W, stage.clientHeight / H_); cv.style.width = Math.floor(W * k) + 'px'; cv.style.height = Math.floor(H_ * k) + 'px'; };
+  new ResizeObserver(fit).observe(stage);
+
+  let playing = false, soundOn = true, raf = 0, wall0 = 0, from = 0, stopSound = null;
+  const stopNow = () => { if (stopSound) { stopSound(); stopSound = null; } };
+  const startSound = () => { stopNow(); if (soundOn && playing) stopSound = SOUND.live(scoreSound, cur, { voiceover: false }); };
+  const ui = () => { playB.textContent = playing ? '❚❚' : '▶'; playB.setAttribute('aria-label', playing ? 'Pause' : 'Play'); scrub.value = cur; timeEl.textContent = `${cur.toFixed(1)} / ${DURATION.toFixed(1)}`; };
+  function tick(now) {
+    let t = from + (now - wall0) / 1000;
+    if (t >= DURATION) {
+      if (loopEl.checked) { from = 0; wall0 = now; t = 0; cur = 0; startSound(); }
+      else { window.seek(DURATION); pause(); return; }
+    }
+    window.seek(t); ui(); raf = requestAnimationFrame(tick);
+  }
+  function play() { if (cur >= DURATION - 1e-3) cur = 0; playing = true; from = cur; wall0 = performance.now(); startSound(); raf = requestAnimationFrame(tick); ui(); }
+  function pause() { playing = false; cancelAnimationFrame(raf); stopNow(); ui(); }
+  playB.onclick = () => (playing ? pause() : play());
+  scrub.oninput = () => { stopNow(); window.seek(Number(scrub.value)); from = cur; wall0 = performance.now(); ui(); };
+  scrub.onchange = () => { if (playing) startSound(); };
+  sndB.onclick = () => { soundOn = !soundOn; sndB.textContent = soundOn ? 'Sound on' : 'Sound off'; sndB.setAttribute('aria-pressed', String(soundOn)); soundOn ? startSound() : stopNow(); };
+  document.addEventListener('keydown', (e) => { if (e.code === 'Space' && e.target === document.body) { e.preventDefault(); playing ? pause() : play(); } });
+  window.ready = fontsReady.then(() => { fit(); window.seek(0); ui(); document.documentElement.dataset.ready = '1'; });
+  }
+})();
+</script>
+</body>
+</html>
