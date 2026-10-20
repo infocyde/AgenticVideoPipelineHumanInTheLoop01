@@ -1,8 +1,8 @@
 // Persistent broadcast "chrome": film grain, scanlines, vignette, glitch cuts, top bar, ticker, captions.
 import React from "react";
-import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from "remotion";
+import { AbsoluteFill, Easing, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
 import { clamp, useEpisode, useTheme } from "../context";
-import { FPS, HEIGHT } from "../lib/timing";
+import { FPS } from "../lib/timing";
 import { SPLIT } from "../scenes/SplitSegment";
 import { layoutOf } from "../themes";
 
@@ -36,6 +36,7 @@ export const Grain: React.FC = () => {
 /** A few frames of RGB-split bars and a flash, for hard cuts. */
 export const GlitchCut: React.FC<{ seed?: number }> = ({ seed = 1 }) => {
   const frame = useCurrentFrame();
+  const { height: HEIGHT } = useVideoConfig();
   const { effects } = useTheme();
   if (frame > 7) return null;
   const strength = 1 - frame / 8;
@@ -167,8 +168,11 @@ export const Ticker: React.FC = () => {
   );
 };
 
+/** Where captions sit; the vertical (Shorts) format passes its own box. */
+export type CaptionBox = { left: number; right?: number; width?: number; bottom: number; fontSize: number };
+
 /** Word-by-word captions from the script's own words; hidden once the outro title slams in. */
-export const Captions: React.FC = () => {
+export const Captions: React.FC<{ box?: CaptionBox }> = ({ box: boxProp }) => {
   const frame = useCurrentFrame();
   const { timeline, theme } = useEpisode();
   const { colors, fonts, effects } = theme;
@@ -178,7 +182,9 @@ export const Captions: React.FC = () => {
   if (!chunk) return null;
   // Split layout: during a numbered segment, captions sit under the framed b-roll, clear of the spec column.
   const split = layoutOf(theme.id) === "split" && timeline.segments.some((s) => frame >= s.from && frame < s.to);
-  const box = split
+  const box: CaptionBox = boxProp
+    ? boxProp
+    : split
     ? { left: SPLIT.captions.left, width: SPLIT.captions.width, bottom: SPLIT.captions.bottom, fontSize: SPLIT.captions.fontSize }
     : { left: 120, right: 120, bottom: 108, fontSize: 54 };
 

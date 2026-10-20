@@ -5,6 +5,7 @@ import { z } from "zod";
 import { EpisodeProvider, type EpisodeCtx } from "./context";
 import { Countdown } from "./formats/Countdown";
 import { List } from "./formats/List";
+import { Short } from "./formats/Short";
 import { parseCredits, usedCredits } from "./lib/credits";
 import { resolveEpisode } from "./lib/resolve";
 import { assetsSchema, type Episode, episodeSchema, type Timing, timingSchema } from "./schema";
@@ -71,7 +72,8 @@ export const makeEpisodeComponents = (entry: RegistryEntry) => {
   const Video: React.FC<CompositionProps> = ({ episode }) => {
     const loaded = useLoaded(episode);
     if (!loaded.ok) return <ErrorCard slug={loaded.slug} errors={loaded.errors} />;
-    const Format = loaded.ctx.episode.format === "list" ? List : Countdown;
+    const { format } = loaded.ctx.episode;
+    const Format = format === "short" ? Short : format === "list" ? List : Countdown;
     return (
       <EpisodeProvider value={loaded.ctx}>
         <Format />

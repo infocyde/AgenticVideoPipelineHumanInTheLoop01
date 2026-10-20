@@ -23,9 +23,17 @@ export const usedCredits = (ep: Episode, tl: Timeline, assets: AssetManifest, ep
   if (mf?.startsWith("library/")) usedLib.add(mf.slice("library/".length));
 
   const isVisual = (c: Credit) => /^(clips|images)\//.test(c.file);
+  // A Short holds all of its parent's media (hard-linked) but shows only a few: credit just the visuals it references.
+  // An episode's folder holds only what it uses, so it credits everything there.
+  const referenced = new Set<string>([
+    ...ep.coldOpen.beats.flatMap((b) => (b.visual ? [b.visual] : [])),
+    ...ep.segments.flatMap((s) => s.visuals.map((v) => v.name)),
+    ...(ep.thumbnail?.visual ? [ep.thumbnail.visual] : []),
+  ]);
+  const shown = (c: Credit) => ep.format !== "short" || referenced.has(c.file.replace(/^.*\//, "").replace(/\.[^.]+$/, ""));
   return {
-    visuals: episodeCredits.filter((c) => isVisual(c) && c.license !== AI_LICENSE),
-    generated: episodeCredits.filter((c) => c.license === AI_LICENSE),
+    visuals: episodeCredits.filter((c) => isVisual(c) && c.license !== AI_LICENSE && shown(c)),
+    generated: episodeCredits.filter((c) => c.license === AI_LICENSE && shown(c)),
     audio: [...episodeCredits.filter((c) => /^(sfx|music)\//.test(c.file)), ...libraryCredits.filter((c) => usedLib.has(c.file))],
   };
 };

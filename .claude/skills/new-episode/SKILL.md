@@ -12,7 +12,7 @@ There are three stops where you wait for the user: **script approval**, **the MP
 ## 1. Intake
 
 1. Get the article (a file path or pasted text).
-2. Confirm with the user: format (`countdown` 10→1 or `list` 1..N), item count, theme (default `threat-brief`), and the date label shown on screen (e.g. `OCT 2026` or `WEEK OF OCT 11–17, 2026`).
+2. Confirm with the user: format (`countdown` 10→1, `list` 1..N, or `short` for a **standalone YouTube Short**), item count, theme (default `threat-brief`), and the date label shown on screen (e.g. `OCT 2026` or `WEEK OF OCT 11–17, 2026`). A standalone Short follows this same procedure with the Short rules in section 8: `npm run new -- <slug> --format short [--count 1-3 scenes]`.
 3. Pick a slug: `<YYYY-MM-DD>-<show>`, e.g. `2026-10-24-threat-brief`. Run:
    ```
    npm run new -- <slug> [--format list] [--count 5] [--theme clean-light]
@@ -49,7 +49,9 @@ Shape (the scaffolded file shows it):
 
 Optionally run `npm run align -- <slug> --estimate` and draft `episode.json` against the estimated timing, so the user can preview the layout before recording.
 
-**Stop.** Give the user the script and wait for approval. Then read `config.yaml`:
+**Shorts:** if `config.yaml` has `shorts.enabled: true` (or the user asks for Shorts), write the Short scripts now too (section 8), so the user approves and records everything in one go.
+
+**Stop.** Give the user the script (and any Short scripts) and wait for approval. Then read `config.yaml`:
 
 - **`voice.enabled: true`:** voice it yourself: `npm run voice -- <slug>`. It writes `public/episodes/<slug>/voiceover.mp3` with the configured engine and voice, then runs align (step 3). Don't wait for an MP3. If it fails because the reference clip (`voices/narrator.wav`) is missing, tell the user (`voices/README.md` explains how to record one), or offer `--engine kokoro` for now.
 - **`voice.enabled: false`:** wait for the user's MP3 at `public/episodes/<slug>/voiceover.mp3`.
@@ -69,6 +71,7 @@ npm run align -- <slug>
 
 Replace every placeholder. The schema with docs is in `src/kit/schema.ts`; timing rules are in `CLAUDE.md`.
 
+- `summary`: **always**, 1–2 sentences for the top of the YouTube description: what the video covers and its strongest specific fact (the #1 item, a key number). Facts from the article and fact-check log only, no hype words the script doesn't support, no hashtags. Write it now, while the facts are fresh; `npm run credits` puts it in `DESCRIPTION.md`, and `check` warns while it's missing.
 - `brand`: carried from the last episode. Update `dateLabel`.
 - `coldOpen.beats`: one per hook line. `cue` = the line's first words. A stamp beat gets `visual` + `stamp` (≤ 16 chars) + `sub`. One beat can be the map instead (`"map": "all-pins"`, `stamp` + `accent`, e.g. "EVERY" / "FRONT"). `title.cue` = "These are"; `title.bigCue` = "ten stories".
 - Per segment:
@@ -122,7 +125,7 @@ When they report back:
    npm run credits -- <slug>
    ```
    `render` fails unless `youtube.mp4` measures -14 ±1 LUFS with true peak ≤ -1 dBTP. If a render is interrupted, run `npm run kill`.
-6. Fill the summary placeholder in `out/<slug>/DESCRIPTION.md` with 1–2 sentences from the article.
+6. Check that `out/<slug>/DESCRIPTION.md` opens with the episode's `summary` (from `episode.json`). Never write the summary into `DESCRIPTION.md` by hand: `npm run credits` rewrites that file, so put any change in `episode.json` and run it again.
 
 If the user wants a painted thumbnail instead, use the image-model prompt in [thumbnail-prompt.md](thumbnail-prompt.md).
 
@@ -135,3 +138,25 @@ Tell the user:
 - What to check by ear: names and numbers the TTS might mispronounce, and any sfx landing awkwardly.
 - Every file-footage substitution and every approved claim beyond the article (from `notes.md`).
 - Every AI-generated image, with a reminder to tick YouTube's "altered or synthetic content" box if any look realistic.
+
+## 8. Shorts (optional)
+
+YouTube Shorts are vertical (9:16, 1080×1920) and each one is its own small episode with its own script and voiceover, so every command works on it. Two kinds:
+
+- **From an episode**, when `config.yaml` has `shorts.enabled: true` or the user asks: `npm run short -- <slug> [--count 1-3]` scaffolds `<slug>-short1`, `-short2`, … Each inherits the parent's theme, brand, music and sources, gets the parent's `article.md`, and has the parent's media hard-linked (no extra disk space) with its `credits.json`.
+- **Standalone**: `npm run new -- <slug> --format short` (intake as usual, its own article and fact-check).
+
+**Picking the Shorts** (from an episode, `shorts.count` of them): the strongest, most self-contained items: the #1 item, a striking number, a surprising contrast. Two related items can share one Short ("laser vs microwave"). Don't make a Short that only works with context from the full video.
+
+**Script** (`episodes/<short>/voiceover.txt`), written at the main script's approval stop:
+- At most `shorts.maxSeconds` (default 60 s, about 130 words at 2.6 words/s; check warns above it, and YouTube's hard limit is 3 minutes). 30–45 s is the sweet spot.
+- Structure: a hook line in the first 2 s (no "welcome", no throat-clearing); a title line; 1–3 scenes, each starting with a distinctive marker ("First, …", "Second, …"); one outro line; a CTA ("Subscribe for the full briefing.").
+- **Facts only from the parent's article and its fact-check log** (or the standalone Short's own fact-check), CLAUDE.md rule 2. Reuse the episode's checked wording wherever you can.
+- Same ear rules as the main script: spell out numbers, no symbols.
+
+**episode.json**: `summary` (1–2 sentences: the Short's one idea and its key fact; the description adds a link line to the full video and `#Shorts`), `coldOpen.beats` (1 hook beat: stamp ≤ 16 chars over a strong visual), `coldOpen.title` (kicker = brand, `big` ≤ 4 chars such as "#1" or "VS", `small` ≤ 2 short lines), `segments` (1–3 items or text sections, each with stats and 1–3 visuals; a `map` shows full-height first, then the b-roll), `outro` (1–2 lines + `cta`). `sourcesCard` and `creditsCard` stay `false`: on Shorts the sources and credits go in the description. File-footage `note`s and AI-image notes apply as usual.
+
+**Then**, per Short: voice it (`npm run voice -- <short>` when local TTS is on, otherwise the user records `voiceover.mp3` alongside the main one), `npm run align`, `npm run assets`, `npm run check` (0 errors), and preview it with the main episode (`npm run preview -- <short>`; the user can approve them together). After approval and the AC-power question, `npm run render -- <short>` writes `out/<short>/youtube.mp4` and copies it to `out/<parent>/short<N>.mp4`. `npm run credits -- <short>` writes its description (link to the full video + `#Shorts`, sources, credits); no thumbnail (YouTube uses a frame).
+
+**Hand off** each Short's path, length and description with the main episode, and log the picks and scripts in the parent's `notes.md`.
+

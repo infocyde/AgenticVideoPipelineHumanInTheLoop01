@@ -29,16 +29,27 @@
     },
     "format": {
       "default": "countdown",
+      "description": "'short': a YouTube Short (vertical, aspect 9:16) made from a parent episode by `npm run short`",
       "type": "string",
       "enum": [
         "countdown",
-        "list"
+        "list",
+        "short"
       ]
     },
     "aspect": {
       "default": "16:9",
+      "description": "16:9 = 1920×1080 (episodes); 9:16 = 1080×1920 (Shorts)",
       "type": "string",
-      "const": "16:9"
+      "enum": [
+        "16:9",
+        "9:16"
+      ]
+    },
+    "parent": {
+      "description": "Shorts only: slug of the episode this Short comes from (its facts, theme, media and credits)",
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
     },
     "brand": {
       "type": "object",

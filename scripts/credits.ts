@@ -31,13 +31,15 @@ const all = [
   ].sort((a, b) => a.at - b.at),
   { at: tl.outro.start, title: "Wrap-up" },
 ];
+const isShort = ep.format === "short";
 const chapters: typeof all = [];
-all.forEach((c, i) => {
+// Shorts don't show chapters; their description points to the full video instead.
+if (!isShort) all.forEach((c, i) => {
   const next = all[i + 1]?.at ?? tl.durationInFrames / FPS;
   if (i > 0 && next - c.at < 10) warn(`chapter "${c.title}" is ${(next - c.at).toFixed(1)}s (YouTube needs ≥ 10s); merged into the previous chapter`);
   else chapters.push(c);
 });
-if (chapters.length < 3) warn("fewer than 3 chapters; YouTube won't show chapters for this video");
+if (!isShort && chapters.length < 3) warn("fewer than 3 chapters; YouTube won't show chapters for this video");
 
 // Only credit what this episode actually uses (same selection as the on-screen credits roll).
 const used = usedCredits(ep, tl, assets!, epCredits, libCredits);
@@ -53,16 +55,19 @@ const soundLines = used.audio.map(line);
 
 const md = `# ${ep.title}: YouTube description
 
-Paste everything below the line. Fill in the summary first.
+Paste everything below the line.${ep.summary ? "" : ' Fill in the summary first (better: set "summary" in episode.json and run npm run credits again, so it survives).'}
 
 ---
 
 ${ep.title}
 
-<1–2 sentence summary: what this episode covers. Only claims from the source article.>
+${ep.summary ?? "<1–2 sentence summary: what this episode covers. Only claims from the source article.>"}
 
-CHAPTERS
-${chapters.map((c) => `${fmtTime(c.at)} ${c.title}`).join("\n")}
+${
+  isShort
+    ? `Full video: <link to ${ep.parent ?? "the full episode"} on YouTube>\n\n#Shorts`
+    : `CHAPTERS\n${chapters.map((c) => `${fmtTime(c.at)} ${c.title}`).join("\n")}`
+}
 
 SOURCES
 ${ep.sources.length ? ep.sources.map((s) => `- ${s.title}: ${s.url}`).join("\n") : "- <add sources to episode.json>"}
@@ -88,4 +93,4 @@ mkdirSync(d.p.out, { recursive: true });
 writeFileSync(join(d.p.out, "DESCRIPTION.md"), md);
 writeFileSync(join(d.p.out, "REFERENCES.md"), refs);
 ok(`out/${slug}/REFERENCES.md (${ep.sources.length} sources)`);
-ok(`out/${slug}/DESCRIPTION.md (${chapters.length} chapters, ${visualLines.length + aiLines.length + soundLines.length} credits)`);
+ok(`out/${slug}/DESCRIPTION.md (${isShort ? "Short, " : `${chapters.length} chapters, `}${visualLines.length + aiLines.length + soundLines.length} credits)`);

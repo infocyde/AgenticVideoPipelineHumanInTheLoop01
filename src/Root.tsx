@@ -3,6 +3,7 @@ import { Composition, Folder, Still } from "remotion";
 import { registry } from "./episodes.generated";
 import { type CompositionProps, compositionSchema, loadEpisode, makeEpisodeComponents } from "./kit/Episode";
 import { FPS, HEIGHT, WIDTH } from "./kit/lib/timing";
+import { SHORT_HEIGHT, SHORT_WIDTH } from "./kit/formats/Short";
 import { episodeSchema } from "./kit/schema";
 import { THUMB_HEIGHT, THUMB_WIDTH } from "./kit/Thumbnail";
 
@@ -24,6 +25,8 @@ export const RemotionRoot: React.FC = () => (
       // so the composition can show its errors.
       const parsed = episodeSchema.safeParse(entry.episode);
       const defaultProps = { episode: parsed.success ? parsed.data : entry.episode } as CompositionProps;
+      // Shorts (aspect 9:16) render vertical and have no 16:9 thumbnail still (YouTube picks a frame).
+      const vertical = parsed.success && parsed.data.aspect === "9:16";
       return (
         <Folder key={entry.slug} name={entry.slug}>
           <Composition
@@ -34,10 +37,10 @@ export const RemotionRoot: React.FC = () => (
             calculateMetadata={({ props }) => ({ durationInFrames: durationFor(entry.slug, props.episode) })}
             durationInFrames={FPS * 10}
             fps={FPS}
-            width={WIDTH}
-            height={HEIGHT}
+            width={vertical ? SHORT_WIDTH : WIDTH}
+            height={vertical ? SHORT_HEIGHT : HEIGHT}
           />
-          <Still id={`${entry.slug}-thumb`} component={Thumb} schema={compositionSchema} defaultProps={defaultProps} width={THUMB_WIDTH} height={THUMB_HEIGHT} />
+          {!vertical && <Still id={`${entry.slug}-thumb`} component={Thumb} schema={compositionSchema} defaultProps={defaultProps} width={THUMB_WIDTH} height={THUMB_HEIGHT} />}
         </Folder>
       );
     })}

@@ -99,9 +99,22 @@ export const episodeSchema = z.object({
   $schema: z.string().optional(),
   slug: z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/),
   title: z.string().min(1).describe("e.g. 'The week in 10 flashpoints'"),
+  summary: z
+    .string()
+    .min(1)
+    .optional()
+    .describe("1–2 sentences for the top of the YouTube description (npm run credits): what the video covers, facts from the article and fact-check only"),
   theme: z.enum(THEME_IDS).default("threat-brief").describe("Theme id from src/kit/themes/"),
-  format: z.enum(["countdown", "list"]).default("countdown"),
-  aspect: z.literal("16:9").default("16:9"),
+  format: z
+    .enum(["countdown", "list", "short"])
+    .default("countdown")
+    .describe("'short': a YouTube Short (vertical, aspect 9:16) made from a parent episode by `npm run short`"),
+  aspect: z.enum(["16:9", "9:16"]).default("16:9").describe("16:9 = 1920×1080 (episodes); 9:16 = 1080×1920 (Shorts)"),
+  parent: z
+    .string()
+    .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/)
+    .optional()
+    .describe("Shorts only: slug of the episode this Short comes from (its facts, theme, media and credits)"),
   brand: z.object({
     name: z.string().min(1).describe("Top-bar brand, e.g. 'GLOBAL THREAT BRIEF'"),
     tagline: z.string().optional().describe("e.g. '// WEEKLY'"),

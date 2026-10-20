@@ -12,12 +12,14 @@ voice:
   # qwen:       Qwen3-TTS (Apache-2.0). Clones the voice in `reference`. Multilingual model (incl. Russian), so it
   #             tends to say Russian/Ukrainian names better. Needs: npm run setup:voice -- --qwen
   # kokoro:     Kokoro-82M (Apache-2.0). Preset voices only, very fast. Good for drafts and long scripts.
-  engine: chatterbox
+  engine: qwen
 
   # The voice to clone (chatterbox and qwen): 10-20 s of clean speech, one speaker, no music, in voices/.
   # Must be your own voice or one you have the rights to. List them: npm run voice -- --voices
   # One-off: --reference voices/<name>.wav  (or --reference none for Chatterbox standard's built-in voice)
-  reference: voices/narrator.wav
+  # collin_ro: Collin's voice, a 20 s excerpt of the ElevenLabs "Hacker_01" voiceover of 2026-10-18-russia-drone-war
+  # (transcript in voices/collin_ro.txt). Chosen 2026-10-19 after comparing all voices with Qwen 1.7B.
+  reference: voices/collin_ro.wav
 
   chatterbox:
     # turbo (default): 350M, fast (~2-3x realtime here), English. Needs a reference clip.
@@ -40,3 +42,14 @@ voice:
 
   pause: 0.3            # seconds of silence between sentences (paragraph breaks get double)
   seed: 7               # same seed + same text = same take; change it to get a different read
+
+shorts:
+  # YouTube Shorts (vertical 9:16, 1080x1920) made alongside each episode.
+  #   true:  at script approval the producer also writes 1-3 Short scripts (each its own 30-60 s script from the
+  #          episode's facts), scaffolds them with `npm run short -- <slug>`, and builds and renders them after the
+  #          main video. Each Short is its own small episode: <slug>-short1, -short2, ...
+  #   false: no Shorts unless you ask. A standalone Short (not from an episode) is always available:
+  #          npm run new -- <slug> --format short
+  enabled: false
+  count: 2          # Shorts per episode, 1-3 (the producer picks the strongest items)
+  maxSeconds: 60    # target length; check warns above this (YouTube allows up to 3 minutes)

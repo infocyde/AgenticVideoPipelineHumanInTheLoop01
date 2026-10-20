@@ -10,6 +10,7 @@ import { AI_LICENSE, assetsSchema, type Credit, creditSchema, isTextSection, LIC
 import { layoutOf } from "../../src/kit/themes/ids.ts";
 import { AUDIO_EXT, IMAGE_EXT, LIBRARY, listMedia, VIDEO_EXT } from "./assets.ts";
 import { loadFromDisk, scriptWords, zodIssues } from "./episode.ts";
+import { loadConfig } from "./config.ts";
 import { PUBLIC } from "./util.ts";
 
 const require = createRequire(import.meta.url);
@@ -88,6 +89,19 @@ export const runCheck = (slug: string): Issue[] => {
   }
   const ep = d.episode!;
   if (ep.slug !== slug) err("slug", `episode.json says "${ep.slug}" but the folder is "${slug}"`);
+
+  // --- Shorts: vertical, from a parent episode, short enough ---
+  if ((ep.format === "short") !== (ep.aspect === "9:16")) {
+    err("aspect", ep.format === "short" ? 'a Short must be "aspect": "9:16"' : '"aspect": "9:16" is only for Shorts ("format": "short")');
+  }
+  if (ep.format === "short") {
+    // A standalone Short (npm run new --format short) has no parent; one cut from an episode names it.
+    if (ep.parent && !existsSync(join(p.src, "..", ep.parent, "episode.json"))) err("parent", `no episode "${ep.parent}" (episodes/${ep.parent}/episode.json)`);
+    const secs = d.timing && !d.timing.estimated ? d.timing.duration : null;
+    const target = loadConfig().shorts.maxSeconds;
+    if (secs !== null && secs > 180) err("timing", `${secs.toFixed(0)} s of voiceover: a YouTube Short can be at most 3 minutes`);
+    else if (secs !== null && secs > target) warn("timing", `${secs.toFixed(0)} s of voiceover; Shorts work best at ${target} s or less (config.yaml shorts.maxSeconds)`);
+  }
 
   // --- generated files ---
   if (!existsSync(p.timing)) err("timing", `timing.json missing: run \`npm run align -- ${slug}\``);
@@ -277,6 +291,7 @@ export const runCheck = (slug: string): Issue[] => {
     err("article.md", "episodes/<slug>/article.md is empty; save the source article there (it is the fact-check reference)");
   }
   if (!ep.sources.length && !ep.outro.sourcesCard) warn("sources", "no sources listed; they go into the YouTube description");
+  if (!ep.summary) warn("summary", "no summary: write 1–2 sentences (facts from the article) for the top of the YouTube description; npm run credits puts it there");
 
   return issues;
 };

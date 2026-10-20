@@ -1,6 +1,6 @@
 # Brief Kit
 
-A template for short, narrated countdown and list videos (Remotion + React). Each video is an **episode**: one folder of data and media. The components, scenes, sound design, captions, mastering and checks are already built, so making an episode never means editing a `.tsx` file.
+A template for short, narrated countdown and list videos (Remotion + React), plus vertical **YouTube Shorts**. Each video is an **episode**: one folder of data and media. The components, scenes, sound design, captions, mastering and checks are already built, so making an episode never means editing a `.tsx` file. Around that core: local text-to-speech with your own cloned voice, illustrated explainers and infographics as b-roll, synthesized sound effects, and licensed-media sourcing, with the optional parts switched on or off in `config.yaml`.
 
 ```
 article  ──►  fact-check  ──►  voiceover.txt  ──►  voiceover.mp3 (local TTS, or you record it)  ──►  align  ──►  episode.json + media  ──►  check  ──►  render
@@ -12,15 +12,15 @@ Brief Kit is built to be run with [Claude Code](https://claude.com/claude-code) 
 
 | Step | You | Claude |
 |---|---|---|
-| 1. Intake | Paste the article text (or a file path) and say *"let's start a new episode"*. Answer a few questions: format, item count, length, theme. | Scaffolds the episode and saves the article. |
+| 1. Intake | Paste the article text (or a file path) and say *"let's start a new episode"* (or *"make a Short from this"*). Answer a few questions: format, item count, length, theme. | Scaffolds the episode and saves the article. |
 | 2. Fact-check | — | Sends research agents to check every figure against reputable sources. Wrong numbers are replaced with sourced ones, unverifiable claims cut, and the sources list rebuilt. Every change goes in `notes.md`. |
-| 3. Script | **Approve** the script, or ask for changes. | Writes `voiceover.txt` for text-to-speech, with a table of what the fact-check changed. |
-| 4. Voiceover | With `voice.enabled: true` in `config.yaml`: nothing (you hear it in the preview). Otherwise record the script (e.g. ElevenLabs) and drop the MP3 in the episode folder. Optionally add your own music track (`.wav` or `.mp3`). | Voices the script locally with `npm run voice` (Chatterbox or Kokoro on your GPU), or moves your MP3 into place. Aligns every word to the audio, and builds a music bed from your track. |
+| 3. Script | **Approve** the script, or ask for changes. | Writes `voiceover.txt` for text-to-speech, with a table of what the fact-check changed. With Shorts on (`config.yaml`), also writes 1–3 Short scripts from the same facts. |
+| 4. Voiceover | With `voice.enabled: true` in `config.yaml`: nothing (you hear it in the preview). Otherwise record the script (e.g. ElevenLabs) and drop the MP3 in the episode folder. Optionally add your own music track (`.wav` or `.mp3`). | Voices the script locally with `npm run voice` (Qwen3-TTS, Chatterbox or Kokoro on your GPU, in your cloned voice), or moves your MP3 into place. Aligns every word to the audio, and builds a music bed from your track. |
 | 5. Build | — | Writes `episode.json` and sends sourcing agents for licensed b-roll (PD / CC0 / CC BY / CC BY-SA only). Generates a labeled FLUX still for any shot it can't find, and runs `check` until it reports 0 errors. You can set the rules: "favor Russian footage", "cap the search at 45 minutes". |
 | 6. Preview | **Watch** the preview Claude opens in your browser and say what to change. | Applies the changes live in Remotion Studio. |
-| 7. Render | **Approve**, and confirm you're on AC power. | Renders, masters to YouTube loudness, and writes the thumbnail and `DESCRIPTION.md`. |
+| 7. Render | **Approve**, and confirm you're on AC power. | Renders, masters to YouTube loudness, and writes the thumbnail and `DESCRIPTION.md`, which opens with a 1–2 sentence summary Claude writes from the fact-checked article. Then builds and renders any Shorts the same way. |
 
-Then upload `out/<slug>/youtube.mp4` with the thumbnail and description. If an episode uses AI-generated stills, tick YouTube's "altered or synthetic content" box.
+Then upload `out/<slug>/youtube.mp4` with the thumbnail and description, and each Short (`out/<slug>/short1.mp4`, …) with its own `DESCRIPTION.md`. If a video uses AI-generated stills, tick YouTube's "altered or synthetic content" box.
 
 `CLAUDE.md` holds the rules Claude follows at every step, and `.claude/skills/new-episode/` holds the full procedure. Step away whenever you like: tell Claude to make its best calls, and it logs each decision in `notes.md` for you to review.
 
@@ -47,6 +47,10 @@ You don't need the commands, slugs or file paths in the rest of this README. Cla
 - *"The artillery shot in the Lancet segment runs too long, use a Lancet clip"*
 - *"Open the preview"* / *"Render it"*
 - *"Re-render last week's episode with a new thumbnail"*
+- *"Make two Shorts from this episode"* / *"Make a standalone Short about the LOCUST laser"*
+- *"Voice it with my collin_ro voice"* / *"Record a new voice called collin_calm"*
+- *"Make a military explainer on why a draft doesn't instantly produce an army"*
+- *"Make a sonar ping sound for the submarine segment"*
 
 To come back to an older episode, describe it (*"the Russian drone one"*). Claude lists the episodes and picks the match.
 
@@ -69,7 +73,7 @@ npm run setup:voice      # creates .venv-tts (Python 3.12) and installs requirem
 npm run setup:voice -- --qwen   # optional third engine: .venv-qwen + requirements-qwen.txt (Qwen3-TTS; model ~4.5 GB on first use)
 ```
 
-Python packages are pinned in `requirements.txt`: faster-whisper and numpy for `align`, and ddgs for the find-media skill's DuckDuckGo lead finder. The TTS packages are pinned separately in `requirements-tts.txt`, because Kokoro needs Python 3.12 and PyTorch brings its own numpy. To install them by hand, run `.venv\Scripts\python.exe -m pip install -r requirements.txt`. `npm run shot` and `npm run infographic` drive the headless Chrome that Remotion already downloads (through `playwright-core`), so they need no extra browser.
+Python packages are pinned in `requirements.txt`: faster-whisper and numpy for `align`, and ddgs for the find-media skill's DuckDuckGo lead finder. The TTS packages are pinned separately in `requirements-tts.txt` (Chatterbox, Kokoro) and `requirements-qwen.txt` (Qwen3-TTS), because Kokoro needs Python 3.12, PyTorch brings its own numpy, and Qwen pins a different `transformers` than Chatterbox. To install them by hand, run `.venv\Scripts\python.exe -m pip install -r requirements.txt`. `npm run shot` and `npm run infographic` drive the headless Chrome that Remotion already downloads (through `playwright-core`), so they need no extra browser.
 
 The rest of this README is reference: the commands and files Claude uses at each step. You only need it to see how things work, or to run a step yourself without Claude.
 
@@ -82,6 +86,7 @@ Slugs are lowercase with dashes. Start them with the date so they sort: `2026-10
 ```powershell
 npm run new -- 2026-10-24-threat-brief                       # countdown, 10 segments, theme threat-brief
 npm run new -- 2026-10-24-tech-five --format list --count 5 --theme clean-light
+npm run new -- 2026-10-24-locust-short --format short          # a standalone YouTube Short (see 7. Shorts)
 ```
 
 This creates:
@@ -117,7 +122,9 @@ npm run voice -- <slug>                                # voiceover.txt -> public
 npm run voice -- <slug> --force                        # a new take (the old one is kept as voiceover.prev.mp3)
 npm run voice -- <slug> --engine kokoro --voice bm_george --force
 npm run voice -- --sample "A line to try."             # out/voice-samples/, to audition a voice or setting
-npm run voice -- --voices                              # Kokoro's preset voices
+npm run voice -- --voices                              # your cloned voices (* = default) and Kokoro's presets
+npm run voice -- --record collin_calm                  # record a new voice from your mic into voices/ (see voices/README.md)
+npm run voice -- <slug> --out <file>.mp3               # voice the script into another file; the episode is untouched
 npm run voice -- <slug> --ignore-off                   # one episode while voice.enabled is false (never overwrites without --force)
 ```
 
@@ -125,26 +132,26 @@ It reads the script sentence by sentence, joins the sentences with short pauses 
 
 | Engine | License | Voice | Speed on an RTX 4070 Laptop (8 GB) | VRAM |
 |---|---|---|---|---|
-| `chatterbox` + `turbo` (default) | MIT | clones `voices/narrator.wav` (your voice) | ~3× realtime (a 2:50 script in under a minute) | ~3.2 GB |
+| `chatterbox` + `turbo` | MIT | clones `voice.reference` (your voice) | ~3× realtime at best (a 2:50 script in under a minute) | ~3.2 GB |
 | `chatterbox` + `standard` | MIT | built-in voice, or a clone; `exaggeration` / `cfg_weight` controls | ~1× realtime | ~3.1 GB |
 | `kokoro` | Apache-2.0 | 28 English presets (`am_michael`, `bm_george`, `af_heart`…) | ~5× realtime | ~0.7 GB |
-| `qwen` (1.7B or 0.6B) | Apache-2.0 | clones `voices/<name>.wav` + its transcript `voices/<name>.txt` | ~0.1× realtime in Balanced power mode (see the note below) | ~4.6 GB (1.7B), ~2.8 GB (0.6B) |
+| `qwen` (1.7B or 0.6B), **the current default** | Apache-2.0 | clones `voice.reference` + its transcript `voices/<name>.txt` | ~0.1–0.6× realtime, depending on the laptop's power state (see the note below) | ~4.6 GB (1.7B), ~2.8 GB (0.6B) |
 
 Models download on first use (Chatterbox ~2 GB, Kokoro ~330 MB, Qwen 1.7B ~4.5 GB) into the Hugging Face cache. Chatterbox output carries Resemble's inaudible Perth watermark, which marks the audio as AI-generated. How to record a reference clip and what you may clone: `voices/README.md`.
 
 > **Note: Qwen3-TTS and foreign names (added 2026-10-19).** Chatterbox and Kokoro are English-only, so they guess at Russian and Ukrainian names ("Zaporizhzhia", "Syrskyi", "Novorossiysk") from English spelling rules. ElevenLabs, which is multilingual, says them better. Chatterbox `standard` does slightly better than `turbo`. **Qwen3-TTS** (`engine: qwen`, Apache-2.0, Alibaba's Qwen team) is a multilingual model that includes Russian (not Ukrainian), so it is the local engine most likely to get these names right. It runs in its own `.venv-qwen` (`npm run setup:voice -- --qwen`), because it pins a different `transformers` than Chatterbox.
 >
 > - **Transcript:** it clones from the reference clip *and* a transcript of it, `voices/<name>.txt`. The first run makes that file with Whisper; correct it by hand if a word is wrong, since a wrong transcript hurts the clone.
-> - **Speed:** on the RTX 4070 Laptop it fits easily (4.6 GB for 1.7B, 2.8 GB for 0.6B), but it is slow, about 0.1× realtime (a 3-minute script takes roughly half an hour), at both sizes and with either attention setting. The bottleneck is not the GPU: during generation the GPU sits at 35–40% in a low power state while the Python process holds one CPU core at ~93%, feeding the model one step at a time. That makes it very sensitive to single-core CPU speed. Measured with Windows power mode on **Balanced**; switching to **Best performance** (Settings → System → Power) and the laptop vendor's performance profile (MSI Center: *Extreme Performance*), on AC power with other GPU apps closed, should speed it up noticeably, and helps Chatterbox too (it dropped from 2.7× to about 1× realtime on the same evening). Untested beyond that; flash-attention isn't available on Windows.
+> - **Speed:** on the RTX 4070 Laptop it fits easily (4.6 GB for 1.7B, 2.8 GB for 0.6B), but it is slower than Chatterbox: between 0.1× and 0.6× realtime in our runs (a 2:46 episode took 5 minutes at 0.5×; the slowest runs would take half an hour), at both sizes and with either attention setting. The bottleneck is not the GPU: during generation the GPU sits at 35–40% in a low power state while the Python process holds one CPU core at ~93%, feeding the model one step at a time. That makes it very sensitive to single-core CPU speed. Measured with Windows power mode on **Balanced**; switching to **Best performance** (Settings → System → Power) and the laptop vendor's performance profile (MSI Center: *Extreme Performance*), on AC power with other GPU apps closed, should speed it up noticeably, and helps Chatterbox too (it dropped from 2.7× to about 1× realtime on the same evening). Untested beyond that; flash-attention isn't available on Windows.
 > - **Use it** for name-heavy scripts or single lines: `npm run voice -- --sample "…" --engine qwen`, or `npm run voice -- <slug> --engine qwen --out <file>.mp3` to try a whole episode without touching its voiceover.
 
-**config.yaml** turns it on or off and sets the defaults; any setting can be overridden per run (`--engine`, `--model`, `--reference`, `--voice`, `--speed`, `--seed`, `--pause`):
+**config.yaml** turns it on or off and sets the defaults; any setting can be overridden per run (`--engine`, `--model`, `--size`, `--reference`, `--voice`, `--speed`, `--seed`, `--pause`). As set now: local TTS off (ElevenLabs stays the normal path), and when it's used, Qwen 1.7B cloning `collin_ro`, a 20 s excerpt of your ElevenLabs voice:
 
 ```yaml
 voice:
-  enabled: true            # false: you bring voiceover.mp3 yourself (ElevenLabs, a mic), as before
-  engine: chatterbox       # chatterbox | qwen | kokoro
-  reference: voices/narrator.wav   # the voice chatterbox and qwen clone
+  enabled: false           # true: Claude voices each approved script itself; false: you bring voiceover.mp3 (ElevenLabs, a mic)
+  engine: qwen             # qwen | chatterbox | kokoro
+  reference: voices/collin_ro.wav  # the voice chatterbox and qwen clone
   chatterbox: { model: turbo, exaggeration: 0.5, cfg_weight: 0.5 }   # model: turbo (default) | standard
   qwen: { size: 1.7B, language: English }
   kokoro: { voice: am_michael, speed: 1.0 }
@@ -185,7 +192,11 @@ Timing comes from **cues**, not seconds. A cue is a short phrase from `voiceover
 }
 ```
 
-Every field is documented in `src/kit/schema.ts`. Editors that read JSON Schema (VS Code does) show hover docs and autocomplete, because each `episode.json` points at `episodes/episode.schema.json`. Optional extras:
+Every field is documented in `src/kit/schema.ts`. Editors that read JSON Schema (VS Code does) show hover docs and autocomplete, because each `episode.json` points at `episodes/episode.schema.json`. At the top level, every episode also gets:
+
+- `"summary"`: 1–2 sentences for the top of the YouTube description (facts from the article and fact-check only). `npm run credits` writes it into `DESCRIPTION.md`, and `check` warns while it's missing.
+
+Optional extras:
 
 - `"emphasis": "top"`: alarm treatment and a "TOP THREAT" badge (usually on #1).
 - `"note": "FILE FOOTAGE · LVIV, 2022"` on a visual: an on-screen tag for footage that isn't of the event described.
@@ -255,10 +266,19 @@ Rendering a ~2:20 episode takes several minutes on a laptop GPU. Plug in to AC p
 | `out/<slug>/video.mp4` | Raw mix (around -26 LUFS) |
 | `out/<slug>/youtube.mp4` | **Upload this.** Mastered to -14 LUFS ±1, true peak ≤ -1 dBTP |
 | `out/<slug>/thumbnail.png` | 1280×720 thumbnail |
-| `out/<slug>/DESCRIPTION.md` | Summary placeholder, chapters, sources and credits |
+| `out/<slug>/DESCRIPTION.md` | The `summary` from `episode.json` (1–2 sentences), chapters, sources and credits. Regenerated by `npm run credits`, so edit the summary in `episode.json`, not here |
 | `out/<slug>/REFERENCES.md` | Just the numbered source list with links, to paste into the description |
 
 For a quick partial render, pass Remotion flags after a second `--`: `npm run render -- <slug> -- --frames=0-299`.
+
+### 7. Shorts (optional)
+
+YouTube Shorts are vertical videos (9:16, 1080×1920), 60 seconds or less here. In the kit, each Short is a **small episode of its own** (`format: "short"`, `aspect: "9:16"`) with its own script, voiceover and `episode.json`, so every command above works on it. A Short has a hook stamp, a title, 1–3 scenes (b-roll full height, each opening on its map if it has one, with the headline and stats stacked in the clear zone) and an outro with the CTA. Everything sits clear of the Shorts player's own overlays: the icons at the top, the title and channel at the bottom, and the buttons on the right.
+
+- **From an episode:** `npm run short -- <slug> [--count 1-3]` makes `<slug>-short1`, `-short2`, … with the parent's theme, brand, music, sources and article, and its media hard-linked in (no extra disk space) with the credits. Write each Short's script (≤ 60 s, from the parent's facts) and `episode.json`, voice or record it, align, check, preview, and render. `npm run render -- <slug>-short1` also copies the result to `out/<slug>/short1.mp4`, next to the main video.
+- **Standalone:** `npm run new -- <slug> --format short [--count 1-3]` (count = scenes) makes a Short with its own article and fact-check, carrying the channel's brand and theme.
+- **config.yaml** turns the per-episode Shorts on (`shorts.enabled`), sets how many (`shorts.count`, 1–3) and the target length (`shorts.maxSeconds`; check warns above it and errors past YouTube's 3-minute limit). When it's on, Claude writes the Short scripts at the script-approval step, so you record everything in one session, and renders the Shorts after the main video.
+- Shorts have no on-screen sources and credits rolls; `npm run credits -- <short>` puts the sources, credits, a link line for the full video and `#Shorts` in its `DESCRIPTION.md`. There's no thumbnail step: YouTube picks a frame.
 
 ---
 
@@ -266,11 +286,13 @@ For a quick partial render, pass Remotion flags after a second `--`: `npm run re
 
 | Command | Does |
 |---|---|
-| `npm run new -- <slug> [--format list] [--count N] [--theme id]` | Scaffold an episode with placeholder content |
+| `npm run new -- <slug> [--format list\|short] [--count N] [--theme id]` | Scaffold an episode (or a standalone Short) with placeholder content |
+| `npm run short -- <slug> [--count 1-3] [--only N]` | Scaffold YouTube Shorts from an episode: `<slug>-short1…`, media hard-linked from the parent |
 | `npm run sync` | Regenerate `src/episodes.generated.ts` (run by `new`, `dev`, `render`, `align`) |
-| `npm run voice -- <slug> [--engine chatterbox\|kokoro] [--reference voices/x.wav] [--voice id] [--seed N] [--force]` | Local TTS: voice `voiceover.txt` to `voiceover.mp3`, then align (settings in `config.yaml`) |
-| `npm run voice -- --sample "text"` / `--voices` | Audition a voice or setting / list Kokoro voices |
-| `npm run setup:voice [--cpu]` | One-time: create `.venv-tts` and install `requirements-tts.txt` |
+| `npm run voice -- <slug> [--engine qwen\|chatterbox\|kokoro] [--reference voices/x.wav] [--seed N] [--force] [--out file.mp3] [--ignore-off]` | Local TTS: voice `voiceover.txt` to `voiceover.mp3`, then align (settings in `config.yaml`) |
+| `npm run voice -- --sample "text"` / `--voices` / `--record <name>` | Audition a voice or setting / list your voices and Kokoro's / record a new voice from the mic |
+| `npm run setup:align` | One-time: create `.venv` and install `requirements.txt` (Whisper alignment) |
+| `npm run setup:voice [--qwen] [--cpu]` | One-time: create `.venv-tts` (or `.venv-qwen`) and install the TTS packages |
 | `npm run align -- <slug> [--estimate]` | Write `timing.json` from the voiceover (or from text only) |
 | `npm run assets -- <slug>` | Write `assets.json` |
 | `npm run generate -- <slug> <name> --prompt "..." [--aspect 16:9] [--resolution 2k] [--force]` | Last-resort FLUX 3 still, with credit and provenance |
@@ -300,8 +322,9 @@ Errors block rendering:
 - A stale `assets.json`, a missing sound from the sfx preset, or a missing music file.
 - Text over its length limit (headline over 6 words, long stamps, stat values or outro lines).
 - An empty `article.md`.
+- Shorts: a format/aspect mismatch (`short` must be `9:16`, and only Shorts are), a `parent` that doesn't exist, or more than 3 minutes of voiceover.
 
-Warnings: unknown map country names (with a suggestion), pins outside the map box, visuals reused in adjacent segments, segments without stats, visuals or a map, and missing sources.
+Warnings: unknown map country names (with a suggestion), pins outside the map box, visuals reused in adjacent segments, segments without stats, visuals or a map, missing sources, a missing `summary`, and a Short longer than `shorts.maxSeconds`.
 
 ## If a render is interrupted
 
@@ -326,7 +349,7 @@ A theme controls colors, fonts, b-roll treatment, glows, grain and default wordi
 
 **Text sections.** Any entry in `segments` can be `"kind": "text"` instead of a numbered item: a `marker`, optional `label`, a `heading`, an optional short `body` and 1–4 cue-cut `visuals` full-screen behind one block of text. Use them for an intro, a recap or a closing "what it means" section. They work in every theme, don't take a number, and are skipped by the top-bar counter and the ticker.
 
-Formats: `countdown` (10 → 1, with a number slam per segment) and `list` (1 … N, with "3 OF 5" counters and no slams). Both reuse the same scenes.
+Formats: `countdown` (10 → 1, with a number slam per segment) and `list` (1 … N, with "3 OF 5" counters and no slams). Both reuse the same scenes. `short` is the vertical format for YouTube Shorts (`aspect: "9:16"`): the same timeline with its own vertical scenes in `src/kit/formats/Short.tsx`.
 
 ## Layout
 
@@ -339,15 +362,18 @@ src/kit/schema.ts                episode.json schema (zod): the single source of
 src/kit/lib/                     cue resolution, captions, sfx presets, music ducking (pure TS, shared with scripts)
 src/kit/components/              WorldMap, Backdrop, Headline, cards, titles, chrome, audio
 src/kit/scenes/                  ColdOpen, Segment, SplitSegment, TextSection, Outro, EndCard
-src/kit/formats/                 Countdown, List
+src/kit/formats/                 Countdown, List, Short (vertical 9:16)
 src/kit/themes/                  threat-brief, clean-light, after-dark, military, military-comparisons, erotic
-scripts/                         the npm commands (TypeScript, run with tsx) + align.py
+scripts/                         the npm commands (TypeScript, run with tsx) + align.py and voice.py
+scripts/lib/config.ts            reads and validates config.yaml (voice:, shorts:)
 scripts/lib/browser.ts           headless Chrome for shot and infographic (Remotion's chrome-headless-shell via playwright-core)
-episodes/<slug>/infographics/    HTML sources for npm run infographic
+episodes/<slug>/infographics/    HTML sources for npm run infographic (and episode explainers)
+episodes/<slug>-short<N>/        a Short made from an episode (npm run short); its own small episode
+explainers/<name>/               standalone illustrated explainers (git-ignored); renders in out/explainers/<name>/
 requirements.txt                 Python packages for .venv (align, find-media lead finder)
 requirements-tts.txt             Python packages for .venv-tts (npm run voice: PyTorch, Chatterbox, Kokoro)
 requirements-qwen.txt            Python packages for .venv-qwen (npm run voice with engine: qwen)
-config.yaml                      kit settings: voice (local TTS on/off, engine, voice)
+config.yaml                      kit settings: voice (local TTS on/off, engine, voice) and shorts (on/off, count, length)
 voices/                          reference clips for voice cloning (git-ignored except README.md)
 .claude/skills/                  new-episode, find-media, generate-image, infographic, explainer
 ```

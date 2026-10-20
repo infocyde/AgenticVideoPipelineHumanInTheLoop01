@@ -11,6 +11,7 @@
     "setup:align": "tsx scripts/setup-align.ts",
     "setup:voice": "tsx scripts/setup-voice.ts",
     "voice": "tsx scripts/voice.ts",
+    "short": "tsx scripts/short.ts",
     "assets": "tsx scripts/assets.ts",
     "generate": "tsx scripts/generate.ts",
     "check": "tsx scripts/check.ts",

@@ -94,6 +94,73 @@ export const templateEpisode = ({ slug, format, count, theme, carry }: TemplateO
   return { episode, script };
 };
 
+export type ShortTemplateOpts = {
+  slug: string;
+  theme: string;
+  /** Scenes in the Short (1–3); each gets a "First, … / Second, … / Third, …" marker. */
+  scenes?: number;
+  /** Slug of the episode it comes from (npm run short); omitted for a standalone Short (npm run new --format short). */
+  parent?: string;
+  title?: string;
+  carry?: Partial<EpisodeInput>;
+  /** A visual for the placeholder, so the preview isn't blank (the parent's first clip). */
+  visual?: string;
+};
+
+/**
+ * Placeholder YouTube Short (vertical 9:16, format "short"): one hook beat, a title, 1–3 scenes and an outro + CTA,
+ * with a matching script, so it previews right away. No on-screen sources or credits rolls: on Shorts they go in the
+ * description (npm run credits).
+ */
+export const templateShort = ({ slug, theme, scenes = 1, parent, title, carry, visual }: ShortTemplateOpts) => {
+  const ORD = ["First", "Second", "Third"];
+  const n = Math.max(1, Math.min(3, scenes));
+  const script = [
+    "Here is the hook line.",
+    "This is the short title.",
+    ...ORD.slice(0, n).map((o, i) => (i === 0 ? `${o}, the one thing to know, and it costs one hundred million.` : `${o}, another point worth knowing.`)),
+    "Full story on the channel. Subscribe for more.",
+  ].join("\n\n");
+  const visuals = visual ? [{ name: visual }] : [];
+  const episode: EpisodeInput = {
+    $schema: "../episode.schema.json",
+    slug,
+    ...(parent ? { parent } : {}),
+    title: title ?? "Short title",
+    theme: (carry?.theme ?? theme) as EpisodeInput["theme"],
+    format: "short",
+    aspect: "9:16",
+    brand: { ...(carry?.brand ?? { name: "YOUR BRAND", tagline: "// SHORTS" }), dateLabel: carry?.brand?.dateLabel ?? dateLabelFromSlug(slug) },
+    audio: {
+      voiceover: "voiceover.mp3",
+      ...(carry?.audio?.music ? { music: carry.audio.music } : {}),
+      sfxPreset: carry?.audio?.sfxPreset ?? "intense",
+      sfxOff: [],
+      sfxExtra: [],
+    },
+    coldOpen: {
+      beats: [{ cue: "Here is", stamp: "HOOK LINE", ...(visual ? { visual } : {}) }],
+      title: { cue: "This is", kicker: carry?.brand?.name ?? "YOUR BRAND", big: "#1", small: "SHORT\nTITLE" },
+    },
+    segments: ORD.slice(0, n).map((o, i) => ({
+      marker: o,
+      region: "REGION",
+      headline: i === 0 ? "The one thing to know" : `Point ${cap(numberWord(i + 1))} headline`,
+      stats: i === 0 ? [{ value: "$100M", label: "PLACEHOLDER STAT", cue: "one hundred" }] : [],
+      visuals,
+    })),
+    outro: {
+      cue: "Full story",
+      lines: [{ text: "FULL STORY", accent: "ON THE CHANNEL" }],
+      cta: { cue: "Subscribe" },
+      sourcesCard: false,
+      creditsCard: false,
+    },
+    sources: carry?.sources ?? [],
+  };
+  return { episode, script };
+};
+
 export const ARTICLE_PLACEHOLDER = `<!-- Paste the source article here (or save the file over this one).
      Everything said or shown in the video must be supported by this text. -->
 `;

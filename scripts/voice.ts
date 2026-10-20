@@ -17,41 +17,16 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { createInterface } from "node:readline/promises";
 import { basename, join, relative, resolve } from "node:path";
-import { parse } from "yaml";
-import { z } from "zod";
 import type { EpisodeInput } from "../src/kit/schema.ts";
+import { loadConfig } from "./lib/config.ts";
 import { fail, info, ok, parseArgs, paths, readJson, requireSlug, ROOT, run, warn } from "./lib/util.ts";
 
 const { flags } = parseArgs();
 const str = (k: string) => (typeof flags[k] === "string" ? (flags[k] as string).trim() : undefined);
 const rel = (f: string) => relative(ROOT, f).replace(/\\/g, "/");
 
-// --- config.yaml
-const configSchema = z.object({
-  voice: z
-    .object({
-      enabled: z.boolean().default(false),
-      engine: z.enum(["chatterbox", "kokoro", "qwen"]).default("chatterbox"),
-      reference: z.string().nullish(), // the clip Chatterbox and Qwen clone (voices/<name>.wav)
-      chatterbox: z
-        .object({
-          model: z.enum(["turbo", "standard"]).default("turbo"),
-          reference: z.string().nullish(), // older place for voice.reference; still read
-          exaggeration: z.number().min(0).max(2).default(0.5),
-          cfg_weight: z.number().min(0).max(1).default(0.5),
-        })
-        .prefault({}),
-      kokoro: z.object({ voice: z.string().default("am_michael"), speed: z.number().min(0.5).max(2).default(1) }).prefault({}),
-      qwen: z.object({ size: z.enum(["1.7B", "0.6B"]).default("1.7B"), language: z.string().default("English") }).prefault({}),
-      pause: z.number().min(0).max(3).default(0.3),
-      seed: z.number().int().default(7),
-    })
-    .prefault({}),
-});
-const configFile = join(ROOT, "config.yaml");
-const cfgParsed = configSchema.safeParse(existsSync(configFile) ? (parse(readFileSync(configFile, "utf8")) ?? {}) : {});
-if (!cfgParsed.success) fail(`config.yaml: ${cfgParsed.error.issues.map((i) => `voice.${i.path.slice(1).join(".")}: ${i.message}`).join("; ")}`);
-const v = cfgParsed.data!.voice;
+// --- config.yaml (voice:)
+const v = loadConfig().voice;
 
 // Chatterbox and Kokoro run in .venv-tts; Qwen3-TTS in .venv-qwen (it pins a different transformers).
 const venvPy = (dir: string) => (process.platform === "win32" ? join(ROOT, dir, "Scripts", "python.exe") : join(ROOT, dir, "bin", "python"));

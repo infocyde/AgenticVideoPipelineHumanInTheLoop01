@@ -1,12 +1,13 @@
 // Check, render and master an episode.
 // Usage: npm run render -- <slug> [-- extra remotion flags, e.g. --frames=0-299 for a quick partial test]
 // Output: out/<slug>/video.mp4 (raw mix) and out/<slug>/youtube.mp4 (-14 LUFS, true peak ≤ -1 dBTP: upload this one)
-import { mkdirSync } from "node:fs";
+import { copyFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { printIssues } from "./check.ts";
 import { runCheck } from "./lib/check.ts";
 import { master, MAX_TRUE_PEAK, TARGET_LUFS } from "./lib/master.ts";
-import { fail, info, ok, parseArgs, paths, requireSlug, ROOT, run } from "./lib/util.ts";
+import type { EpisodeInput } from "../src/kit/schema.ts";
+import { fail, info, ok, parseArgs, paths, readJson, requireSlug, ROOT, run } from "./lib/util.ts";
 import { sync } from "./sync.ts";
 
 const slug = requireSlug("npm run render -- <slug>");
@@ -38,3 +39,13 @@ const r = master(video, join(out, "youtube.mp4"));
 const line = `out/${slug}/youtube.mp4: ${r.lufs.toFixed(1)} LUFS, true peak ${r.truePeak.toFixed(1)} dBTP`;
 if (!r.ok) fail(`${line} (target ${TARGET_LUFS} ±1 LUFS, true peak ≤ ${MAX_TRUE_PEAK} dBTP)`);
 ok(line);
+
+// A Short also lands next to its parent's video: out/<parent>/short<N>.mp4.
+const ep = readJson<EpisodeInput>(paths(slug).episode);
+if (ep.format === "short" && ep.parent) {
+  const n = slug.match(/-short(\d+)$/)?.[1] ?? slug;
+  const dest = join(paths(ep.parent).out, `short${n}.mp4`);
+  mkdirSync(paths(ep.parent).out, { recursive: true });
+  copyFileSync(join(out, "youtube.mp4"), dest);
+  ok(`copied to out/${ep.parent}/short${n}.mp4`);
+}

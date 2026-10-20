@@ -17,8 +17,9 @@ This repo turns an article plus a voiceover into a short narrated YouTube video 
 ## Commands (all take the episode slug)
 
 ```
-npm run new -- <slug> [--format countdown|list] [--count N] [--theme threat-brief|clean-light|after-dark|military|military-comparisons|erotic]
+npm run new -- <slug> [--format countdown|list|short] [--count N] [--theme threat-brief|clean-light|after-dark|military|military-comparisons|erotic]
 npm run voice -- <slug> [--force]         # local TTS (config.yaml voice:): voiceover.txt -> voiceover.mp3, then align
+npm run short -- <slug> [--count 1-3]     # scaffold YouTube Shorts (<slug>-short1…) from an episode; each is its own small episode
 npm run align -- <slug> [--estimate]      # timing.json from voiceover.mp3 (or rough, from text only)
 npm run assets -- <slug>                  # assets.json from clips/, images/, library sfx/music
 npm run generate -- <slug> <name> --prompt "..."   # last-resort FLUX 3 still (see generate-image skill)
@@ -54,5 +55,7 @@ npm run kill                              # stop leftover render processes from 
 - Shared sounds and the music bed: `public/library/` (`sfx/`, `music/`, `credits.json`). Available sfx: alarm, glitch, impact, riser, tick, typing, whoosh, whoosh2. Music: bed.
 - **A sound the library doesn't have:** synthesize it with `npm run sfx -- <slug> <name> --sound <kit sound>` (one of the ~40 sounds in the explainer sound kit, with options such as `--f`, `--dur`, `--material`) or `--recipe` (layer kit sounds and raw tones and noise in `episodes/<slug>/sfx/<name>.js`). It lands in the episode's `sfx/`, normalized like the library and credited `OWN WORK`, and is used by name in `sfxExtra`. A name that matches a library sound replaces it for that episode. `--library` adds it to `public/library/` for every episode instead.
 - Map country names must match world-atlas 110m (e.g. "United States of America", "Dem. Rep. Congo", "Bosnia and Herz."). `check` warns and suggests names.
+- **Shorts** (`format: "short"`, vertical 9:16, `config.yaml` `shorts:`): each is its own small episode (`npm run short -- <slug>` from an episode, or `npm run new -- <slug> --format short` standalone), with its own ≤ 60 s script from the parent's facts. The procedure is section 8 of the `new-episode` skill. Shorts turn the on-screen sources and credits rolls off; their sources and credits go in the description (`npm run credits`).
+- Every `episode.json` (Shorts too) gets a **`summary`**: 1–2 sentences for the top of the YouTube description, facts from the article and fact-check only. `npm run credits` writes it into `DESCRIPTION.md`, which it regenerates each time, so never edit the summary there by hand.
 - Every video ends with a **sources scene** and a **credits roll** (on by default; `outro.sourcesCard` / `outro.creditsCard`). So `sources` in `episode.json` must list what the script relies on, and every media file must be in `credits.json`; the roll is built from it.
 - Human docs: `README.md`.
