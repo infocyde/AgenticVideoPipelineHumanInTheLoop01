@@ -1,0 +1,1 @@
+(k) => { k.play('thud', 0, { f: 120 }); k.noise(0, { dur: 0.04, filter: 'highpass', f: 4500, gain: 0.25 }); k.tone(0, { f: [[0, 220], [0.38, 880]], type: 'triangle', dur: 0.42, gain: 0.07, a: 0.34 }); k.play('blip', 0.4, { f: 'A6', dur: 0.05, type: 'sine' }); k.play('blip', 0.45, { f: 'E7', dur: 0.09, type: 'sine' }); }

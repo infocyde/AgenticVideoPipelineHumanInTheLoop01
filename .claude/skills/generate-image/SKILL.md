@@ -1,6 +1,6 @@
 ---
 name: generate-image
-description: Generate a Brief Kit still or thumbnail background with FLUX 3 (Black Forest Labs, via Replicate) when no good PD/CC-licensed image or clip can be found. Use only as a fallback after sourcing fails, or when the user asks for a generated image or a painted thumbnail.
+description: Generate a Brief Kit still or thumbnail background, locally with Z-Image Turbo or in the cloud with FLUX 3 (Black Forest Labs, via Replicate) per config.yaml image_gen.mode, when no good PD/CC-licensed image or clip can be found. Use only as a fallback after sourcing fails, or when the user asks for a generated image or a painted thumbnail.
 ---
 
 # Generate an image (fallback)
@@ -11,18 +11,34 @@ Real, licensed footage comes first. Generate when:
 - the only licensed footage is a poor stand-in (a different system, country or era) and a generated image of the right subject would serve the viewer better, or
 - the user asks for a generated image or a painted thumbnail background.
 
-Tell the user which shots you're generating, and why, before you spend credits.
+Tell the user which shots you're generating, and why, before you start (and before you spend credits on cloud renders).
+
+## Engines and modes
+
+`config.yaml` `image_gen.mode` decides where a still is made:
+
+| Mode | Ordinary stills | `--detail high` |
+|---|---|---|
+| `local_render` | Z-Image Turbo on this GPU | Z-Image Turbo |
+| `cloud_render` | FLUX 3 via Replicate | FLUX 3 |
+| `mixed` (default) | Z-Image Turbo | FLUX 3 when `REPLICATE_API_TOKEN` is set, otherwise Z-Image Turbo |
+
+- **Z-Image Turbo** (Tongyi-MAI, Apache-2.0): a Q4_K GGUF run by stable-diffusion.cpp in `models/image/` (set up with `npm run setup:image`). Free, about 35–55 s per image on the RTX 4070 Laptop, rendered at 1600×896 and scaled to 1920×1080. Settings (steps 8, CFG 1.5, shift 3, sampler, size, the default negative prompt) are in `config.yaml` `image_gen.local`; the negative prompt only applies when CFG is above 1. Every run takes a fresh random seed, recorded in `credits.json`; `--seed <n>` remakes one.
+- **FLUX 3** (Black Forest Labs via Replicate): a paid API call per image, sharper fine detail and more reliable on complex machinery and lettering.
+- **Use `--detail high`** for the thumbnail background and for a hero still that sits full-screen for a long time. Ordinary b-roll stills (darkened, tinted and covered by text) don't need it.
+- `--engine local` or `--engine cloud` overrides the mode for one image.
 
 ## Command
 
 ```
-npm run generate -- <slug> <name> --prompt "<prompt>" [--aspect 16:9] [--resolution 2k] [--force]
+npm run generate -- <slug> <name> --prompt "<prompt>" [--detail high] [--engine local|cloud] [--seed N] [--force]
+npm run generate -- --sample "<prompt>"          # try a prompt -> out/image-samples/ (no credit)
 ```
 
-- Writes `public/episodes/<slug>/images/<name>.jpg` (1920×1080) and a `credits.json` entry with license `AI-GENERATED` and a full provenance record (model, prediction id, exact prompt and inputs). It also refreshes `assets.json`. The untouched original is kept in `out/<slug>/generated/`.
-- The token comes from `REPLICATE_API_TOKEN`, either in the environment or in a `.env` file in the repo or a parent folder (currently `C:\_activeDev\.env`). Never print or log it.
-- Each run is a paid API call. Keep the default `2k` for anything shown full-screen; `1k` only comes out at about 1360×768 and gets upscaled.
-- `--grounding` lets the model web-search the prompt first. Leave it off; it pulls in real news photos and makes images that pass as real coverage.
+- Writes `public/episodes/<slug>/images/<name>.jpg` (1920×1080) and a `credits.json` entry with license `AI-GENERATED` and a full provenance record (model, exact prompt and inputs, and the seed or Replicate prediction id). It also refreshes `assets.json`. The untouched original is kept in `out/<slug>/generated/`.
+- Local only: `--steps N` and `--cfg X` override `config.yaml` for one run.
+- Cloud only: `--aspect 16:9`, `--resolution 2k` (default from `image_gen.cloud`), `--safety`, `--grounding`. The token comes from `REPLICATE_API_TOKEN`, either in the environment or in a `.env` file in the repo or a parent folder (currently `C:\_activeDev\.env`). Never print or log it. Keep `2k` for anything shown full-screen; `1k` only comes out at about 1360×768 and gets upscaled.
+- `--grounding` (cloud) lets the model web-search the prompt first. Leave it off; it pulls in real news photos and makes images that pass as real coverage.
 - `--force` replaces an existing image with the same name (and its credit entry).
 - Use a long prompt from a file with `--prompt-file <path>`.
 
@@ -35,6 +51,7 @@ The image will sit under heavy text overlays, darkened and tinted by the theme.
 - **Never copy a specific photo.** Don't feed an unlicensed photo in as a reference or recreate its composition with small changes; that is still a derivative of the photographer's work. Write the prompt from a description.
 - **Unlicensed photos as visual reference only.** To get a named system right, look at photos of it (any license; DuckDuckGo image search is fine) and write down its features in words: airframe and wing layout, propulsion and propeller position, launcher, hull shape, size cues, color. The prompt is that text description, with your own framing and setting. Afterwards compare the result with the reference and regenerate if the design is wrong.
 - **No real, identifiable people.** No politicians, leaders or named individuals, and no recognisable faces. Silhouettes, distant figures, helmeted soldiers seen from behind and hands are fine.
+- **Name the subject's shape, not just its name.** The local model knows fewer named systems than FLUX: "a Magura naval drone" came out as a flying quadcopter. Say what it is and how it looks ("a low, wedge-shaped uncrewed speedboat with a dark gray hull, skimming the waves"). This matters for both engines, more for the local one.
 - **Text and markings garble.** Allow flags or insignia only when they matter, and reject any image where lettering, hull numbers or symbols come out mangled. When markings don't matter, end the prompt with: `No text, no logos.`
 - **Leave room for the layout.** The left ~55% of the frame is covered by the headline and stats, so put the subject right of centre: `subject on the right third, empty dark space on the left`.
 - **Match the theme.** threat-brief: `moody, overcast or night, muted desaturated colors, high contrast, cinematic documentary photography`. clean-light: `bright, soft daylight, clean, editorial photography`. military: `overcast, dusty, muted olive and gray tones, gritty high contrast, documentary photography`. military-comparisons: `cold overcast light, steel blue and gunmetal gray tones, high contrast, clean documentary photography`. erotic: `warm low-key lighting, deep wine and blush tones with soft gold highlights, shallow depth of field, elegant editorial photography` (suggestive mood only: fully clothed or no people, nothing explicit).
@@ -59,4 +76,4 @@ No text, no logos, no identifiable people.
    A cold-open beat takes the same `note`. For a thumbnail background, set `"thumbnail": { "visual": "<name>" }`; no on-screen note is needed there.
 3. Record it in `notes.md`. In the handoff, tell the user which visuals are AI-generated, and remind them to tick YouTube's **"altered or synthetic content"** box when uploading if any of them look realistic. `check` warns about this too, and `npm run credits` lists the images under "AI-generated illustrations" in `DESCRIPTION.md`.
 
-Only stills can be generated (FLUX 3 is an image model). A generated still works as b-roll: the Backdrop gives it a slow Ken Burns move.
+Only stills can be generated (both are image models). A generated still works as b-roll: the Backdrop gives it a slow Ken Burns move.

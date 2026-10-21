@@ -13,18 +13,28 @@ import { Segment } from "../scenes/Segment";
 import { SourcesCard } from "../scenes/SourcesCard";
 import { SplitSegment } from "../scenes/SplitSegment";
 import { TextSection } from "../scenes/TextSection";
+import { useSkin } from "../skins";
 import { layoutOf } from "../themes";
 
 export const Brief: React.FC<{ slam: boolean }> = ({ slam }) => {
   const { timeline, theme } = useEpisode();
   const { coldOpen, segments, texts, outro, sourcesCard, creditsCard, endScreen } = timeline;
   const chromeEnd = outro.to;
-  const SegmentScene = layoutOf(theme.id) === "split" ? SplitSegment : Segment;
+  const skin = useSkin();
+  const SegmentScene = skin.Segment ?? (layoutOf(theme.id) === "split" ? SplitSegment : Segment);
+  const Open = skin.ColdOpen ?? ColdOpen;
+  const Text = skin.Text ?? TextSection;
+  const OutroScene = skin.Outro ?? Outro;
+  const End = skin.EndCard ?? EndCard;
+  const Finish = skin.Finish ?? Grain;
+  const Bar = skin.TopBar ?? TopBar;
+  const Rail = skin.Ticker === undefined ? Ticker : skin.Ticker;
+  const Caps = skin.Captions ?? Captions;
 
   return (
     <AbsoluteFill style={{ background: theme.colors.bg }}>
       <Sequence durationInFrames={Math.max(1, coldOpen.to)}>
-        <ColdOpen />
+        <Open />
       </Sequence>
 
       {segments.map((s) => (
@@ -35,12 +45,12 @@ export const Brief: React.FC<{ slam: boolean }> = ({ slam }) => {
 
       {texts.map((t) => (
         <Sequence key={`t${t.index}`} from={t.from} durationInFrames={Math.max(1, t.to - t.from)}>
-          <TextSection t={t} />
+          <Text t={t} />
         </Sequence>
       ))}
 
       <Sequence from={outro.from} durationInFrames={Math.max(1, outro.to - outro.from)}>
-        <Outro />
+        <OutroScene />
       </Sequence>
 
       {sourcesCard && (
@@ -57,18 +67,20 @@ export const Brief: React.FC<{ slam: boolean }> = ({ slam }) => {
 
       {endScreen && (
         <Sequence from={endScreen.from} durationInFrames={endScreen.to - endScreen.from}>
-          <EndCard />
+          <End />
         </Sequence>
       )}
 
-      <Grain />
+      <Finish />
       <Sequence durationInFrames={chromeEnd} layout="none">
-        <TopBar />
+        <Bar />
       </Sequence>
-      <Sequence from={coldOpen.to} durationInFrames={Math.max(1, outro.from - coldOpen.to)} layout="none">
-        <Ticker />
-      </Sequence>
-      <Captions />
+      {Rail && (
+        <Sequence from={coldOpen.to} durationInFrames={Math.max(1, outro.from - coldOpen.to)} layout="none">
+          <Rail />
+        </Sequence>
+      )}
+      <Caps />
       <IssuesOverlay />
 
       <Voiceover />

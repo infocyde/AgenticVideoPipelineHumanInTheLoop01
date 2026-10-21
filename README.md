@@ -1,6 +1,6 @@
 # Brief Kit
 
-A template for short, narrated countdown and list videos (Remotion + React), plus vertical **YouTube Shorts**. Each video is an **episode**: one folder of data and media. The components, scenes, sound design, captions, mastering and checks are already built, so making an episode never means editing a `.tsx` file. Around that core: local text-to-speech with your own cloned voice, illustrated explainers and infographics as b-roll, synthesized sound effects, and licensed-media sourcing, with the optional parts switched on or off in `config.yaml`.
+A template for short, narrated countdown and list videos (Remotion + React), plus vertical **YouTube Shorts**. Each video is an **episode**: one folder of data and media. The components, scenes, sound design, captions, mastering and checks are already built, so making an episode never means editing a `.tsx` file. Around that core: local text-to-speech with your own cloned voice, locally generated music beds (Stable Audio 3) and AI stills (Z-Image Turbo, or FLUX 3 in the cloud), illustrated explainers and infographics as b-roll, synthesized sound effects, and licensed-media sourcing, with the optional parts switched on or off in `config.yaml`. Themes range from news and military briefings to `frontier`, a technology theme with scenes of its own.
 
 ```
 article  ──►  fact-check  ──►  voiceover.txt  ──►  voiceover.mp3 (local TTS, or you record it)  ──►  align  ──►  episode.json + media  ──►  check  ──►  render
@@ -15,12 +15,12 @@ Brief Kit is built to be run with [Claude Code](https://claude.com/claude-code) 
 | 1. Intake | Paste the article text (or a file path) and say *"let's start a new episode"* (or *"make a Short from this"*). Answer a few questions: format, item count, length, theme. | Scaffolds the episode and saves the article. |
 | 2. Fact-check | — | Sends research agents to check every figure against reputable sources. Wrong numbers are replaced with sourced ones, unverifiable claims cut, and the sources list rebuilt. Every change goes in `notes.md`. |
 | 3. Script | **Approve** the script, or ask for changes. | Writes `voiceover.txt` for text-to-speech, with a table of what the fact-check changed. With Shorts on (`config.yaml`), also writes 1–3 Short scripts from the same facts. |
-| 4. Voiceover | With `voice.enabled: true` in `config.yaml`: nothing (you hear it in the preview). Otherwise record the script (e.g. ElevenLabs) and drop the MP3 in the episode folder. Optionally add your own music track (`.wav` or `.mp3`). | Voices the script locally with `npm run voice` (Qwen3-TTS, Chatterbox or Kokoro on your GPU, in your cloned voice), or moves your MP3 into place. Aligns every word to the audio, and builds a music bed from your track. |
-| 5. Build | — | Writes `episode.json` and sends sourcing agents for licensed b-roll (PD / CC0 / CC BY / CC BY-SA only). Generates a labeled FLUX still for any shot it can't find, and runs `check` until it reports 0 errors. You can set the rules: "favor Russian footage", "cap the search at 45 minutes". |
+| 4. Voiceover | With `voice.enabled: true` in `config.yaml`: nothing (you hear it in the preview). Otherwise record the script (e.g. ElevenLabs) and drop the MP3 in the episode folder. Optionally add your own music track (`.wav` or `.mp3`). | Voices the script locally with `npm run voice` (Qwen3-TTS, Chatterbox or Kokoro on your GPU, in your cloned voice), or moves your MP3 into place. Aligns every word to the audio. Builds the music bed from your track, or, with `music_gen.enabled: true`, composes one with Stable Audio 3 sized to the video. |
+| 5. Build | — | Writes `episode.json` and sends sourcing agents for licensed b-roll (PD / CC0 / CC BY / CC BY-SA only). Generates a labeled AI still for any shot it can't find (locally with Z-Image Turbo, or FLUX 3 for high-detail shots, per `image_gen.mode`), and runs `check` until it reports 0 errors. You can set the rules: "favor Russian footage", "cap the search at 45 minutes". |
 | 6. Preview | **Watch** the preview Claude opens in your browser and say what to change. | Applies the changes live in Remotion Studio. |
 | 7. Render | **Approve**, and confirm you're on AC power. | Renders, masters to YouTube loudness, and writes the thumbnail and `DESCRIPTION.md`, which opens with a 1–2 sentence summary Claude writes from the fact-checked article. Then builds and renders any Shorts the same way. |
 
-Then upload `out/<slug>/youtube.mp4` with the thumbnail and description, and each Short (`out/<slug>/short1.mp4`, …) with its own `DESCRIPTION.md`. If a video uses AI-generated stills, tick YouTube's "altered or synthetic content" box.
+Then upload `out/<slug>/youtube.mp4` with the thumbnail and description, and each Short (`out/<slug>/short1.mp4`, …) with its own `DESCRIPTION.md`. If a video uses AI-generated stills that look realistic, tick YouTube's "altered or synthetic content" box. If it uses a composed music bed, keep the "Powered by Stability AI" line that `DESCRIPTION.md` already has (see [Using Stable Audio 3 legally](#using-stable-audio-3-legally)).
 
 `CLAUDE.md` holds the rules Claude follows at every step, and `.claude/skills/new-episode/` holds the full procedure. Step away whenever you like: tell Claude to make its best calls, and it logs each decision in `notes.md` for you to review.
 
@@ -51,6 +51,9 @@ You don't need the commands, slugs or file paths in the rest of this README. Cla
 - *"Voice it with my collin_ro voice"* / *"Record a new voice called collin_calm"*
 - *"Make a military explainer on why a draft doesn't instantly produce an army"*
 - *"Make a sonar ping sound for the submarine segment"*
+- *"Use the tech theme"* / *"Make the explainer in creative mode, your call"*
+- *"Compose a darker bed for this one"* / *"Give me another take of the music"*
+- *"Render the stills locally"* / *"Use FLUX for the thumbnail"*
 
 To come back to an older episode, describe it (*"the Russian drone one"*). Claude lists the episodes and picks the match.
 
@@ -71,7 +74,41 @@ Optional, for local text-to-speech instead of ElevenLabs (needs [uv](https://doc
 ```powershell
 npm run setup:voice      # creates .venv-tts (Python 3.12) and installs requirements-tts.txt: CUDA PyTorch, Chatterbox, Kokoro (~4 GB)
 npm run setup:voice -- --qwen   # optional third engine: .venv-qwen + requirements-qwen.txt (Qwen3-TTS; model ~4.5 GB on first use)
+npm run setup:music      # local music beds: .venv-music + requirements-music.txt (Stable Audio 3, Flash Attention; see below)
 ```
+
+Optional, for local AI stills (Z-Image Turbo through stable-diffusion.cpp; no Python needed):
+
+```powershell
+npm run setup:image      # sd-cli + Z-Image Turbo Q4_K + Qwen3-4B encoder + FLUX.1 VAE into models/image/ (~6.7 GB); --from <folder> hard-links files you already have
+```
+
+### config.yaml at a glance
+
+| Section | What it switches | Now |
+|---|---|---|
+| `voice:` | Text-to-speech. `true`: Claude voices each approved script (`npm run voice`). `false`: you bring `voiceover.mp3`. | on (Qwen3-TTS cloning `collin_ro`, on Replicate: `qwen-cloud`) |
+| `shorts:` | Shorts made with every episode (`count` 1–3, `maxSeconds`). | off (ask for Shorts per episode) |
+| `music_gen:` | Composed music beds with Stable Audio 3 (`model`, `steps`, `lufs`). A fresh random seed every run. | on (medium) |
+| `licensing:` | `press_images`: official manufacturer press images (newsroom / press kit) of a product being discussed, credited `PRESS`. An opt-in risk: they're editorial-use material, not CC. Never the thumbnail. | on |
+| `image_gen:` | Where AI stills come from: `local_render`, `cloud_render` or `mixed` (local, with FLUX 3 for `--detail high`). Local steps, CFG, size and negative prompt live under `local:`. | mixed |
+
+### Using Stable Audio 3 legally
+
+Stable Audio 3 is open-weight, not open-source. The model weights are under the [Stability AI Community License](https://stability.ai/community-license-agreement), and the text encoder bundled inside them (T5Gemma) under Google's [Gemma Terms of Use](https://ai.google.dev/gemma/terms). For a monetized channel:
+
+1. **Accept the terms on Hugging Face.** The model repos are gated (approval is automatic): [stable-audio-3-medium](https://huggingface.co/stabilityai/stable-audio-3-medium) and [stable-audio-3-small-music](https://huggingface.co/stabilityai/stable-audio-3-small-music). Then log in once (`.venv-music\Scripts\hf.exe auth login`, or `HF_TOKEN=...` in `.env`).
+2. **Register for commercial use.** It's free, and required for commercial use, which a monetized channel is: [stability.ai/community-license](https://stability.ai/community-license). (Done, 2026-10-20.)
+3. **Stay under US$1M a year in revenue** (you and your affiliates together). Above that the license ends and you need Stability's Enterprise license.
+4. **Credit "Powered by Stability AI".** `npm run credits` adds it to `DESCRIPTION.md`, and the credits roll shows it for every composed bed. Keep that line when you paste or edit the description.
+5. **Follow the Acceptable Use Policies** (Stability's and Gemma's): nothing illegal, deceptive or infringing. The kit's own rule goes further: never prompt "in the style of" a named artist, band or song.
+6. **Don't train other AI models on the outputs.** The license forbids using them to build or improve another foundation model.
+7. **Keep the provenance.** You own the outputs to the extent the law allows. `credits.json` records the model, prompt, seed and steps of every bed, which is your evidence if a Content ID claim ever lands on one.
+8. **Don't redistribute the weights.** The kit only downloads them to your Hugging Face cache. Sharing the model files themselves would bring extra notice requirements.
+
+Disclosure: YouTube's "altered or synthetic content" label is for realistic content that could mislead. A background bed usually isn't that, but the description's credit line says it's AI-generated either way. This is a summary, not legal advice; the license text decides.
+
+The other generators are simpler: Z-Image Turbo (local stills) and its Qwen3-4B encoder are Apache-2.0 (no registration, commercial use allowed), FLUX 3 runs under Replicate's and Black Forest Labs' API terms, and the TTS engines' licenses are in the voice table below.
 
 Python packages are pinned in `requirements.txt`: faster-whisper and numpy for `align`, and ddgs for the find-media skill's DuckDuckGo lead finder. The TTS packages are pinned separately in `requirements-tts.txt` (Chatterbox, Kokoro) and `requirements-qwen.txt` (Qwen3-TTS), because Kokoro needs Python 3.12, PyTorch brings its own numpy, and Qwen pins a different `transformers` than Chatterbox. To install them by hand, run `.venv\Scripts\python.exe -m pip install -r requirements.txt`. `npm run shot` and `npm run infographic` drive the headless Chrome that Remotion already downloads (through `playwright-core`), so they need no extra browser.
 
@@ -128,7 +165,9 @@ npm run voice -- <slug> --out <file>.mp3               # voice the script into a
 npm run voice -- <slug> --ignore-off                   # one episode while voice.enabled is false (never overwrites without --force)
 ```
 
-It reads the script sentence by sentence, joins the sentences with short pauses (longer at paragraph breaks), writes the settings it used to `episodes/<slug>/voice.json`, and runs `align`. With a fixed `seed`, the same text gives the same take; change the seed for a different read. A word it says wrong shows up in align's mismatch report and in `heard.txt`: respell it in `voiceover.txt` the way it should sound and voice it again.
+**Cloud option:** `engine: qwen-cloud` runs the same Qwen3-TTS voice clone on Replicate (the official `qwen/qwen3-tts` model, Apache-2.0), sending every sentence at once: about a minute per episode instead of ~7 locally, at roughly 2.6 s of Replicate GPU time per sentence (cents per episode). It needs `REPLICATE_API_TOKEN`, uploads your reference clip to Replicate, and has no seed, so each run is a fresh take. `--engine qwen` voices locally as before.
+
+It reads the script sentence by sentence, trims each one with a 250 ms tail and a short fade (so word endings never click off), joins the sentences with short pauses (longer at paragraph breaks), writes the settings it used to `episodes/<slug>/voice.json`, and runs `align`. With a fixed `seed`, the same text gives the same take; change the seed for a different read. A word it says wrong shows up in align's mismatch report and in `heard.txt`: respell it in `voiceover.txt` the way it should sound and voice it again.
 
 | Engine | License | Voice | Speed on an RTX 4070 Laptop (8 GB) | VRAM |
 |---|---|---|---|---|
@@ -145,17 +184,19 @@ Models download on first use (Chatterbox ~2 GB, Kokoro ~330 MB, Qwen 1.7B ~4.5 G
 > - **Speed:** on the RTX 4070 Laptop it fits easily (4.6 GB for 1.7B, 2.8 GB for 0.6B), but it is slower than Chatterbox: between 0.1× and 0.6× realtime in our runs (a 2:46 episode took 5 minutes at 0.5×; the slowest runs would take half an hour), at both sizes and with either attention setting. The bottleneck is not the GPU: during generation the GPU sits at 35–40% in a low power state while the Python process holds one CPU core at ~93%, feeding the model one step at a time. That makes it very sensitive to single-core CPU speed. Measured with Windows power mode on **Balanced**; switching to **Best performance** (Settings → System → Power) and the laptop vendor's performance profile (MSI Center: *Extreme Performance*), on AC power with other GPU apps closed, should speed it up noticeably, and helps Chatterbox too (it dropped from 2.7× to about 1× realtime on the same evening). Untested beyond that; flash-attention isn't available on Windows.
 > - **Use it** for name-heavy scripts or single lines: `npm run voice -- --sample "…" --engine qwen`, or `npm run voice -- <slug> --engine qwen --out <file>.mp3` to try a whole episode without touching its voiceover.
 
-**config.yaml** turns it on or off and sets the defaults; any setting can be overridden per run (`--engine`, `--model`, `--size`, `--reference`, `--voice`, `--speed`, `--seed`, `--pause`). As set now: local TTS off (ElevenLabs stays the normal path), and when it's used, Qwen 1.7B cloning `collin_ro`, a 20 s excerpt of your ElevenLabs voice:
+Older takes voiced before that fix (hard cuts at sentence ends) can be softened in place without re-voicing: `.venv\Scripts\python.exe scripts\soften_cuts.py public\episodes\<slug>oiceover.mp3 --keep out\<slug>` fades the 50 ms before every pause, keeps the length (timing stays valid) and saves the original as `voiceover.before-fade.mp3`.
+
+**config.yaml** turns it on or off and sets the defaults; any setting can be overridden per run (`--engine`, `--model`, `--size`, `--reference`, `--voice`, `--speed`, `--seed`, `--pause`). As set now: local TTS on, Qwen 1.7B cloning `collin_ro`, a 20 s excerpt of your ElevenLabs voice:
 
 ```yaml
 voice:
-  enabled: false           # true: Claude voices each approved script itself; false: you bring voiceover.mp3 (ElevenLabs, a mic)
+  enabled: true            # true: Claude voices each approved script itself; false: you bring voiceover.mp3 (ElevenLabs, a mic)
   engine: qwen             # qwen | chatterbox | kokoro
   reference: voices/collin_ro.wav  # the voice chatterbox and qwen clone
   chatterbox: { model: turbo, exaggeration: 0.5, cfg_weight: 0.5 }   # model: turbo (default) | standard
   qwen: { size: 1.7B, language: English }
   kokoro: { voice: am_michael, speed: 1.0 }
-  pause: 0.3
+  pause: 0.35
   seed: 7
 ```
 
@@ -200,10 +241,10 @@ Optional extras:
 
 - `"emphasis": "top"`: alarm treatment and a "TOP THREAT" badge (usually on #1).
 - `"note": "FILE FOOTAGE · LVIV, 2022"` on a visual: an on-screen tag for footage that isn't of the event described.
-- **Every episode ends with a sources scene and a credits scene.** After the voiceover, a "SOURCES" card lists `sources` (title + site) for 7s. Then a "CREDITS" roll built from `credits.json` (footage, images, AI illustrations, music, sound, map data) runs for 8s, listing only what the episode actually uses, the same as `DESCRIPTION.md`. Change the lengths with `"outro": { "sourcesCard": { "seconds": 7 }, "creditsCard": { "seconds": 8 } }`, or turn one off with `false`. `check` fails an episode with no `sources` while its sources card is on.
+- **Every episode ends with a sources scene and a credits scene.** After the voiceover, a "SOURCES" card lists `sources` (title + site) for 7s (more than 8 sources are split evenly over several cards, 7s each). Then a "CREDITS" roll built from `credits.json` (footage, images, AI illustrations, music, sound, map data) runs for 8s, listing only what the episode actually uses, the same as `DESCRIPTION.md`. Change the lengths with `"outro": { "sourcesCard": { "seconds": 7 }, "creditsCard": { "seconds": 8 } }`, or turn one off with `false`. `check` fails an episode with no `sources` while its sources card is on.
 - `"outro": { "endScreen": { "seconds": 12 } }`: a branded hold frame after the voiceover (and after the sources card, if any), with empty slots for YouTube's end-screen elements.
 - `"thumbnail": { "big": "10", "title": "FLASH\nPOINTS", "visual": "gulf_navy" }`
-- `"audio": { "music": { "file": "bed", "level": 0.22, "duck": true }, "sfxPreset": "intense" | "calm" | "none" }`
+- `"audio": { "music": { "file": "bed", "level": 0.22, "duck": true }, "sfxPreset": "intense" | "calm" | "tech" | "none" }` (`tech` is made for the `frontier` theme)
 
 ### 5. Media and licenses
 
@@ -216,13 +257,13 @@ Optional extras:
   ```
 
   Optional fields: `licenseVersion` ("4.0"), `originalUrl`, `notes`.
-- **No good image anywhere, or only a poor stand-in?** Generate a still with FLUX 3 via Replicate:
+- **No good image anywhere, or only a poor stand-in?** Generate a still, locally with Z-Image Turbo or with FLUX 3 via Replicate (`config.yaml` `image_gen.mode`: `local_render`, `cloud_render`, or `mixed`, which renders locally and sends `--detail high` work such as thumbnail backgrounds to FLUX):
 
   ```powershell
   npm run generate -- <slug> tanker_dusk --prompt "Oil tanker at anchor at dusk, subject on the right third, empty space on the left, muted colors, documentary photography. No text, no logos, no flags, no identifiable people."
   ```
 
-  This needs `REPLICATE_API_TOKEN` in the environment or in a `.env` file in this folder or a parent folder. It writes `images/<name>.jpg` (1920×1080) and a credits entry with license `AI-GENERATED`, plus the exact prompt and prediction id. A generated visual must carry `"note": "AI-GENERATED ILLUSTRATION"` (check enforces this). If it looks realistic, tick YouTube's "altered or synthetic content" box when uploading. Each run is a paid API call. Prompt rules are in `.claude/skills/generate-image/SKILL.md`.
+  Local renders use stable-diffusion.cpp and Z-Image Turbo (Tongyi-MAI, Apache-2.0) as a Q4_K GGUF in `models/image/`: free, about 35–55 s each on an 8 GB laptop GPU, a fresh random seed every run (`--seed` remakes one). Set it up once with `npm run setup:image` (`--from <folder>` hard-links files you already have). Steps, CFG, size and the default negative prompt are in `config.yaml` `image_gen.local`; `--sample "prompt"` tries a prompt into `out/image-samples/`. FLUX renders need `REPLICATE_API_TOKEN` in the environment or in a `.env` file in this folder or a parent folder, and each is a paid API call. Either way it writes `images/<name>.jpg` (1920×1080) and a credits entry with license `AI-GENERATED`, plus the exact prompt and the seed or prediction id. A generated visual must carry `"note": "AI-GENERATED ILLUSTRATION"` (check enforces this). If it looks realistic, tick YouTube's "altered or synthetic content" box when uploading. Prompt rules are in `.claude/skills/generate-image/SKILL.md`.
 - **A web page as b-roll** (an encyclopedia infobox, an official notice, a data table): screenshot part of it.
 
   ```powershell
@@ -239,9 +280,10 @@ Optional extras:
   ```
 
   The page gets the theme's colors and fonts as CSS variables (`--accent`, `--highlight`, `--font-display`…). The renderer steps CSS animations and an optional `window.bkSeek(ms)` through the clip frame by frame, so motion lands exactly on each frame. The credit is `OWN WORK`, with the data sources from `<meta name="sources">` in its notes. Like everything else on screen, the numbers must come from the script and the fact-check. Rules and layout patterns are in `.claude/skills/infographic/SKILL.md`.
-- **An illustrated explainer** (Manga Page, Military HUD…): a canvas animation in a named style with a synthesized sound score, storyboarded first. `npm run explainer -- new <name> --style <id> --episode <slug>` scaffolds `episodes/<slug>/infographics/<name>.html`, and the same `npm run infographic` renders it as silent b-roll. Without `--episode` it is a standalone piece, and `npm run explainer -- render <name>` gives an MP4 with sound in `out/explainers/<name>/`. See `.claude/skills/explainer/SKILL.md`.
+- **An illustrated explainer** (Manga Page, Military HUD…): a canvas animation in a named style with a synthesized sound score, storyboarded first. Styles are a starting point, not a limit, and the length follows the content. Say *creative mode* (or "your call") to let Claude choose the medium, angle, length and placement itself, inventing a look with `--style freeform` and fonts with `--fonts "Anton|Space Grotesk:wght@400;700"`. `npm run explainer -- new <name> --style <id> --episode <slug>` scaffolds `episodes/<slug>/infographics/<name>.html`, and the same `npm run infographic` renders it as silent b-roll. Without `--episode` it is a standalone piece, and `npm run explainer -- render <name>` gives an MP4 with sound in `out/explainers/<name>/`. See `.claude/skills/explainer/SKILL.md`.
 - Sound effects and the music bed are shared across episodes in `public/library/` (credited in `public/library/credits.json`). An episode can override one by adding `sfx/<name>.mp3` or `music/<name>.mp3` to its own folder.
 - **A new sound effect** can be synthesized instead of sourced: `npm run sfx -- <slug> sonar_ping --recipe` renders `episodes/<slug>/sfx/sonar_ping.js` (a function of the explainer sound kit: `(k) => { k.tone(0, { f: 1400, dur: 1.6, verb: 0.6 }); }`), and `--sound stamp --dur 0.3` renders one ready-made kit sound. `npm run sfx -- list` shows them. The MP3 lands in the episode's `sfx/`, normalized to the library's level and credited `OWN WORK`, ready for `audio.sfxExtra`. `--library` puts it in `public/library/` for all episodes.
+- **A music bed generated locally** with Stable Audio 3 Medium (Stability AI), when `config.yaml` has `music_gen.enabled: true`: `npm run compose -- <slug> bed --prompt "TrackType: Music, VocalType: Instrumental, Genre: Electronic. …, 108 BPM"` writes `public/episodes/<slug>/music/bed.mp3`, sized to the whole video (longer than 6:20 is extended with the model's own continuation, never hard-looped), level-matched to the library bed, and credited `AI-GENERATED` with its prompt and seed ("Powered by Stability AI" goes into the credits roll and `DESCRIPTION.md` automatically). Every run takes a fresh random seed; `--force` gives another take, `--seed <n>` remakes one, and `--sample "prompt"` auditions a prompt into `out/music-samples/`. One-time setup: `npm run setup:music`, accept the model terms on [Hugging Face](https://huggingface.co/stabilityai/stable-audio-3-medium) and log in (`.venv-music\Scripts\hf.exe auth login`, or `HF_TOKEN` in `.env`). The weights are under the Stability AI Community License: free commercial use under US$1M a year in revenue, after a free [registration](https://stability.ai/community-license). Prompts and rules: `.claude/skills/compose-music/SKILL.md`.
 
 Then:
 
@@ -295,11 +337,14 @@ YouTube Shorts are vertical videos (9:16, 1080×1920), 60 seconds or less here. 
 | `npm run setup:voice [--qwen] [--cpu]` | One-time: create `.venv-tts` (or `.venv-qwen`) and install the TTS packages |
 | `npm run align -- <slug> [--estimate]` | Write `timing.json` from the voiceover (or from text only) |
 | `npm run assets -- <slug>` | Write `assets.json` |
-| `npm run generate -- <slug> <name> --prompt "..." [--aspect 16:9] [--resolution 2k] [--force]` | Last-resort FLUX 3 still, with credit and provenance |
+| `npm run setup:image [--from <folder>]` | One-time: stable-diffusion.cpp + Z-Image Turbo GGUF into `models/image/` |
+| `npm run generate -- <slug> <name> --prompt "..." [--detail high] [--engine local\|cloud] [--seed N] [--force]` | Last-resort AI still (local Z-Image Turbo or FLUX 3, per `image_gen.mode`), with credit and provenance |
 | `npm run shot -- <slug> <name> --url <url> [--selector "<css>"] [--license PD] [--highlight "..."]` | Screenshot part of a web page as a still, with credit |
 | `npm run infographic -- <slug> <name> [--seconds 12] [--still]` | Render `episodes/<slug>/infographics/<name>.html` as a themed clip or still, with credit |
 | `npm run explainer -- <styles\|new\|storyboard\|frames\|render> <name> [--episode <slug>]` | Illustrated explainers: scaffold in a style, storyboard, check frames, render with sound |
 | `npm run sfx -- <slug> <name> --sound <kit sound> \| --recipe [file.js]` | Synthesize a sound effect into the episode's `sfx/` (or `--library`), credited OWN WORK |
+| `npm run setup:music [--cpu]` | One-time: create `.venv-music` and install Stable Audio 3 (CUDA PyTorch 2.7.1, Flash Attention 2) |
+| `npm run compose -- <slug> <name> --prompt "..." [--seconds N] [--seed N] [--force]` | Generate a music bed into the episode's `music/` (config.yaml `music_gen:`), new random seed each run |
 | `npm run check -- <slug>` | Validate schema, cues, visuals, licenses, text lengths, maps and generated files |
 | `npm run preview -- <slug> [--port N] [--no-open]` | Check, start Remotion Studio and open the browser on this episode (stop with Ctrl+C) |
 | `npm run dev` | Remotion Studio, all episodes |
@@ -317,7 +362,7 @@ Errors block rendering:
 - Schema problems in `episode.json` (wrong field, wrong type, bad theme id).
 - A marker, stat, visual, beat, outro or CTA cue that isn't spoken where it should be: missing, out of order, or outside its segment. Nothing falls back silently. In Studio, unresolved cues also show as a red panel over the video.
 - A visual named in `episode.json` that isn't in `clips/` or `images/`.
-- A media file with no credits entry, or a license other than PD, CC0, CC BY or CC BY-SA. `AI-GENERATED` is accepted only for `npm run generate` stills, and only with their provenance record and an on-screen note.
+- A media file with no credits entry, or a license other than PD, CC0, CC BY or CC BY-SA. `AI-GENERATED` is accepted only for `npm run generate` stills (with their provenance record and an on-screen note) and `npm run compose` music beds.
 - Estimated timing, a voiceover/timing duration mismatch, or a `voiceover.txt` edited since alignment.
 - A stale `assets.json`, a missing sound from the sfx preset, or a missing music file.
 - Text over its length limit (headline over 6 words, long stamps, stat values or outro lines).
@@ -345,7 +390,11 @@ It stops only processes whose executable lives in this repo, plus node processes
 - `military-comparisons`: weapons-system spec briefing in the **split layout**. Footage plays in a bracketed frame on the left; the number, headline and stats sit on the right, and the stats build into a spec sheet that stays up (5 rows a panel, then panel 2, 3). The map card shows briefly over the footage and slides off to the left. Cool white on gunmetal, HUD-cyan readouts, signal-orange accent, with Teko, IBM Plex Mono and Saira Condensed.
 - `erotic`: a boudoir-editorial comparison sheet in the same **split layout** as `military-comparisons`. Blush cream on wine-black, lipstick-crimson accent, champagne-gold readouts, a warm low-key b-roll grade and soft grain with no scanlines. Fonts are Playfair Display, Josefin Sans and Jost. Default labels: AFTER HOURS ticker, TOP PICK, PROFILE panels. The mood comes from color and type only. The theme has no imagery of its own, and b-roll still has to pass YouTube's rules and the license gate.
 
-A theme controls colors, fonts, b-roll treatment, glows, grain and default wording (ticker label, CTA, emphasis badge), and picks a segment layout (`overlay` or `split`, set in `THEME_LAYOUT` in `src/kit/themes/ids.ts`). To add one, copy `src/kit/themes/threat-brief.ts`, then register it in `src/kit/themes/index.ts` and `src/kit/themes/ids.ts`.
+- `frontier`: bleeding-edge technology, and the one theme with scenes of its own (a **skin**, below). Ink-black field with a living dot lattice and drifting aurora; the b-roll floats in a turned glass window with an iridescent edge; number, region chip and a sentence-case headline on the left; stats as a row of glass **metric tiles** that count up under the window (3 visible, sliding on); text sections mirror the layout. Text decodes from cycling glyphs, cuts are a light sweep instead of a glitch, the countdown number boots inside a charging ring and flies into its badge, the map is dot-matrix and its card collapses to a line, captions are karaoke (the spoken word lit in a lime pill), the ticker is a slim signal rail, and the `#1` item gets a rotating iridescent frame. Shorts and the thumbnail have their own Frontier versions. Fonts are Sora, Geist and Geist Mono. It comes with its own sound preset, `tech` (`audio.sfxPreset`; `npm run new --theme frontier` picks it), synthesized from the explainer sound kit (recipes in `src/kit/skins/frontier/sounds/`).
+
+A theme controls colors, fonts, b-roll treatment, glows, grain and default wording (ticker label, CTA, emphasis badge), and picks a segment layout (`overlay`, `split` or `spatial`, set in `THEME_LAYOUT` in `src/kit/themes/ids.ts`). To add one, copy `src/kit/themes/threat-brief.ts`, then register it in `src/kit/themes/index.ts` and `src/kit/themes/ids.ts`.
+
+**Skins.** A theme can also bring its own scenes and chrome instead of restyling the shared ones: register a `Skin` for it in `src/kit/skins/index.ts` (see `src/kit/skins/types.ts`). Every piece is optional (cold open, segment, text section, outro, end card, finish, top bar, ticker, captions, thumbnail, and the Shorts versions), and anything left out falls back to the shared component. A skin keeps the shared timing (scene cuts, the 0–22 frame number window, stat and visual cues, the map exit, the CTA click), because the sound presets fire on those times. `src/kit/skins/frontier/` is the example.
 
 **Text sections.** Any entry in `segments` can be `"kind": "text"` instead of a numbered item: a `marker`, optional `label`, a `heading`, an optional short `body` and 1–4 cue-cut `visuals` full-screen behind one block of text. Use them for an intro, a recap or a closing "what it means" section. They work in every theme, don't take a number, and are skipped by the top-bar counter and the ticker.
 
@@ -363,9 +412,10 @@ src/kit/lib/                     cue resolution, captions, sfx presets, music du
 src/kit/components/              WorldMap, Backdrop, Headline, cards, titles, chrome, audio
 src/kit/scenes/                  ColdOpen, Segment, SplitSegment, TextSection, Outro, EndCard
 src/kit/formats/                 Countdown, List, Short (vertical 9:16)
-src/kit/themes/                  threat-brief, clean-light, after-dark, military, military-comparisons, erotic
+src/kit/themes/                  threat-brief, clean-light, after-dark, military, military-comparisons, erotic, frontier
+src/kit/skins/                   themes with scenes of their own (frontier)
 scripts/                         the npm commands (TypeScript, run with tsx) + align.py and voice.py
-scripts/lib/config.ts            reads and validates config.yaml (voice:, shorts:)
+scripts/lib/config.ts            reads and validates config.yaml (voice:, shorts:, music_gen:, image_gen:)
 scripts/lib/browser.ts           headless Chrome for shot and infographic (Remotion's chrome-headless-shell via playwright-core)
 episodes/<slug>/infographics/    HTML sources for npm run infographic (and episode explainers)
 episodes/<slug>-short<N>/        a Short made from an episode (npm run short); its own small episode
@@ -373,7 +423,9 @@ explainers/<name>/               standalone illustrated explainers (git-ignored)
 requirements.txt                 Python packages for .venv (align, find-media lead finder)
 requirements-tts.txt             Python packages for .venv-tts (npm run voice: PyTorch, Chatterbox, Kokoro)
 requirements-qwen.txt            Python packages for .venv-qwen (npm run voice with engine: qwen)
-config.yaml                      kit settings: voice (local TTS on/off, engine, voice) and shorts (on/off, count, length)
+requirements-music.txt           Python packages for .venv-music (npm run compose: Stable Audio 3, Flash Attention)
+models/image/                    sd-cli + Z-Image Turbo GGUF, encoder and VAE for local stills (git-ignored; npm run setup:image)
+config.yaml                      kit settings: voice, shorts, music_gen (composed beds) and image_gen (local / cloud / mixed stills)
 voices/                          reference clips for voice cloning (git-ignored except README.md)
-.claude/skills/                  new-episode, find-media, generate-image, infographic, explainer
+.claude/skills/                  new-episode, find-media, generate-image, infographic, explainer, compose-music
 ```

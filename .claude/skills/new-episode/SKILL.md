@@ -67,6 +67,10 @@ npm run align -- <slug>
 - **Under 90% matched** usually means the recording differs from the script (lines changed in ElevenLabs, ad-libs). Read `episodes/<slug>/heard.txt` (Whisper's raw transcript), edit `voiceover.txt` to match **what was actually said** (keeping the script's spelling for names), and run align again. Captions must show what was said.
 - If a marker is missing, the speaker probably said it differently ("Number 10" read as "Number ten" is fine; "At number ten" changes the marker). Fix `voiceover.txt` to match the audio, or change the `marker` in `episode.json`.
 
+### 3b. Music bed (when `config.yaml` has `music_gen.enabled: true`)
+
+Once the final voiceover is aligned, compose the bed with the **compose-music** skill: write a prompt that fits the theme and the subject, then `npm run compose -- <slug> bed --prompt "..."` (sized to the video, new random seed each run) and set `"audio": { "music": { "file": "bed", "level": 0.16, "duck": true } }`. If the user hands over their own track, use theirs instead. Log the prompt and seed in `notes.md`. Each Short composes its own bed the same way, with the parent's prompt.
+
 ## 4. Episode data → `episodes/<slug>/episode.json`
 
 Replace every placeholder. The schema with docs is in `src/kit/schema.ts`; timing rules are in `CLAUDE.md`.
@@ -83,6 +87,7 @@ Replace every placeholder. The schema with docs is in `src/kit/schema.ts`; timin
   - `map`: `bbox` [[w,s],[e,n]] around the places, `highlight` and optional `hostile` country names (world-atlas spelling), 1–3 `pins` with uppercase labels.
 - Countdown: put `"emphasis": "top"` on #1.
 - Text sections: an entry in `segments` with `"kind": "text"`, `marker`, optional `label` (≤ 28 chars, e.g. "INTRODUCTION"), `heading` (≤ 8 words), optional `body` (≤ 200 chars, one short paragraph summing up what's said, article facts only) and 1–4 `visuals` (cue rules as for segments). No number, stats or map.
+- **Frontier** (`frontier`, the technology theme, "spatial" layout): b-roll floats in a glass window on the right and the stats become metric tiles under it that count up (3 visible at a time, the row slides on; 2–5 per segment read best, `check` warns above 6). A tile's `value` counts up when it is a quantity ("40M", "$20M", "97%"), and decodes when it is a year, a date or a name ("2023", "OCT 12", "H100"), so keep it short (≤ 10 chars) and put the meaning in `label` (it gets two lines). Headlines show **as written**, not forced to capitals: write them in sentence case ("Replika, the veteran"). Give each segment a `subhead` with the subject's plain name (≤ 32 chars, e.g. "GeForce RTX 5090") when the headline is a descriptor; it shows under the headline in cyan mono caps. The region is a small chip, so keep it short. Use the `tech` sound preset (`npm run new --theme frontier` sets it).
 - **Split-layout themes** (`military-comparisons`, `erotic`): b-roll sits framed on the left and the stats build into a spec sheet on the right and stay up, so use more of them: one per spec the article gives (range, warhead, guidance, cost, production…). Five fit a panel; a sixth starts panel 2 (up to 3 panels). Keep `value` short ("1,500 KM", "GPS/INS", "$6–10K") and put the spec name in `label` ("RANGE", "UNIT COST"). The map card shows briefly over the footage and exits left.
 - `outro.lines`: the first line has no cue ("ANY ONE COULD" + accent "BOIL OVER"); the next gets `cue: "That's the week"`. `cta.cue` = "Subscribe".
 - `sources`: title and URL of each source the script relies on (required). Every video ends with a sources scene and a credits roll, both on by default (`outro.sourcesCard`, `outro.creditsCard`; only set `false` if the user asks). `npm run credits` also writes the sources to `out/<slug>/REFERENCES.md`.
@@ -95,7 +100,7 @@ Run `npm run check -- <slug>`. Asset and license errors are expected at this poi
 List the visuals `episode.json` needs and what each should show. Then dispatch **parallel subagents** with the prompts in [asset-prompts.md](asset-prompts.md):
 
 - **A. Clips and images** (always), split across 2–3 agents if there are more than ~8 shots.
-- **B. Sound effects and music** only when `check` reports a sound missing from `public/library/`, or the user asks for a new bed. For a one-off effect the library lacks (a sonar ping, a heavier stamp, a radio blip), synthesizing it with `npm run sfx -- <slug> <name> --sound … | --recipe` is usually faster than sourcing it, and it needs no license check (`OWN WORK`).
+- **B. Sound effects and music** only when `check` reports a sound missing from `public/library/`, or the user asks for a new bed (with `music_gen.enabled: true` the bed is composed in step 3b instead of sourced). For a one-off effect the library lacks (a sonar ping, a heavier stamp, a radio blip), synthesizing it with `npm run sfx -- <slug> <name> --sound … | --recipe` is usually faster than sourcing it, and it needs no license check (`OWN WORK`).
 
 The **find-media** skill (`.claude/skills/find-media/`) has the license gate, every source's tested API and the optional keys. The prompts point subagents to it, and you can use it directly for a single missing shot.
 

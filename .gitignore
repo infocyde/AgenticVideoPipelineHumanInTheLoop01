@@ -3,6 +3,9 @@ node_modules/
 .venv/
 .venv-tts/
 .venv-qwen/
+.venv-music/
+# Local model weights and binaries (npm run setup:image)
+models/
 __pycache__/
 *.pyc
 

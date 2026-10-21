@@ -9,6 +9,7 @@ import { Short } from "./formats/Short";
 import { parseCredits, usedCredits } from "./lib/credits";
 import { resolveEpisode } from "./lib/resolve";
 import { assetsSchema, type Episode, episodeSchema, type Timing, timingSchema } from "./schema";
+import { getSkin } from "./skins";
 import { getTheme } from "./themes";
 import { Thumbnail } from "./Thumbnail";
 
@@ -84,9 +85,10 @@ export const makeEpisodeComponents = (entry: RegistryEntry) => {
   const Thumb: React.FC<CompositionProps> = ({ episode }) => {
     const loaded = useLoaded(episode);
     if (!loaded.ok) return <ErrorCard slug={loaded.slug} errors={loaded.errors} />;
+    const Thumbnail_ = getSkin(loaded.ctx.theme.id).Thumbnail ?? Thumbnail;
     return (
       <EpisodeProvider value={loaded.ctx}>
-        <Thumbnail />
+        <Thumbnail_ />
       </EpisodeProvider>
     );
   };

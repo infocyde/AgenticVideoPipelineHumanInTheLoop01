@@ -2,6 +2,7 @@
 import { afterDark } from "./after-dark";
 import { cleanLight } from "./clean-light";
 import { erotic } from "./erotic";
+import { frontier } from "./frontier";
 import { military } from "./military";
 import { militaryComparisons } from "./military-comparisons";
 import { threatBrief } from "./threat-brief";
@@ -15,6 +16,7 @@ export const themes: Record<ThemeId, Theme> = {
   military,
   "military-comparisons": militaryComparisons,
   erotic,
+  frontier,
 };
 export const DEFAULT_THEME: ThemeId = "threat-brief";
 

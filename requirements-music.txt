@@ -1,0 +1,17 @@
+# Python dependencies for local music beds (npm run compose: Stable Audio 3), installed into .venv-music by
+# `npm run setup:music`. Separate from the voice environments because stable-audio-3 pins torch 2.7.1 and transformers 5.8+.
+# Versions are the ones tested with the kit (RTX 4070 Laptop, 8 GB, CUDA 12.6 wheels, Python 3.12, Windows).
+--extra-index-url https://download.pytorch.org/whl/cu126
+
+# PyTorch with CUDA 12.6 (setup:music --cpu swaps in the CPU wheels; then only the small-music model works)
+torch==2.7.1+cu126
+torchaudio==2.7.1+cu126
+
+# Stable Audio 3 (Stability AI): code MIT, model weights under the Stability AI Community License. Pinned to a commit.
+stable-audio-3 @ git+https://github.com/Stability-AI/stable-audio-3@77e0398c26f7d22d801ec1bb036307e8b231f741
+
+# Flash Attention 2, required by the medium model. Community prebuilt Windows wheel matching cu126 / torch 2.7 / cp312
+# (https://github.com/mjun0812/flash-attention-prebuild-wheels). setup:music swaps in the Linux wheel off Windows.
+flash_attn @ https://github.com/mjun0812/flash-attention-prebuild-wheels/releases/download/v0.4.19/flash_attn-2.8.3%2Bcu126torch2.7-cp312-cp312-win_amd64.whl
+
+soundfile==0.13.1

@@ -3,7 +3,8 @@
 // Engines run in .venv-tts (Python 3.12 + CUDA PyTorch), made by `npm run setup:voice`. See scripts/voice.py.
 //
 // Usage:
-//   npm run voice -- <slug> [--engine chatterbox|kokoro] [--model turbo|standard] [--reference voices/x.wav]
+//   npm run voice -- <slug> [--engine chatterbox|kokoro|qwen|qwen-cloud] [--model turbo|standard] [--reference voices/x.wav]
+//   qwen-cloud: Qwen3-TTS on Replicate (official qwen/qwen3-tts), all sentences in parallel (--concurrency N); needs REPLICATE_API_TOKEN
 //                           [--voice am_michael] [--speed 1] [--seed 7] [--force] [--no-align]
 //   --reference none   use the standard model's built-in voice instead of the clip in config.yaml
 //   npm run voice -- --sample "A line to try." [same overrides]   writes out/voice-samples/<engine>-<voice>.mp3
@@ -19,6 +20,7 @@ import { createInterface } from "node:readline/promises";
 import { basename, join, relative, resolve } from "node:path";
 import type { EpisodeInput } from "../src/kit/schema.ts";
 import { loadConfig } from "./lib/config.ts";
+import { getSecret } from "./lib/env.ts";
 import { fail, info, ok, parseArgs, paths, readJson, requireSlug, ROOT, run, warn } from "./lib/util.ts";
 
 const { flags } = parseArgs();
@@ -54,8 +56,9 @@ function listClips() {
 }
 
 // --- settings for this run: config.yaml, then command-line overrides
-const engine = (str("engine") ?? v.engine) as "chatterbox" | "kokoro" | "qwen";
-if (!["chatterbox", "kokoro", "qwen"].includes(engine)) fail(`--engine must be chatterbox, kokoro or qwen`);
+const engine = (str("engine") ?? v.engine) as "chatterbox" | "kokoro" | "qwen" | "qwen-cloud";
+if (!["chatterbox", "kokoro", "qwen", "qwen-cloud"].includes(engine)) fail(`--engine must be chatterbox, kokoro, qwen or qwen-cloud`);
+const cloud = engine === "qwen-cloud";
 const model = (str("model") ?? v.chatterbox.model) as "turbo" | "standard";
 const refArg = str("reference") === "none" ? "" : (str("reference") ?? refDefault); // --reference none: the standard model's built-in voice
 const reference = engine !== "kokoro" && refArg ? resolve(ROOT, refArg) : "";
@@ -74,6 +77,7 @@ const settings = {
   qwen_size: qwenSize,
   language: str("language") ?? v.qwen.language,
   ref_text: "", // Qwen: transcript of the reference clip, filled in by refText()
+  cloud_concurrency: num("concurrency", v.qwen.cloud_concurrency),
 };
 
 // --- record a reference clip of your voice
@@ -85,16 +89,23 @@ const testOut = str("out"); // --out <file>: voice an episode's script to a sepa
 if (!isSample && !testOut && !v.enabled && !flags["ignore-off"]) fail("Local TTS is off (config.yaml: voice.enabled: false), so this episode's voiceover is recorded outside the kit. Set it to true, or pass --ignore-off for a one-off.");
 if (engine !== "kokoro") {
   if (reference && !existsSync(reference)) fail(`No reference clip at ${rel(reference)}. Record one with: npm run voice -- --record  (see voices/README.md), or set voice.reference in config.yaml.`);
-  if (!reference && engine === "qwen") fail("Qwen3-TTS clones a voice, so it needs a reference clip (voice.reference in config.yaml, or --reference voices/<name>.wav).");
+  if (!reference && (engine === "qwen" || cloud)) fail("Qwen3-TTS clones a voice, so it needs a reference clip (voice.reference in config.yaml, or --reference voices/<name>.wav).");
   if (!reference && model === "turbo") fail("Chatterbox Turbo needs a reference clip (voice.reference in config.yaml). Or use --model standard for its built-in voice, or --engine kokoro.");
 }
 if (engine === "qwen") {
   if (!existsSync(venvPy(".venv-qwen"))) fail("The Qwen3-TTS environment isn't installed. Run: npm run setup:voice -- --qwen  (one time)");
   settings.ref_text = refText(reference);
 }
+const replicate = cloud ? getSecret("REPLICATE_API_TOKEN") : null;
+if (cloud) {
+  if (!replicate) fail("qwen-cloud runs on Replicate: put REPLICATE_API_TOKEN in .env (or the environment).");
+  if (!existsSync(py) && !existsSync(venvPy(".venv-qwen"))) fail("qwen-cloud needs a voice environment for joining the sentences (numpy, soundfile). Run: npm run setup:voice  (one time)");
+  settings.ref_text = refText(reference);
+}
 const label =
   engine === "kokoro" ? `kokoro ${settings.voice}`
   : engine === "qwen" ? `qwen3-tts ${qwenSize} cloning ${rel(reference)}`
+  : cloud ? `qwen3-tts on Replicate cloning ${rel(reference)}`
   : `chatterbox ${model}${reference ? ` cloning ${rel(reference)}` : " (built-in voice)"}`;
 
 // --- one test line, no episode
@@ -103,7 +114,7 @@ if (isSample) {
   const dir = join(ROOT, "out", "voice-samples");
   mkdirSync(dir, { recursive: true });
   const who = reference ? basename(reference).replace(/\.[^.]+$/, "") : "default";
-  const tag = engine === "kokoro" ? `kokoro-${settings.voice}` : engine === "qwen" ? `qwen-${qwenSize}-${who}` : `chatterbox-${model}-${who}`;
+  const tag = engine === "kokoro" ? `kokoro-${settings.voice}` : engine === "qwen" ? `qwen-${qwenSize}-${who}` : cloud ? `qwen-cloud-${who}` : `chatterbox-${model}-${who}`;
   const txt = join(dir, `${tag}.txt`);
   writeFileSync(txt, text + "\n");
   const mp3 = synth(txt, join(dir, `${tag}.mp3`), dir);
@@ -174,7 +185,9 @@ function synth(textFile: string, mp3: string, dir: string): string {
   const args = join(dir, "voice-args.json");
   const wav = mp3.replace(/\.mp3$/, ".wav");
   writeFileSync(args, JSON.stringify({ ...settings, text: textFile, out: wav }));
-  const code = run(settings.engine === "qwen" ? venvPy(".venv-qwen") : py, [voicePy, args], { env: { ...process.env, PYTHONIOENCODING: "utf-8", HF_HUB_DISABLE_SYMLINKS_WARNING: "1" } });
+  const python = settings.engine === "qwen" || (cloud && !existsSync(py)) ? venvPy(".venv-qwen") : py;
+  const env = { ...process.env, PYTHONIOENCODING: "utf-8", HF_HUB_DISABLE_SYMLINKS_WARNING: "1", ...(replicate ? { REPLICATE_API_TOKEN: replicate.value } : {}) };
+  const code = run(python, [voicePy, args], { env });
   if (code !== 0 || !existsSync(wav)) fail("speech synthesis failed (see above).");
   if (run("ffmpeg", ["-v", "error", "-y", "-i", wav, "-ar", "44100", "-c:a", "libmp3lame", "-q:a", "2", mp3]) !== 0) fail("ffmpeg could not encode the MP3.");
   rmSync(wav);

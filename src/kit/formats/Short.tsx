@@ -17,6 +17,7 @@ import { MAP_EXIT, segmentOffset, toFrame } from "../lib/timing";
 import { CreditsCard } from "../scenes/CreditsCard";
 import { EndCard } from "../scenes/EndCard";
 import { SourcesCard } from "../scenes/SourcesCard";
+import { useSkin } from "../skins";
 import type { MapFocus } from "../schema";
 import { alpha } from "../themes";
 
@@ -324,23 +325,33 @@ const ShortOutro: React.FC = () => {
 export const Short: React.FC = () => {
   const { timeline, theme } = useEpisode();
   const { coldOpen, segments, texts, outro, sourcesCard, creditsCard, endScreen } = timeline;
+  const skin = useSkin();
+  const v = skin.short ?? {};
+  const Open = v.ColdOpen ?? ShortColdOpen;
+  const Seg = v.Segment ?? ShortSegment;
+  const Text = v.Text ?? ShortText;
+  const OutroScene = v.Outro ?? ShortOutro;
+  const Bar = v.TopBar ?? ShortTopBar;
+  const Caps = v.Captions ?? Captions;
+  const Finish = skin.Finish ?? Grain;
+  const End = skin.EndCard ?? EndCard;
   return (
     <AbsoluteFill style={{ background: theme.colors.bg }}>
       <Sequence durationInFrames={Math.max(1, coldOpen.to)}>
-        <ShortColdOpen />
+        <Open />
       </Sequence>
       {segments.map((s) => (
         <Sequence key={s.index} from={s.from} durationInFrames={Math.max(1, s.to - s.from)}>
-          <ShortSegment s={s} />
+          <Seg s={s} />
         </Sequence>
       ))}
       {texts.map((t) => (
         <Sequence key={`t${t.index}`} from={t.from} durationInFrames={Math.max(1, t.to - t.from)}>
-          <ShortText t={t} />
+          <Text t={t} />
         </Sequence>
       ))}
       <Sequence from={outro.from} durationInFrames={Math.max(1, outro.to - outro.from)}>
-        <ShortOutro />
+        <OutroScene />
       </Sequence>
       {sourcesCard && (
         <Sequence from={sourcesCard.from} durationInFrames={sourcesCard.to - sourcesCard.from}>
@@ -354,14 +365,14 @@ export const Short: React.FC = () => {
       )}
       {endScreen && (
         <Sequence from={endScreen.from} durationInFrames={endScreen.to - endScreen.from}>
-          <EndCard />
+          <End />
         </Sequence>
       )}
-      <Grain />
+      <Finish />
       <Sequence durationInFrames={outro.to} layout="none">
-        <ShortTopBar />
+        <Bar />
       </Sequence>
-      <Captions box={CAPTIONS} />
+      <Caps box={CAPTIONS} />
       <IssuesOverlay />
       <Voiceover />
       <MusicBed />

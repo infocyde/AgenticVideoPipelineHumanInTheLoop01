@@ -2,6 +2,10 @@
 // so Studio previews immediately. The producer replaces every field and line.
 import type { EpisodeInput } from "../../src/kit/schema.ts";
 
+type Preset = NonNullable<EpisodeInput["audio"]>["sfxPreset"];
+/** The frontier theme has its own sound preset; it replaces the default "intense" (a deliberate calm/none is kept). */
+const presetFor = (theme: string, carried?: Preset): Preset => (theme === "frontier" && (!carried || carried === "intense") ? "tech" : carried ?? "intense");
+
 const ONES = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty"];
 export const numberWord = (n: number) => ONES[n] ?? String(n);
 const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
@@ -51,7 +55,9 @@ export const templateEpisode = ({ slug, format, count, theme, carry }: TemplateO
     format,
     aspect: "16:9",
     brand: { ...(carry?.brand ?? { name: "YOUR BRAND", tagline: "// WEEKLY" }), dateLabel: dateLabelFromSlug(slug) },
-    audio: carry?.audio ?? { voiceover: "voiceover.mp3", music: { file: "bed", level: 0.22, duck: true }, sfxPreset: "intense" },
+    audio: carry?.audio
+      ? { ...carry.audio, sfxPreset: presetFor(carry?.theme ?? theme, carry.audio.sfxPreset) }
+      : { voiceover: "voiceover.mp3", music: { file: "bed", level: 0.22, duck: true }, sfxPreset: presetFor(theme) },
     coldOpen: {
       beats: [
         { cue: "Placeholder hook line one", stamp: "HOOK ONE", sub: "REPLACE WITH A STAMP" },
@@ -134,7 +140,7 @@ export const templateShort = ({ slug, theme, scenes = 1, parent, title, carry, v
     audio: {
       voiceover: "voiceover.mp3",
       ...(carry?.audio?.music ? { music: carry.audio.music } : {}),
-      sfxPreset: carry?.audio?.sfxPreset ?? "intense",
+      sfxPreset: presetFor(carry?.theme ?? theme, carry?.audio?.sfxPreset),
       sfxOff: [],
       sfxExtra: [],
     },

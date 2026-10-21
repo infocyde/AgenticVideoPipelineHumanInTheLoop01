@@ -24,7 +24,8 @@ export const CreditsCard: React.FC = () => {
   const fade = interpolate(frame, [0, 12], [0, 1], { ...clamp, easing: Easing.out(Easing.cubic) });
 
   const left: { heading: string; items: Row[] }[] = [{ heading: "FOOTAGE & IMAGES", items: rows(credits.visuals) }];
-  if (credits.generated.length) left.push({ heading: "AI ILLUSTRATIONS", items: [{ who: "Generated with FLUX 3 (Black Forest Labs) via Replicate", what: "" }] });
+  // One row per generator (FLUX 3 via Replicate, Z-Image Turbo locally), from each credit's author line.
+  if (credits.generated.length) left.push({ heading: "AI ILLUSTRATIONS", items: [...new Set(credits.generated.map((c) => c.author))].map((who) => ({ who, what: "" })) });
   const right = [
     { heading: "MUSIC & SOUND", items: rows(credits.audio) },
     { heading: "MAP DATA", items: [{ who: "Natural Earth via world-atlas", what: "Public domain" }] },

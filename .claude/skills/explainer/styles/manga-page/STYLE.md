@@ -24,4 +24,4 @@ Missing entirely: `pencilRough` (non-photo-blue layout rough), the reference's o
 
 ## Sound palette
 
-Paper and ink: `slap` on each panel landing, `stroke` with `material: 'brush'` while ink draws (match `dur` to the draw-on), `paper` on a page turn, `stamp` / `impact` on the focus-line hit and the key number, `tock` for カチカチ, `ding` / `success` for ピンポーン and the takeaway, `buzz` for ブー (wrong). A quiet `room` bed. No music.
+Paper and ink: `slap` on each panel landing, `stroke` with `material: 'brush'` while ink draws (match `dur` to the draw-on), `paper` on a page turn, `stamp` / `impact` on the focus-line hit and the key number, `tock` for カチカチ, `ding` / `success` for ピンポーン and the takeaway, `buzz` for ブー (wrong). No bed by default (effects only: the user doesn't want a background hum), and no music.

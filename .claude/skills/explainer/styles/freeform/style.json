@@ -1,0 +1,12 @@
+{
+  "name": "Freeform (creative mode)",
+  "family": "Any",
+  "default": "default",
+  "variants": {
+    "default": {
+      "fontsHref": "https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;800&family=JetBrains+Mono:wght@500&display=block",
+      "fontSpecs": ["800 48px \"Inter Tight\"", "500 32px \"Inter Tight\"", "500 28px \"JetBrains Mono\""],
+      "vars": { "bg": "#101114" }
+    }
+  }
+}

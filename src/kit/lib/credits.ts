@@ -1,5 +1,5 @@
 // Which credits an episode actually uses, grouped for the on-screen roll and DESCRIPTION.md. Pure.
-import { AI_LICENSE, type AssetManifest, type Credit, creditSchema, type Episode } from "../schema";
+import { AI_LICENSE, type AssetManifest, type Credit, creditSchema, type Episode, PRESS_LICENSE } from "../schema";
 import type { Timeline } from "./resolve";
 import { sfxCues } from "./sfx";
 
@@ -33,10 +33,21 @@ export const usedCredits = (ep: Episode, tl: Timeline, assets: AssetManifest, ep
   const shown = (c: Credit) => ep.format !== "short" || referenced.has(c.file.replace(/^.*\//, "").replace(/\.[^.]+$/, ""));
   return {
     visuals: episodeCredits.filter((c) => isVisual(c) && c.license !== AI_LICENSE && shown(c)),
-    generated: episodeCredits.filter((c) => c.license === AI_LICENSE && shown(c)),
+    generated: episodeCredits.filter((c) => c.license === AI_LICENSE && isVisual(c) && shown(c)),
     audio: [...episodeCredits.filter((c) => /^(sfx|music)\//.test(c.file)), ...libraryCredits.filter((c) => usedLib.has(c.file))],
   };
 };
 
+/** Music made by `npm run compose` (Stable Audio 3): its license asks for "Powered by Stability AI" where it's credited. */
+export const isStableAudio = (c: Credit) => c.license === AI_LICENSE && /stable-audio/.test(c.generator?.model ?? "");
+
 export const licenseLabel = (c: Credit) =>
-  c.license === "PD" ? "Public domain" : c.license === "OWN WORK" ? "Original work" : `${c.license}${c.licenseVersion ? ` ${c.licenseVersion}` : ""}`;
+  c.license === "PD"
+    ? "Public domain"
+    : c.license === "OWN WORK"
+      ? "Original work"
+      : c.license === PRESS_LICENSE
+        ? "Press image"
+      : isStableAudio(c)
+        ? "AI-generated · Powered by Stability AI"
+        : `${c.license}${c.licenseVersion ? ` ${c.licenseVersion}` : ""}`;

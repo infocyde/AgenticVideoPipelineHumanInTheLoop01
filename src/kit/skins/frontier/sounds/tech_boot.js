@@ -1,0 +1,1 @@
+(k) => { k.tone(0, { f: [[0, 60], [0.5, 240]], type: 'sine', dur: 0.9, gain: 0.45, a: 0.03 }); k.noise(0, { dur: 0.55, color: 'pink', filter: 'bandpass', f: [[0, 400], [0.5, 6500]], q: 2, gain: 0.22, a: 0.45 }); k.tone(0.5, { f: 55, dur: 0.7, gain: 0.45 }); k.play('blip', 0.5, { f: 'E6', dur: 0.1, type: 'sine' }); k.play('blip', 0.58, { f: 'B6', dur: 0.16, type: 'sine' }); }

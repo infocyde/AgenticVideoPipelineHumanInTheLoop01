@@ -1,6 +1,7 @@
 """Local TTS for Brief Kit (run by scripts/voice.ts inside .venv-tts).
 
 voice.py <args.json>   args: engine, model, reference, exaggeration, cfg_weight, voice, speed, pause, seed, text, out
+                       (engine qwen-cloud: Qwen3-TTS on Replicate, every sentence at once; needs REPLICATE_API_TOKEN)
 voice.py --voices      list Kokoro voices
 
 The script is spoken sentence by sentence (paragraph breaks get a longer pause), one fixed seed per sentence, so a
@@ -41,13 +42,101 @@ def sentences(text):
     return out
 
 
-def trim(wav, sr, thresh=0.01):
-    """Trim leading/trailing near-silence, keeping 40 ms of room."""
+def trim(wav, sr, thresh=0.003):
+    """Trim leading/trailing near-silence. Keeps 40 ms before the first sound and 250 ms after the last (word endings
+    such as a soft "s" or "th" decay well below the threshold), with a 10 ms fade-in and a 90 ms fade-out so no cut is audible."""
     idx = np.where(np.abs(wav) > thresh)[0]
     if not len(idx):
         return wav
-    pad = int(0.04 * sr)
-    return wav[max(0, idx[0] - pad) : min(len(wav), idx[-1] + pad)]
+    out = wav[max(0, idx[0] - int(0.04 * sr)) : min(len(wav), idx[-1] + int(0.25 * sr))].astype(np.float32).copy()
+    fi, fo = min(len(out), int(0.01 * sr)), min(len(out), int(0.09 * sr))
+    out[:fi] *= np.linspace(0.0, 1.0, fi, dtype=np.float32)
+    out[len(out) - fo :] *= np.cos(np.linspace(0.0, np.pi / 2, fo, dtype=np.float32))
+    return out
+
+
+CLOUD_MODEL = "qwen/qwen3-tts"  # official Replicate model (Alibaba Qwen, Apache-2.0); voice_clone mode
+
+
+def cloud_takes(a, chunks):
+    """Qwen3-TTS on Replicate: upload the reference clip once, then voice every sentence in parallel.
+    Returns ([float32 mono arrays], sample rate, stats). No seed input: a re-run gives a different take."""
+    import os
+    import subprocess
+    from concurrent.futures import ThreadPoolExecutor
+
+    import requests
+
+    token = os.environ.get("REPLICATE_API_TOKEN")
+    if not token:
+        sys.exit("REPLICATE_API_TOKEN is not set (put it in .env); qwen-cloud runs on Replicate.")
+    api = "https://api.replicate.com/v1"
+    auth = {"Authorization": f"Bearer {token}"}
+    sr = 24000
+
+    with open(a["reference"], "rb") as f:
+        up = requests.post(f"{api}/files", headers=auth, files={"content": (os.path.basename(a["reference"]), f, "audio/wav")}, timeout=120)
+    if up.status_code >= 300:
+        sys.exit(f"Replicate refused the reference upload ({up.status_code}): {up.text[:300]}")
+    ref_url = up.json()["urls"]["get"]
+
+    def decode(blob):
+        raw = subprocess.run(["ffmpeg", "-v", "error", "-i", "pipe:0", "-f", "f32le", "-ac", "1", "-ar", str(sr), "pipe:1"],
+                             input=blob, capture_output=True, check=True).stdout
+        return np.frombuffer(raw, dtype=np.float32).copy()
+
+    def one(i, s):
+        body = {"input": {"mode": "voice_clone", "text": s, "language": a["language"], "reference_audio": ref_url, "reference_text": a["ref_text"]}}
+        last = ""
+        for attempt in range(4):
+            try:
+                r = requests.post(f"{api}/models/{CLOUD_MODEL}/predictions", headers={**auth, "Prefer": "wait=60"}, json=body, timeout=120)
+                if r.status_code == 429:
+                    time.sleep(2 + attempt * 3)
+                    continue
+                r.raise_for_status()
+                pred = r.json()
+                t_end = time.time() + 300
+                while pred["status"] not in ("succeeded", "failed", "canceled"):
+                    if time.time() > t_end:
+                        raise RuntimeError("timed out")
+                    time.sleep(1)
+                    pred = requests.get(pred["urls"]["get"], headers=auth, timeout=60).json()
+                if pred["status"] != "succeeded":
+                    raise RuntimeError(pred.get("error") or pred["status"])
+                url = pred["output"] if isinstance(pred["output"], str) else pred["output"][0]
+                audio = decode(requests.get(url, timeout=120).content)
+                return audio, float((pred.get("metrics") or {}).get("predict_time") or 0)
+            except Exception as e:  # retry transient failures
+                last = str(e)
+                time.sleep(1 + attempt * 2)
+        sys.exit(f"sentence {i + 1} failed on Replicate after retries: {last}")
+
+    done = [0]
+
+    def run(item):
+        i, (s, _) = item
+        out = one(i, s)
+        done[0] += 1
+        print(f"\r  sentence {done[0]}/{len(chunks)} (cloud)", end="", flush=True)
+        return out
+
+    with ThreadPoolExecutor(max_workers=max(1, int(a.get("cloud_concurrency") or 8))) as ex:
+        results = list(ex.map(run, enumerate(chunks)))
+    print(flush=True)
+    return [r[0] for r in results], sr, {"gpu_seconds": round(sum(r[1] for r in results), 1)}
+
+
+def assemble(raws, chunks, sr, pause):
+    """Trim each sentence (with its tail and fades), join with pauses, normalize to -1 dBFS."""
+    pieces, spoken = [], 0.0
+    for raw, (_, pause_mult) in zip(raws, chunks):
+        w = trim(np.asarray(raw).reshape(-1), sr).astype(np.float32)
+        spoken += len(w) / sr
+        pieces += [w, np.zeros(int(sr * pause * pause_mult), dtype=np.float32)]
+    audio = np.concatenate(pieces[:-1])
+    peak = float(np.max(np.abs(audio))) or 1.0
+    return audio / peak * 0.89, spoken
 
 
 def main():
@@ -62,6 +151,17 @@ def main():
     chunks = sentences(text)
     if not chunks:
         sys.exit("voiceover.txt is empty")
+
+    if a["engine"] == "qwen-cloud":
+        t1 = time.time()
+        print(f"  {len(chunks)} sentences to Replicate ({CLOUD_MODEL}, voice_clone), {a.get('cloud_concurrency') or 8} at a time", flush=True)
+        raws, sr, stats = cloud_takes(a, chunks)
+        audio, spoken = assemble(raws, chunks, sr, a["pause"])
+        sf.write(a["out"], audio, sr, subtype="PCM_16")
+        took = time.time() - t1
+        print(f"  {len(audio) / sr:.1f}s of audio in {took:.0f}s ({spoken / max(took, 1e-6):.1f}x realtime); "
+              f"Replicate GPU time {stats['gpu_seconds']}s", flush=True)
+        return
 
     import torch
 

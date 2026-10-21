@@ -6,7 +6,7 @@ import { feature } from "topojson-client";
 import type { Issue } from "../../src/kit/lib/resolve.ts";
 import { sfxCues } from "../../src/kit/lib/sfx.ts";
 import { norm } from "../../src/kit/lib/timing.ts";
-import { AI_LICENSE, assetsSchema, type Credit, creditSchema, isTextSection, LICENSES, OWN_LICENSE } from "../../src/kit/schema.ts";
+import { AI_LICENSE, assetsSchema, type Credit, creditSchema, isTextSection, LICENSES, OWN_LICENSE, PRESS_LICENSE } from "../../src/kit/schema.ts";
 import { layoutOf } from "../../src/kit/themes/ids.ts";
 import { AUDIO_EXT, IMAGE_EXT, LIBRARY, listMedia, VIDEO_EXT } from "./assets.ts";
 import { loadFromDisk, scriptWords, zodIssues } from "./episode.ts";
@@ -25,6 +25,7 @@ const COUNTRIES = new Set<string>(
 export const LIMITS = {
   headlineWords: 6,
   headlineChars: 44,
+  subhead: 32,
   region: 34,
   statValue: 10,
   statLabel: 42,
@@ -45,6 +46,8 @@ export const LIMITS = {
   // split-layout themes: stat rows per panel and the most panels that still read well
   splitPerPanel: 5,
   splitPanels: 3,
+  // spatial-layout themes (frontier): metric tiles, 3 visible at a time
+  spatialStats: 6,
 };
 
 type Credits = { entries: Credit[]; issues: Issue[] };
@@ -67,8 +70,8 @@ const loadCredits = (file: string, where: string): Credits => {
       const file = (r as { file?: string })?.file ?? `entry ${i}`;
       const lic = (r as { license?: string })?.license;
       const licMsg =
-        lic !== undefined && lic !== AI_LICENSE && lic !== OWN_LICENSE && !(LICENSES as readonly string[]).includes(lic)
-          ? ` License "${lic}" is not allowed (only ${LICENSES.join(", ")}, ${OWN_LICENSE} for your own material, or ${AI_LICENSE} via \`npm run generate\`).`
+        lic !== undefined && lic !== AI_LICENSE && lic !== OWN_LICENSE && lic !== PRESS_LICENSE && !(LICENSES as readonly string[]).includes(lic)
+          ? ` License "${lic}" is not allowed (only ${LICENSES.join(", ")}, ${OWN_LICENSE} for your own material, ${AI_LICENSE} via \`npm run generate\` / \`npm run compose\`, or ${PRESS_LICENSE} for official press images when config.yaml allows them).`
           : "";
       issues.push({ level: "error", where: `${where} ${file}`, msg: `${zodIssues(c.error).join("; ")}.${licMsg}` });
     }
@@ -147,7 +150,8 @@ export const runCheck = (slug: string): Issue[] => {
   const long = (where: string, text: string, max: number, what = "characters") => {
     if (text.length > max) err(where, `"${text}" is ${text.length} ${what}; keep it ≤ ${max} so it fits`);
   };
-  const split = layoutOf(ep.theme) === "split";
+  const layout = layoutOf(ep.theme);
+  const split = layout === "split";
   const lastItem = ep.segments.reduce((acc, s, i) => (isTextSection(s) ? acc : i), -1);
   ep.segments.forEach((s, i) => {
     const w = `segments[${i}]`;
@@ -164,6 +168,7 @@ export const runCheck = (slug: string): Issue[] => {
     const words = s.headline.split(/\s+/).filter(Boolean).length;
     if (words > LIMITS.headlineWords) err(`${w}.headline`, `"${s.headline}" is ${words} words; keep headlines ≤ ${LIMITS.headlineWords}`);
     long(`${w}.headline`, s.headline, LIMITS.headlineChars);
+    if (s.subhead) long(`${w}.subhead`, s.subhead, LIMITS.subhead);
     long(`${w}.region`, s.region, LIMITS.region);
     s.stats.forEach((st, k) => {
       long(`${w}.stats[${k}].value`, st.value, LIMITS.statValue);
@@ -173,6 +178,9 @@ export const runCheck = (slug: string): Issue[] => {
       const max = LIMITS.splitPerPanel * LIMITS.splitPanels;
       if (s.stats.length > max) warn(`${w}.stats`, `${s.stats.length} stats; more than ${LIMITS.splitPanels} panels of ${LIMITS.splitPerPanel} is hard to follow`);
       if (s.stats.length === 0) warn(`${w}.stats`, "no stats; the spec column will be just the headline");
+    } else if (layout === "spatial") {
+      if (s.stats.length > LIMITS.spatialStats) warn(`${w}.stats`, `${s.stats.length} stats; the metric tiles show 3 at a time and slide on, so more than ${LIMITS.spatialStats} is hard to follow`);
+      if (s.stats.length === 0) warn(`${w}.stats`, "no stats; the row of metric tiles under the window stays empty");
     } else {
       if (s.stats.length > 2) warn(`${w}.stats`, `${s.stats.length} stats; 1–2 per segment reads best`);
       if (s.stats.length === 0) warn(`${w}.stats`, "no stats; the left column will be just the headline");
@@ -262,11 +270,12 @@ export const runCheck = (slug: string): Issue[] => {
     .filter((c) => !existsSync(join(p.pub, c.file)))
     .forEach((c) => warn("credits.json", `${c.file} is credited but not on disk`));
 
-  // --- AI-generated images: stills only, always tagged on screen, disclosed on upload ---
-  const generated = new Set(epCredits.entries.filter((c) => c.license === AI_LICENSE).map((c) => c.file.replace(/^images\//, "").replace(/\.[^.]+$/, "")));
+  // --- AI-generated media: stills (npm run generate, always tagged on screen) and music beds (npm run compose) ---
+  const generated = new Set(epCredits.entries.filter((c) => c.license === AI_LICENSE && c.file.startsWith("images/")).map((c) => c.file.replace(/^images\//, "").replace(/\.[^.]+$/, "")));
+  const composed = (c: Credit) => c.file.startsWith("music/") && c.generator?.provider === "local" && /stable-audio-3/.test(c.generator.model);
   epCredits.entries
-    .filter((c) => c.license === AI_LICENSE && !c.file.startsWith("images/"))
-    .forEach((c) => err("credits.json", `${c.file}: ${AI_LICENSE} is only allowed for images/ made by \`npm run generate\``));
+    .filter((c) => c.license === AI_LICENSE && !c.file.startsWith("images/") && !composed(c))
+    .forEach((c) => err("credits.json", `${c.file}: ${AI_LICENSE} is only allowed for images/ made by \`npm run generate\` and music/ made by \`npm run compose\``));
   libCredits.entries.filter((c) => c.license === AI_LICENSE).forEach((c) => err("library/credits.json", `${c.file}: ${AI_LICENSE} isn't allowed in the shared library`));
   const usesAi: string[] = [];
   ep.segments.forEach((s, i) =>
@@ -285,6 +294,17 @@ export const runCheck = (slug: string): Issue[] => {
   if (usesAi.length) {
     warn("AI imagery", `uses AI-generated images (${[...new Set(usesAi)].join(", ")}). If any look realistic, tick YouTube's "altered or synthetic content" box when uploading.`);
   }
+
+  // --- press images (config.yaml licensing.press_images): official manufacturer images of a product being discussed ---
+  const pressOn = loadConfig().licensing.press_images;
+  const press = epCredits.entries.filter((c) => c.license === PRESS_LICENSE);
+  press.forEach((c) => {
+    if (!pressOn) err("credits.json", `${c.file}: press images are off (config.yaml licensing.press_images: false); replace it with licensed media`);
+    if (!/^(images|clips)\//.test(c.file)) err("credits.json", `${c.file}: ${PRESS_LICENSE} is only for images/ and clips/`);
+  });
+  libCredits.entries.filter((c) => c.license === PRESS_LICENSE).forEach((c) => err("library/credits.json", `${c.file}: press images stay per episode, not in the shared library`));
+  const pressNames = new Set(press.map((c) => c.file.replace(/^.*\//, "").replace(/\.[^.]+$/, "")));
+  if (ep.thumbnail?.visual && pressNames.has(ep.thumbnail.visual)) err("thumbnail.visual", `"${ep.thumbnail.visual}" is a press image: press images can't be the thumbnail (it promotes the video, not the product)`);
 
   // --- source material ---
   if (!existsSync(p.article) || readFileSync(p.article, "utf8").replace(/<!--[\s\S]*?-->/g, "").trim().length < 200) {

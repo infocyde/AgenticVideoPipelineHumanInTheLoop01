@@ -11,6 +11,7 @@ These prompts sourced all 15 shots for the first episode in about 50 minutes and
 > You are sourcing b-roll VIDEO clips (and a few backup images) for a ~<duration> YouTube video: <one-line description of the episode, e.g. "a weekly top-10 geopolitics countdown, dark red news-briefing look">. The clips will be shown darkened, tinted, with heavy text overlays, 3–8 seconds each.
 >
 > LICENSING IS STRICT: only public domain (incl. US federal government works: US Navy, DoD/DVIDS, NASA, NOAA, USGS), CC0, or CC BY / CC BY-SA. No NC, no ND, no "editorial only", no unknown license. Record attribution for every file.
+> PRESS-IMAGE OPT-IN (only if config.yaml has licensing.press_images: true; the main session tells you): for a product the segment discusses, when no PD/CC media of it exists, an official image or b-roll clip from the manufacturer's own newsroom or press kit is allowed. Record it as license "PRESS", author = the company, sourceUrl = the press page, originalUrl = the file. Never retailer listing photos, photographers' or outlets' photos, or embargoed / "do not use" material.
 >
 > Read `.claude/skills/find-media/SKILL.md` (license gate, workflow, which source fits which shot) and `.claude/skills/find-media/sources.md` (every source's tested endpoints, license fields and gotchas) before you search.
 >

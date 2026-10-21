@@ -14,6 +14,11 @@
       "minLength": 1,
       "description": "e.g. 'The week in 10 flashpoints'"
     },
+    "summary": {
+      "description": "1–2 sentences for the top of the YouTube description (npm run credits): what the video covers, facts from the article and fact-check only",
+      "type": "string",
+      "minLength": 1
+    },
     "theme": {
       "default": "threat-brief",
       "description": "Theme id from src/kit/themes/",
@@ -24,7 +29,8 @@
         "after-dark",
         "military",
         "military-comparisons",
-        "erotic"
+        "erotic",
+        "frontier"
       ]
     },
     "format": {
@@ -107,10 +113,12 @@
         },
         "sfxPreset": {
           "default": "intense",
+          "description": "Sound-effect preset (lib/sfx.ts); tech suits the frontier theme",
           "type": "string",
           "enum": [
             "intense",
             "calm",
+            "tech",
             "none"
           ]
         },
@@ -294,6 +302,10 @@
                 "type": "string",
                 "minLength": 1,
                 "description": "6 words or fewer"
+              },
+              "subhead": {
+                "description": "Optional second line under the headline, e.g. the product's name ('GeForce RTX 5090'); ≤ 32 chars. Shown by the frontier theme",
+                "type": "string"
               },
               "emphasis": {
                 "description": "Alarm treatment, usually on #1",
@@ -509,6 +521,14 @@
                     "name"
                   ]
                 }
+              },
+              "layout": {
+                "description": "frontier: 'full' shows the visual large across the frame (a summary board, a big chart) with just the label; default 'window'",
+                "type": "string",
+                "enum": [
+                  "window",
+                  "full"
+                ]
               }
             },
             "required": [
@@ -574,7 +594,7 @@
           "default": {
             "seconds": 7
           },
-          "description": "On by default: after the voiceover, list the episode's `sources` on screen for this many seconds. `false` turns it off.",
+          "description": "On by default: after the voiceover, list the episode's `sources` on screen for this many seconds. More than 8 sources are split evenly over several cards, each shown this long. `false` turns it off.",
           "anyOf": [
             {
               "type": "object",

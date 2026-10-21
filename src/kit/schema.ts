@@ -54,6 +54,7 @@ export const segmentSchema = z.object({
   num: z.number().int().positive().optional().describe("Shown number; defaults to N..1 for countdown, 1..N for list"),
   region: z.string().min(1),
   headline: z.string().min(1).describe("6 words or fewer"),
+  subhead: z.string().optional().describe("Optional second line under the headline, e.g. the product's name ('GeForce RTX 5090'); ≤ 32 chars. Shown by the frontier theme"),
   emphasis: z.literal("top").optional().describe("Alarm treatment, usually on #1"),
   emphasisLabel: z.string().optional().describe("Badge text for emphasis; defaults to the theme's (e.g. 'TOP THREAT')"),
   stats: z.array(statSchema).default([]).describe("Overlay themes show one at a time; split themes stack them into spec-sheet panels of 5"),
@@ -68,6 +69,10 @@ export const textSectionSchema = z.object({
   heading: z.string().min(1).describe("8 words or fewer"),
   body: z.string().optional().describe("One short paragraph summing up what is said (≤ 200 characters); facts from the article only"),
   visuals: z.array(visualSchema).max(4).default([]).describe("1–4 clips or stills behind the text; every visual after the first needs a cue"),
+  layout: z
+    .enum(["window", "full"])
+    .optional()
+    .describe("frontier: 'full' shows the visual large across the frame (a summary board, a big chart) with just the label; default 'window'"),
 });
 
 /** One entry of `segments`: a numbered item, or a text section (`kind: "text"`). */
@@ -129,7 +134,7 @@ export const episodeSchema = z.object({
         duck: z.boolean().default(true).describe("Dip under speech, swell in gaps and on slams"),
       })
       .optional(),
-    sfxPreset: z.enum(["intense", "calm", "none"]).default("intense"),
+    sfxPreset: z.enum(["intense", "calm", "tech", "none"]).default("intense").describe("Sound-effect preset (lib/sfx.ts); tech suits the frontier theme"),
     sfxOff: z
       .array(z.enum(SFX_EVENTS))
       .default([])
@@ -165,7 +170,7 @@ export const episodeSchema = z.object({
     lines: z.array(outroLineSchema).min(1),
     cta: z.object({ label: z.string().optional(), cue }).optional(),
     sourcesCard: closingCard(3, 7).describe(
-      "On by default: after the voiceover, list the episode's `sources` on screen for this many seconds. `false` turns it off.",
+      "On by default: after the voiceover, list the episode's `sources` on screen for this many seconds. More than 8 sources are split evenly over several cards, each shown this long. `false` turns it off.",
     ),
     creditsCard: closingCard(4, 8).describe(
       "On by default: after the sources card, roll the media credits (footage, images, music, sound, map data) from credits.json. `false` turns it off.",
@@ -229,16 +234,21 @@ export type MediaFile = z.output<typeof media>;
 
 /** Licenses for sourced media. */
 export const LICENSES = ["PD", "CC0", "CC BY", "CC BY-SA"] as const;
-/** Images made by `npm run generate`; only valid with a `generator` provenance record. */
+/** Images made by `npm run generate` and music beds made by `npm run compose`; only valid with a `generator` provenance record. */
 export const AI_LICENSE = "AI-GENERATED";
 /** Material the channel owner made or owns outright (e.g. their own music); no source URL needed. */
 export const OWN_LICENSE = "OWN WORK";
+/**
+ * Official manufacturer press images (newsroom / press kit) of a product the video discusses, used for commentary.
+ * Only accepted when config.yaml has licensing.press_images: true; author = the company, sourceUrl = the press page.
+ */
+export const PRESS_LICENSE = "PRESS";
 
 export const generatorSchema = z.object({
-  provider: z.string(), // "replicate"
-  model: z.string(), // "black-forest-labs/flux-3-image"
+  provider: z.string(), // "replicate" (npm run generate) or "local" (npm run compose)
+  model: z.string(), // "black-forest-labs/flux-3-image", "stabilityai/stable-audio-3-medium"
   version: z.string().optional(),
-  predictionId: z.string(),
+  predictionId: z.string().optional(), // Replicate's id; local generations record their seed in `input`
   prompt: z.string(),
   input: z.record(z.string(), z.unknown()).optional(),
   created: z.string(),
@@ -249,12 +259,12 @@ export const creditSchema = z
     file: z.string().describe("Path relative to the folder holding this credits.json, e.g. 'clips/drone.mp4' (episode) or 'sfx/impact.mp3' (library)"),
     title: z.string().min(1),
     author: z.string().min(1),
-    license: z.enum([...LICENSES, AI_LICENSE, OWN_LICENSE]),
+    license: z.enum([...LICENSES, AI_LICENSE, OWN_LICENSE, PRESS_LICENSE]),
     licenseVersion: z.string().optional(),
     sourceUrl: z.string().url().optional().describe("Landing page of the source; required for every license except OWN WORK"),
     originalUrl: z.string().url().optional(),
     notes: z.string().optional(),
-    generator: generatorSchema.optional().describe("Provenance for AI-GENERATED images (written by `npm run generate`)"),
+    generator: generatorSchema.optional().describe("Provenance for AI-GENERATED media (written by `npm run generate` and `npm run compose`)"),
   })
   .refine((c) => c.license !== AI_LICENSE || !!c.generator, { message: "AI-GENERATED entries need a `generator` record", path: ["generator"] })
   .refine((c) => c.license === OWN_LICENSE || !!c.sourceUrl, { message: "needs a sourceUrl (only OWN WORK entries may omit it)", path: ["sourceUrl"] });

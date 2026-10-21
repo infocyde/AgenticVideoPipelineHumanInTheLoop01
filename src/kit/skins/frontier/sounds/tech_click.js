@@ -1,0 +1,1 @@
+(k) => { k.play('click', 0, { f: 2200 }); k.tone(0.01, { f: 'A6', type: 'sine', dur: 0.14, gain: 0.08, a: 0.001 }); k.tone(0.05, { f: 'E7', type: 'sine', dur: 0.18, gain: 0.05, a: 0.001, verb: 0.3 }); }

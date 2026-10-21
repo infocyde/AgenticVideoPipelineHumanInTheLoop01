@@ -62,7 +62,34 @@ const calm: SfxPreset = {
   cta: [{ sfx: "tick", offset: CTA_CLICK, volume: 0.6 }],
 };
 
-export const SFX_PRESETS: Record<Episode["audio"]["sfxPreset"], SfxPreset> = { intense, calm, none: {} };
+/**
+ * Frontier (and any tech piece): synthesized digital sounds matched to the frontier skin's motion. The light sweep
+ * on cuts, a ring-lock on the number boot, data ticks on metric tiles, decode chatter as the region types out, a zip
+ * as the map card collapses. Recipes: src/kit/skins/frontier/sounds/.
+ */
+const tech: SfxPreset = {
+  open: [{ sfx: "tech_boot", offset: 0, volume: 0.6 }],
+  beatCut: [{ sfx: "tech_sweep", offset: -0.33, volume: 0.42 }],
+  stampBeat: [{ sfx: "tech_data", offset: 0.15, volume: 0.16 }],
+  title: [{ sfx: "riser", offset: -2.4, volume: 0.35 }],
+  coldOpenEnd: [{ sfx: "tech_hit", offset: -1.1, volume: 0.7 }],
+  segment: [
+    { sfx: "tech_sweep", offset: -0.35, volume: 0.5 },
+    { sfx: "tech_data", offset: 0.55, volume: 0.14 },
+  ],
+  section: [{ sfx: "tech_sweep", offset: -0.35, volume: 0.42 }],
+  slam: [{ sfx: "tech_lock", offset: 0.1, volume: 0.7 }],
+  slamTop: [{ sfx: "tech_hit", offset: 0.1, volume: 0.9 }],
+  top: [{ sfx: "tech_ping", offset: LEAD + 0.6, volume: 0.35 }],
+  stat: [{ sfx: "tech_tick", offset: 0, volume: 0.55 }],
+  visualCut: [{ sfx: "tech_sweep", offset: -0.33, volume: 0.24 }],
+  mapExit: [{ sfx: "tech_zip", offset: 0, volume: 0.3 }],
+  outro: [{ sfx: "tech_sweep", offset: -0.3, volume: 0.45 }],
+  outroLine: [{ sfx: "tech_hit", offset: 0, volume: 0.65 }],
+  cta: [{ sfx: "tech_click", offset: CTA_CLICK, volume: 0.7 }],
+};
+
+export const SFX_PRESETS: Record<Episode["audio"]["sfxPreset"], SfxPreset> = { intense, calm, tech, none: {} };
 
 export type SfxCue = { at: number; sfx: string; volume: number };
 

@@ -2,7 +2,7 @@
 // Usage: npm run credits -- <slug>
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { licenseLabel, parseCredits, usedCredits } from "../src/kit/lib/credits.ts";
+import { isStableAudio, licenseLabel, parseCredits, usedCredits } from "../src/kit/lib/credits.ts";
 import { FPS } from "../src/kit/lib/timing.ts";
 import type { Credit } from "../src/kit/schema.ts";
 import { LIBRARY } from "./lib/assets.ts";
@@ -50,8 +50,10 @@ const visualLines = used.visuals.map((c) => {
   const note = notedVisuals.find((v) => v.name === name)?.note;
   return line(c) + (note ? ` (shown as: ${note})` : "");
 });
-const aiLines = used.generated.map((c) => `- ${c.file.replace(/^.*\//, "")}: generated with FLUX 3 (Black Forest Labs) via Replicate; not a photograph`);
+const aiLines = used.generated.map((c) => `- ${c.file.replace(/^.*\//, "")}: ${c.author.replace(/^Generated/, "generated")}; not a photograph`);
 const soundLines = used.audio.map(line);
+// Stability AI Community License: credit generated music with "Powered by Stability AI".
+if (used.audio.some(isStableAudio)) soundLines.push("- Music generated locally with Stable Audio 3 (Stability AI Community License). Powered by Stability AI.");
 
 const md = `# ${ep.title}: YouTube description
 

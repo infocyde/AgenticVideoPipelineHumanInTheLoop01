@@ -88,5 +88,68 @@
     "sourceUrl": "https://freesound.org/people/metrostock99/sounds/203725",
     "originalUrl": "https://cdn.freesound.org/previews/203/203725_1256155-hq.mp3",
     "notes": "Freesound via Openverse. Processed: leading silence removed, loudness-normalized. Duration 203.0s."
+  },
+  {
+    "file": "sfx/tech_boot.mp3",
+    "title": "Sound effect: tech_boot",
+    "author": "Own work (synthesized)",
+    "license": "OWN WORK",
+    "notes": "Synthesized with npm run sfx from the explainer sound kit, recipe src/kit/skins/frontier/sounds/tech_boot.js: (k) => { k.tone(0, { f: [[0, 60], [0.5, 240]], type: 'sine', dur: 0.9, gain: 0.45, a: 0.03 }); k.noise(0, { dur: 0.55, color: 'pink', filter: 'bandpass', f: [[0, 400], [0.5, 6500]], q: 2, gain: 0.22, a: 0.45 }); k.tone(0.5, { f: 55, dur: 0.7, gain: 0.45 }); k.play('blip', 0.5, { f: 'E6', dur: 0.1, type: 'sine' }); k.play('blip', 0.58, { f: 'B6', dur: 0.16, type: 'sine' }); }. Duration 1.04s."
+  },
+  {
+    "file": "sfx/tech_sweep.mp3",
+    "title": "Sound effect: tech_sweep",
+    "author": "Own work (synthesized)",
+    "license": "OWN WORK",
+    "notes": "Synthesized with npm run sfx from the explainer sound kit, recipe src/kit/skins/frontier/sounds/tech_sweep.js: (k) => { k.noise(0, { dur: 0.42, color: 'white', filter: 'bandpass', f: [[0, 700], [0.3, 7500], [0.42, 3000]], q: 1.4, gain: 0.32, a: 0.27, verb: 0.2 }); k.tone(0, { f: [[0, 260], [0.36, 1900]], type: 'sine', dur: 0.4, gain: 0.05, a: 0.32 }); k.play('click', 0.37, { f: 2600 }); }. Duration 1.12s."
+  },
+  {
+    "file": "sfx/tech_lock.mp3",
+    "title": "Sound effect: tech_lock",
+    "author": "Own work (synthesized)",
+    "license": "OWN WORK",
+    "notes": "Synthesized with npm run sfx from the explainer sound kit, recipe src/kit/skins/frontier/sounds/tech_lock.js: (k) => { k.play('thud', 0, { f: 120 }); k.noise(0, { dur: 0.04, filter: 'highpass', f: 4500, gain: 0.25 }); k.tone(0, { f: [[0, 220], [0.38, 880]], type: 'triangle', dur: 0.42, gain: 0.07, a: 0.34 }); k.play('blip', 0.4, { f: 'A6', dur: 0.05, type: 'sine' }); k.play('blip', 0.45, { f: 'E7', dur: 0.09, type: 'sine' }); }. Duration 0.56s."
+  },
+  {
+    "file": "sfx/tech_hit.mp3",
+    "title": "Sound effect: tech_hit",
+    "author": "Own work (synthesized)",
+    "license": "OWN WORK",
+    "notes": "Synthesized with npm run sfx from the explainer sound kit, recipe src/kit/skins/frontier/sounds/tech_hit.js: (k) => { k.play('thud', 0, { f: 72 }); k.tone(0, { f: 'C3', type: 'sawtooth', dur: 1.3, gain: 0.07, filter: 'lowpass', f2: [[0, 2600], [1.1, 280]], verb: 0.45 }); k.tone(0, { f: 'G3', type: 'sawtooth', dur: 1.3, gain: 0.05, filter: 'lowpass', f2: [[0, 2200], [1.1, 280]], verb: 0.45, detune: 8 }); k.noise(0, { dur: 0.8, color: 'pink', filter: 'lowpass', f: [[0, 5200], [0.7, 380]], gain: 0.16, verb: 0.4 }); k.play('sparkle', 0.03, { n: 5, gain: 0.8 }); }. Duration 1.32s."
+  },
+  {
+    "file": "sfx/tech_ping.mp3",
+    "title": "Sound effect: tech_ping",
+    "author": "Own work (synthesized)",
+    "license": "OWN WORK",
+    "notes": "Synthesized with npm run sfx from the explainer sound kit, recipe src/kit/skins/frontier/sounds/tech_ping.js: (k) => { k.tone(0, { f: 'E6', dur: 0.5, gain: 0.12, verb: 0.35 }); k.tone(0.16, { f: 'B6', dur: 0.75, gain: 0.12, verb: 0.35 }); k.tone(0.16, { f: 'E7', dur: 0.3, gain: 0.03, verb: 0.35 }); }. Duration 1.25s."
+  },
+  {
+    "file": "sfx/tech_tick.mp3",
+    "title": "Sound effect: tech_tick",
+    "author": "Own work (synthesized)",
+    "license": "OWN WORK",
+    "notes": "Synthesized with npm run sfx from the explainer sound kit, recipe src/kit/skins/frontier/sounds/tech_tick.js: (k) => { k.play('click', 0, { f: 2400 }); k.tone(0, { f: 'C7', type: 'sine', dur: 0.05, gain: 0.12, a: 0.001, hold: 0.02 }); k.tone(0.05, { f: 'G7', type: 'sine', dur: 0.05, gain: 0.07, a: 0.001, hold: 0.015 }); }. Duration 0.12s."
+  },
+  {
+    "file": "sfx/tech_data.mp3",
+    "title": "Sound effect: tech_data",
+    "author": "Own work (synthesized)",
+    "license": "OWN WORK",
+    "notes": "Synthesized with npm run sfx from the explainer sound kit, recipe src/kit/skins/frontier/sounds/tech_data.js: (k) => { [2093, 2637, 3136, 2349, 2794, 3520, 2093, 3951, 2637, 3136, 2349, 4186, 2794, 3520].forEach((f, i) => k.tone(i * 0.034, { f, type: 'sine', dur: 0.022, gain: 0.07, a: 0.001, hold: 0.012, pan: (i % 3 - 1) * 0.3 })); }. Duration 0.50s."
+  },
+  {
+    "file": "sfx/tech_zip.mp3",
+    "title": "Sound effect: tech_zip",
+    "author": "Own work (synthesized)",
+    "license": "OWN WORK",
+    "notes": "Synthesized with npm run sfx from the explainer sound kit, recipe src/kit/skins/frontier/sounds/tech_zip.js: (k) => { k.tone(0, { f: [[0, 2400], [0.22, 170]], type: 'sine', dur: 0.26, gain: 0.12, a: 0.005 }); k.noise(0, { dur: 0.2, filter: 'bandpass', f: [[0, 6000], [0.2, 600]], q: 2, gain: 0.14 }); k.play('click', 0.24, { f: 1800 }); }. Duration 0.29s."
+  },
+  {
+    "file": "sfx/tech_click.mp3",
+    "title": "Sound effect: tech_click",
+    "author": "Own work (synthesized)",
+    "license": "OWN WORK",
+    "notes": "Synthesized with npm run sfx from the explainer sound kit, recipe src/kit/skins/frontier/sounds/tech_click.js: (k) => { k.play('click', 0, { f: 2200 }); k.tone(0.01, { f: 'A6', type: 'sine', dur: 0.14, gain: 0.08, a: 0.001 }); k.tone(0.05, { f: 'E7', type: 'sine', dur: 0.18, gain: 0.05, a: 0.001, verb: 0.3 }); }. Duration 0.58s."
   }
 ]

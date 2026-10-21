@@ -1,0 +1,1 @@
+(k) => { k.tone(0, { f: [[0, 2400], [0.22, 170]], type: 'sine', dur: 0.26, gain: 0.12, a: 0.005 }); k.noise(0, { dur: 0.2, filter: 'bandpass', f: [[0, 6000], [0.2, 600]], q: 2, gain: 0.14 }); k.play('click', 0.24, { f: 1800 }); }

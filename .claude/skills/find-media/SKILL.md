@@ -18,7 +18,9 @@ Allowed, and the only spellings for `license`:
 | CC0 / Public Domain Mark applied by the creator or the holding institution | `CC0` / `PD` | omit |
 | CC BY x.y / CC BY-SA x.y (any port, e.g. `3.0 de`) | `CC BY` / `CC BY-SA` | `"x.y"` |
 
-Reject everything else: NC, ND, Sampling+, GFDL-only, "editorial use only", "copyrighted free use", "no known copyright restrictions" / "no known restrictions on publication" without a confirmed PD basis, any custom "free" license (Pexels, Pixabay, Unsplash, Mixkit, Coverr, Videvo, Rawpixel, StockSnap…), and anything unclear.
+**Press images (opt-in):** when `config.yaml` has `licensing.press_images: true`, an official manufacturer image or b-roll clip from the company's own newsroom or press kit (e.g. nvidianews.nvidia.com, amd.com/en/newsroom, intel.com/newsroom, apple.com/newsroom) may show the product a segment discusses, when no PD/CC media of it exists. Credit: `"license": "PRESS"`, `"author": "<Company>"`, `"sourceUrl": "<the press page>"`, `"originalUrl": "<the file>"`. Not retailer listing photos, not photographers' or outlets' photos, not embargoed or "do not use" material, never the thumbnail. PD/CC media of the product still comes first.
+
+Reject everything else: NC, ND, Sampling+, GFDL-only, "editorial use only" (apart from the press-image opt-in above), "copyrighted free use", "no known copyright restrictions" / "no known restrictions on publication" without a confirmed PD basis, any custom "free" license (Pexels, Pixabay, Unsplash, Mixkit, Coverr, Videvo, Rawpixel, StockSnap…), and anything unclear.
 
 - **The landing page decides, not the search index.** Openverse, Internet Archive and Commons search results are aggregated or uploader-asserted. Open `sourceUrl` (or the metadata API) for every file you keep.
 - **PD needs a basis you can name.** "U.S. Navy photo by …" is a basis. An Internet Archive uploader's PD Mark on a TV show or a game is not.

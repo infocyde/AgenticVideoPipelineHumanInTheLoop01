@@ -80,6 +80,15 @@ export const segmentNum = (ep: Episode, i: number) => {
 export const firstPins = (ep: Episode): Pin[] => items(ep).flatMap((s) => s.map?.pins.slice(0, 1) ?? []);
 export const allPins = (ep: Episode): Pin[] => items(ep).flatMap((s) => s.map?.pins ?? []);
 
+/** The sources card shows at most this many sources at once; more are split evenly over several cards. */
+export const SOURCES_PER_CARD = 8;
+/** Index ranges [start, end) of the sources on each card, e.g. 16 sources -> [[0, 8], [8, 16]]. */
+export const sourcePages = (n: number): [number, number][] => {
+  const pages = Math.max(1, Math.ceil(n / SOURCES_PER_CARD));
+  const per = Math.ceil(n / pages);
+  return Array.from({ length: pages }, (_, p) => [p * per, Math.min(n, (p + 1) * per)] as [number, number]);
+};
+
 export const resolveEpisode = (ep: Episode, timing: Timing, assets: AssetManifest): Timeline => {
   const issues: Issue[] = [];
   const err = (where: string, msg: string) => issues.push({ level: "error", where, msg });
@@ -243,7 +252,7 @@ export const resolveEpisode = (ep: Episode, timing: Timing, assets: AssetManifes
     err("sources", "no sources: every episode ends on a sources card, so add the article's sources (or set outro.sourcesCard to false)");
   }
   const card = (start: number, seconds?: number) => (seconds ? { from: start, to: start + toFrame(seconds) } : null);
-  const sourcesCard = card(voEnd + FPS, sc ? sc.seconds : undefined);
+  const sourcesCard = card(voEnd + FPS, sc ? sc.seconds * sourcePages(ep.sources.length).length : undefined);
   const creditsCard = card(sourcesCard?.to ?? voEnd + FPS, cc ? cc.seconds : undefined);
   const endScreen = card(creditsCard?.to ?? sourcesCard?.to ?? voEnd, es?.seconds);
   const durationInFrames = Math.max(1, endScreen?.to ?? creditsCard?.to ?? sourcesCard?.to ?? toFrame(voiceoverDuration + TAIL));

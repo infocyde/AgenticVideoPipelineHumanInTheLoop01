@@ -4,7 +4,8 @@
 //
 // Usage:
 //   npm run explainer -- styles                                   list styles and their variants
-//   npm run explainer -- new <name> [--style <id>] [--variant <v>] [--episode <slug>] [--title "..."] [--force]
+//   npm run explainer -- new <name> [--style <id>] [--variant <v>] [--episode <slug>] [--title "..."] [--fonts "<families>"] [--force]
+//                                                                 --fonts "Anton|Space Grotesk:wght@400;700" replaces the style's Google Fonts
 //   npm run explainer -- storyboard <name> [--episode <slug>]     <out>/<name>.storyboard.html (to publish) + storyboard.png (to look at)
 //   npm run explainer -- frames <name> --at 1,4.5,9 [--episode <slug>]   PNG frames at those times + timing/determinism check
 //   npm run explainer -- render <name> [--episode <slug>] [--fps 30] [--scale 1.5] [--no-sound] [--voiceover]
@@ -67,27 +68,44 @@ if (cmd === "new") {
   const variantId = str("variant") ?? (theme && theme in style.variants ? theme : style.default);
   const variant = style.variants[variantId];
   if (!variant) fail(`Style ${styleId} has no variant "${variantId}". Variants: ${Object.keys(style.variants).join(", ")}`);
+  const fonts = str("fonts") ? googleFonts(str("fonts")!) : variant;
   const title = str("title") ?? name.replace(/[-_]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   const fill: Record<string, string> = {
     __TITLE__: title.replace(/[<&]/g, ""),
-    __FONTS_HREF__: variant.fontsHref.replace(/&/g, "&amp;"),
+    __FONTS_HREF__: fonts.fontsHref.replace(/&/g, "&amp;"),
     __HARNESS__: readFileSync(join(SKILL, "lib", "harness.js"), "utf8").trimEnd(),
     __SOUND__: readFileSync(join(SKILL, "lib", "sound.js"), "utf8").trimEnd(),
     __STYLE_ID__: `${styleId}${variantId === "default" ? "" : `/${variantId}`}`,
     __VARIANT__: JSON.stringify(variant.vars),
-    __FONT_SPECS__: JSON.stringify(variant.fontSpecs),
+    __FONT_SPECS__: JSON.stringify(fonts.fontSpecs),
     __STYLE__: readFileSync(join(STYLES, styleId!, "style.js"), "utf8").trimEnd(),
   };
   // One pass, so text inserted for one placeholder is never scanned for another.
   const html = readFileSync(join(SKILL, "template.html"), "utf8").replace(new RegExp(Object.keys(fill).join("|"), "g"), (k) => fill[k]);
   mkdirSync(join(src, ".."), { recursive: true });
   writeFileSync(src, html);
-  ok(`${rel(src)}  (${style.name}, ${variantId})`);
+  ok(`${rel(src)}  (${style.name}, ${variantId}${str("fonts") ? `, fonts: ${str("fonts")}` : ""})`);
   console.log(`
 Next:
   • Fill BEATS / ASSUMPTIONS / SOURCES and draw each beat's key frame in explainer() (style helpers are already in the page).
   • npm run explainer -- storyboard ${name}${slug ? ` --episode ${slug}` : ""}   then publish the .storyboard.html and wait for approval.`);
   process.exit(0);
+}
+
+// "Anton|Space Grotesk:wght@400;700" -> a css2 URL (display=block) and one document.fonts.load spec per face.
+function googleFonts(list: string): Pick<Variant, "fontsHref" | "fontSpecs"> {
+  const fams = list.split("|").map((f) => f.trim()).filter(Boolean);
+  if (!fams.length) fail('--fonts needs family names, e.g. --fonts "Anton|Space Grotesk:wght@400;700"');
+  const fontSpecs: string[] = [];
+  const query = fams.map((f) => {
+    const [family, axes] = f.split(":").map((x) => x.trim());
+    const m = axes?.match(/^wght@([\d;]+)$/);
+    if (axes && !m) fail(`--fonts: only a weight list is supported after the family ("${f}"): use Family:wght@400;700`);
+    const weights = m ? m[1].split(";").filter(Boolean) : [""];
+    for (const w of weights) fontSpecs.push(`${w ? `${w} ` : ""}48px "${family}"`);
+    return `family=${family.replace(/ /g, "+")}${m ? `:wght@${weights.join(";")}` : ""}`;
+  });
+  return { fontsHref: `https://fonts.googleapis.com/css2?${query.join("&")}&display=block`, fontSpecs };
 }
 
 // ---------------------------------------------------------------------------------------------------- page commands

@@ -6,19 +6,22 @@ voice:
   #          public/episodes/<slug>/voiceover.mp3 (then aligns it).
   #   false: you bring voiceover.mp3 yourself, as before. `npm run voice -- <slug>` refuses unless you pass --ignore-off
   #          (--sample auditions always work, so you can try voices before turning this on).
-  enabled: false
+  enabled: true
 
   # chatterbox: Resemble AI Chatterbox (MIT). Clones the voice in `reference`. English only.
   # qwen:       Qwen3-TTS (Apache-2.0). Clones the voice in `reference`. Multilingual model (incl. Russian), so it
   #             tends to say Russian/Ukrainian names better. Needs: npm run setup:voice -- --qwen
   # kokoro:     Kokoro-82M (Apache-2.0). Preset voices only, very fast. Good for drafts and long scripts.
-  engine: qwen
+  # qwen-cloud: the same Qwen3-TTS voice clone, run on Replicate (official qwen/qwen3-tts) with every sentence sent at
+  #             once: about a minute for an episode instead of ~7 locally, roughly 2.6 s of Replicate GPU time per
+  #             sentence (cents per episode). Needs REPLICATE_API_TOKEN; uploads the reference clip to Replicate.
+  #             No seed input, so a re-run gives a different take. Local qwen stays the fallback: --engine qwen.
+  engine: qwen-cloud
 
   # The voice to clone (chatterbox and qwen): 10-20 s of clean speech, one speaker, no music, in voices/.
   # Must be your own voice or one you have the rights to. List them: npm run voice -- --voices
   # One-off: --reference voices/<name>.wav  (or --reference none for Chatterbox standard's built-in voice)
-  # collin_ro: Collin's voice, a 20 s excerpt of the ElevenLabs "Hacker_01" voiceover of 2026-10-18-russia-drone-war
-  # (transcript in voices/collin_ro.txt). Chosen 2026-10-19 after comparing all voices with Qwen 1.7B.
+  # collin_ro: Collin's voice,  Chosen 2026-10-19 after comparing all voices with Qwen 1.7B.
   reference: voices/collin_ro.wav
 
   chatterbox:
@@ -30,7 +33,8 @@ voice:
     cfg_weight: 0.5     # standard model only: lower = slower, more deliberate delivery
 
   qwen:
-    size: 1.7B          # 1.7B (better, ~6 GB VRAM) | 0.6B (lighter, ~4 GB). One-off: --size 0.6B
+    size: 1.7B          # 1.7B (better, ~6 GB VRAM) | 0.6B (lighter, ~4 GB). One-off: --size 0.6B (local only)
+    cloud_concurrency: 8  # qwen-cloud: sentences sent to Replicate at once (--concurrency N)
     language: English   # the narration's language (Chinese, English, Japanese, Korean, German, French, Russian,
                         # Portuguese, Spanish, Italian). Names inside English text are still read by a model that
                         # knows Russian. It also needs a transcript of the reference clip: voices/<name>.txt, made
@@ -40,7 +44,7 @@ voice:
     voice: am_michael   # list them with: npm run voice -- --voices
     speed: 1.0
 
-  pause: 0.3            # seconds of silence between sentences (paragraph breaks get double)
+  pause: 0.35           # seconds of silence between sentences (paragraph breaks get double)
   seed: 7               # same seed + same text = same take; change it to get a different read
 
 shorts:
@@ -53,3 +57,65 @@ shorts:
   enabled: false
   count: 2          # Shorts per episode, 1-3 (the producer picks the strongest items)
   maxSeconds: 60    # target length; check warns above this (YouTube allows up to 3 minutes)
+
+music_gen:
+  # Local background music with Stable Audio 3 (Stability AI), instead of a library or hand-made bed.
+  #   true:  for every episode and Short the producer writes a prompt that fits the theme and mood and runs
+  #          `npm run compose -- <slug> bed --prompt "..."`, which writes public/episodes/<slug>/music/bed.mp3 sized to
+  #          the video, level-matched to the library bed, credited AI-GENERATED (Powered by Stability AI). You hear it in
+  #          the preview, as with any bed. Your own tracks still win when you hand one over.
+  #   false: no generated music; beds come from the library, the episode's music/ folder or your own tracks.
+  # Setup once: npm run setup:music. The weights are gated on Hugging Face (accept the terms, then log in), and a
+  # monetized channel needs the free Stability AI Community License registration (under $1M revenue a year).
+  # Every bed gets a fresh random seed; it is recorded in credits.json (re-make one with --seed).
+  enabled: true
+  model: medium       # medium (1.4B, GPU + Flash Attention, up to 6:20 per pass) | small-music (433M, CPU OK, up to 2:00)
+  steps: 8            # sampling steps (8 is the model's default; more doesn't help the post-trained models)
+  lufs: -20.3         # integrated loudness of the bed (matches public/library/music/bed.mp3)
+
+image_gen:
+  # Where AI stills come from (npm run generate; the generate-image skill: a fallback when licensed footage fails).
+  #   local_render: every still on this GPU with Z-Image Turbo (Tongyi-MAI, Apache-2.0), free, ~35-55 s each
+  #   cloud_render: every still with FLUX 3 (Black Forest Labs) via Replicate, a paid API call each
+  #   mixed:        local for ordinary stills; FLUX 3 for high-detail work (--detail high: thumbnail backgrounds, hero
+  #                 shots) when REPLICATE_API_TOKEN is set, otherwise local as well
+  # One run can override it: --engine local | --engine cloud. Every local run takes a fresh random seed (recorded in
+  # credits.json; remake one with --seed). Setup once: npm run setup:image (sd.cpp + models into models/image/).
+  mode: cloud_render
+
+  local:
+    sdcpp: models/image/sdcpp/sd-cli.exe                       # stable-diffusion.cpp (CUDA 12 build)
+    model: models/image/z_image_turbo-Q4_K.gguf                # Z-Image Turbo, Q4_K GGUF (~3.9 GB)
+    text_encoder: models/image/Qwen3-4B-Instruct-2507-Q4_K_M.gguf   # stock Qwen3-4B (the one sd.cpp documents)
+    vae: models/image/flux1_ae.safetensors                     # FLUX.1 VAE
+    width: 1600           # rendered size, then scaled to 1920x1080 (multiples of 64; ~1.4 MP is Turbo's sweet spot)
+    height: 896
+    steps: 8              # Turbo is distilled for 8; 6 is faster and a little softer
+    cfg: 1.5              # 1.0 = fastest (~35 s) but ignores the negative prompt; above 1 the negative applies and
+                          # each step runs twice (~55 s). 1.5 is cleaner than 1.0 with little change in look; 2.0+
+                          # pushes contrast and saturation
+    shift: 3.0            # flow shift (Turbo's default)
+    sampler: euler
+    scheduler: discrete
+    negative_prompt: >-
+      blurry, out of focus, low quality, jpeg artifacts, noise, oversaturated, overexposed, watermark, signature,
+      logo, text, caption, letters, garbled text, deformed, distorted, extra limbs, malformed hands, bad anatomy,
+      duplicate, cropped, frame, border
+    offload_to_cpu: true  # keep weights in RAM and move each model to the GPU when it runs (needed on 8 GB)
+    flash_attention: true
+    vae_tiling: false     # true lowers VRAM for big sizes, a little slower
+
+  cloud:
+    resolution: 2k        # FLUX 3 output size: 1k | 1.5k | 2k | 4k (2k for anything shown full-screen)
+    safety: 2             # 0 (strictest) .. 4
+
+licensing:
+  # Official manufacturer press images: product shots from a company's newsroom or press kit (NVIDIA, AMD, Intel,
+  # Apple...), used to show the product a segment discusses. They are "editorial use" material, not CC: this is a
+  # risk you accept (fair-use commentary; low in practice, since makers publish them for coverage). The rules check
+  # enforces: credited "PRESS" with the company as author and the press page as sourceUrl; images/ and clips/ only;
+  # never the thumbnail; never in the shared library. Only the maker's own images: no retailer listing photos, no
+  # photographers' or outlets' photos, nothing with a "do not use" or embargo notice.
+  #   true:  sourcing agents may use them when no PD/CC media shows the product
+  #   false: PD / CC0 / CC BY / CC BY-SA, own work and AI stills only (check errors on PRESS credits)
+  press_images: true

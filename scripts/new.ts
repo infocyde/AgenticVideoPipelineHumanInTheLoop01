@@ -1,5 +1,5 @@
 // Scaffold a new episode: episodes/<slug>/ (data) and public/episodes/<slug>/ (media), then sync.
-// Usage: npm run new -- <slug> [--format countdown|list|short] [--count N] [--theme threat-brief|clean-light|after-dark|military|military-comparisons|erotic]
+// Usage: npm run new -- <slug> [--format countdown|list|short] [--count N] [--theme threat-brief|clean-light|after-dark|military|military-comparisons|erotic|frontier]
 //   --format short: a standalone YouTube Short (vertical 9:16, its own article and facts); --count = scenes (1-3, default 1).
 //   For Shorts cut from an existing episode, use npm run short -- <episode> instead.
 // Brand, theme and audio settings carry over from the most recent episode of the same format, if any.
