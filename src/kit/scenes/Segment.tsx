@@ -31,6 +31,9 @@ export const Segment: React.FC<{ s: ResolvedSegment; slam: boolean }> = ({ s, sl
   const tuckAt = MAP_EXIT + MAP_GLITCH + o;
   const tuck = interpolate(frame, [tuckAt, tuckAt + MAP_SLIDE + 4], [0, 1], { ...clamp, easing: Easing.inOut(Easing.cubic) });
   const textScale = 1 - (1 - TEXT_SHRINK) * tuck;
+  // card: "exit" slides the whole block off the left edge instead of tucking it (its later stats stay off screen too).
+  const cardTransform =
+    seg.card === "exit" ? `translateX(${-1400 * tuck}px)` : seg.card === "none" ? "translateX(-2400px)" : `translate(${-56 * tuck}px, ${-36 * tuck}px) scale(${textScale})`;
 
   const statFrames = s.stats.map((st) => toFrame(st.at) - s.from);
   const activeStat = statFrames.reduce((acc, f, i) => (frame >= f ? i : acc), -1);
@@ -44,7 +47,7 @@ export const Segment: React.FC<{ s: ResolvedSegment; slam: boolean }> = ({ s, sl
   return (
     <AbsoluteFill style={{ transform: `translate(${sx}px, ${sy}px)` }}>
       {visuals.length ? (
-        <Backdrop visuals={visuals} durationInFrames={dur} seed={s.num * 3} clear={tuck} />
+        <Backdrop visuals={visuals} durationInFrames={dur} seed={s.num * 3} clear={tuck} scrim={seg.card !== "exit" && seg.card !== "none"} />
       ) : (
         <AbsoluteFill style={{ background: colors.bg }}>
           {seg.map && (
@@ -65,7 +68,7 @@ export const Segment: React.FC<{ s: ResolvedSegment; slam: boolean }> = ({ s, sl
           top: 128,
           width: 1040,
           transformOrigin: "top left",
-          transform: `translate(${-56 * tuck}px, ${-36 * tuck}px) scale(${textScale})`,
+          transform: cardTransform,
         }}
       >
         <div style={{ display: "flex", alignItems: "flex-end", gap: 18, opacity: badgeIn, transform: `translateX(${(1 - badgeIn) * -60}px)` }}>

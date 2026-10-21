@@ -38,6 +38,12 @@ export type Theme = {
     tintBlend: "multiply" | "screen" | "overlay" | "soft-light";
     sideGradient: string;
     bottomGradient: string;
+    /** Opacity the side gradient keeps once the segment text has tucked away or left (default 0.35). */
+    sideCleared?: number;
+    /** Optional scrim faded in as the side gradient clears, behind what stays on screen (the tucked text, the top bar). */
+    clearedScrim?: string;
+    /** Side-gradient strength behind cold-open stamp beats, 0–1 (default 1). */
+    coldOpenSide?: number;
   };
   /** Text shadows and glows, as CSS values. */
   effects: {

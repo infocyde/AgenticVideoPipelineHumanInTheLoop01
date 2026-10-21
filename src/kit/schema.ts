@@ -60,6 +60,26 @@ export const segmentSchema = z.object({
   stats: z.array(statSchema).default([]).describe("Overlay themes show one at a time; split themes stack them into spec-sheet panels of 5"),
   visuals: z.array(visualSchema).default([]),
   map: mapSchema.optional(),
+  captions: z
+    .boolean()
+    .optional()
+    .describe("false hides the word-by-word captions for this segment, e.g. over an explainer whose own text they would cover"),
+  card: z
+    .enum(["tuck", "exit", "none"])
+    .optional()
+    .describe(
+      "Overlay layouts: what the number/headline/stat block does once the map card leaves. 'tuck' (default) shrinks it into the top-left corner; 'exit' slides it off the left edge so the b-roll has the whole frame; 'none' never shows the region and headline (Shorts too). Split and spatial layouts ignore it",
+    ),
+  fade: z
+    .number()
+    .min(0)
+    .max(1)
+    .optional()
+    .describe("Shorts: strength of an optional paper wash over this segment's b-roll, 0 (none, the default) to 1"),
+  overlay: z
+    .enum(["top", "bottom", "none"])
+    .optional()
+    .describe("Shorts: where the region/headline/stat panel sits so it stays off the action: 'top' (default), 'bottom' (just above the captions) or 'none' (hidden)"),
 });
 
 export const textSectionSchema = z.object({
@@ -73,6 +93,7 @@ export const textSectionSchema = z.object({
     .enum(["window", "full"])
     .optional()
     .describe("frontier: 'full' shows the visual large across the frame (a summary board, a big chart) with just the label; default 'window'"),
+  captions: z.boolean().optional().describe("false hides the word-by-word captions for this section"),
 });
 
 /** One entry of `segments`: a numbered item, or a text section (`kind: "text"`). */
@@ -85,6 +106,8 @@ export const beatSchema = z.object({
   stamp: z.string().min(1).describe("Big stamped text, or the headline over the map for a map beat"),
   accent: z.string().optional().describe("Map beats only: trailing word(s) drawn in the accent color, e.g. stamp 'EVERY' + accent 'FRONT'"),
   sub: z.string().optional(),
+  fade: z.number().min(0).max(1).optional().describe("Shorts: strength of an optional paper wash over this beat's b-roll, 0 (none, the default) to 1"),
+  stampAt: z.enum(["top", "center", "bottom"]).optional().describe("Shorts: where the hook stamp sits, to keep it off the action (default 'center')"),
   map: z.literal("all-pins").optional().describe("Show the world map with every segment's first pin instead of a visual"),
 });
 

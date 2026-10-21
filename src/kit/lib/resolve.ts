@@ -65,6 +65,10 @@ export const resolveVisual = (assets: AssetManifest, name: string): Asset | null
   return null;
 };
 
+/** True while a segment or text section with `captions: false` is on screen (frame numbers, as in `from`/`to`). */
+export const captionsHidden = (t: Timeline, frame: number) =>
+  [...t.segments, ...t.texts].some((s) => s.seg.captions === false && frame >= s.from && frame < s.to);
+
 /** The numbered segments of an episode (text sections left out). */
 export const items = (ep: Episode): Segment[] => ep.segments.filter((s): s is Segment => !isTextSection(s));
 

@@ -9,7 +9,7 @@ import { toFrame } from "../lib/timing";
 
 /** Hook beats (stamp over b-roll, or the all-fronts map), each cut on its spoken cue, then the title card. */
 export const ColdOpen: React.FC = () => {
-  const { episode, timeline } = useEpisode();
+  const { episode, timeline, theme } = useEpisode();
   const { beats, title, to } = timeline.coldOpen;
   const titleFrom = toFrame(title.start);
   const pins = firstPins(episode);
@@ -25,7 +25,7 @@ export const ColdOpen: React.FC = () => {
               <EveryFront pins={pins} text={beat.stamp} accent={beat.accent} />
             ) : (
               <>
-                {asset && <Backdrop visuals={[{ name: beat.visual!, asset, note: beat.note, from: 0 }]} durationInFrames={dur} seed={i} />}
+                {asset && <Backdrop visuals={[{ name: beat.visual!, asset, note: beat.note, from: 0 }]} durationInFrames={dur} seed={i} side={theme.backdrop.coldOpenSide ?? 1} />}
                 <Sequence from={4} layout="none">
                   <Stamp text={beat.stamp} sub={beat.sub} />
                 </Sequence>

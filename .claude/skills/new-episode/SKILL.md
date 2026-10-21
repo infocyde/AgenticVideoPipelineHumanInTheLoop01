@@ -40,10 +40,12 @@ Shape (the scaffolded file shows it):
 
 - **Cold open:** 3–4 short, punchy hook lines, each naming one concrete event. Then *"These are the N stories that defined this week."* (N spelled out).
 - **Segments:** one paragraph each, starting with the marker sentence `Number ten.` … `Number one.` (countdown, least to most severe) or `Number one.` … (list). Two to four short sentences each.
-- **Text sections (optional):** unnumbered paragraphs for an intro, a recap or a "what it means" wrap-up, placed anywhere among the segments. Each starts with a distinctive opening phrase that becomes its `marker` (e.g. *"First, the big picture."*). Not before the title line: the cold open ends at the first marker.
+- **Text sections (optional):** unnumbered paragraphs for an intro, a recap or a "what it means" wrap-up, placed anywhere among the segments. Each starts with a distinctive opening phrase that becomes its `marker`, written as part of a full sentence (e.g. *"The big picture is that…"*, not a bare *"First, the big picture."*). Not before the title line: the cold open ends at the first marker.
 - **Outro:** starts *"Any one of these…"*, then *"That's the week."*, then a CTA line (*"Subscribe so you don't miss the next one."*).
 - About **360 words for ~2:15**. Scale for other lengths at ~2.6 words a second.
 - Write for the ear (TTS): spell out numbers and dates ("October twenty-fifth", "ninety percent", "two thousand"). Avoid symbols, abbreviations it may misread, parentheses and stage directions.
+- **No colons and no abrupt fragment sentences** in any narration (episodes, Shorts, explainers). A bare fragment such as *"First, the test."* followed by a new sentence reads choppily, and the voice engine voices it as its own tiny sentence and can chop it off mid-word (it did on 2026-10-21). Fold such openings into a full, flowing sentence: *"In the first test, Anthropic's red team gave it…"*, *"For comparison, …"*, *"Released on October seventh, it costs…"*. The kit's `Number one.` segment markers are the one exception, because the number slam needs them.
+- After voicing, check sentence ends for hard cuts (audio that stops dead instead of fading): read the waveform around any join that sounds clipped. A cut inside a word can't be fixed with a fade, so reword the line and voice it again.
 - **Every claim must be in the article or in the step 1b fact-check log.** List anything else you added (context, definitions) and ask the user to approve or cut it.
 - Write with cues in mind: each stat you plan to show should be spoken with a distinctive word ("kiwifruit", "ninety", "halted"), and each b-roll cut should land on a distinctive phrase.
 
@@ -155,9 +157,9 @@ YouTube Shorts are vertical (9:16, 1080×1920) and each one is its own small epi
 
 **Script** (`episodes/<short>/voiceover.txt`), written at the main script's approval stop:
 - At most `shorts.maxSeconds` (default 60 s, about 130 words at 2.6 words/s; check warns above it, and YouTube's hard limit is 3 minutes). 30–45 s is the sweet spot.
-- Structure: a hook line in the first 2 s (no "welcome", no throat-clearing); a title line; 1–3 scenes, each starting with a distinctive marker ("First, …", "Second, …"); one outro line; a CTA ("Subscribe for the full briefing.").
+- Structure: a hook line in the first 2 s (no "welcome", no throat-clearing); a title line; 1–3 scenes, each opening with a distinctive marker inside a full sentence ("In the first test, Anthropic's red team…", "For comparison, …", never a bare "First, the test."); one outro line; a CTA ("Subscribe for the full briefing.").
 - **Facts only from the parent's article and its fact-check log** (or the standalone Short's own fact-check), CLAUDE.md rule 2. Reuse the episode's checked wording wherever you can.
-- Same ear rules as the main script: spell out numbers, no symbols.
+- Same ear rules as the main script: spell out numbers, no symbols, no colons or abrupt fragment sentences.
 
 **episode.json**: `summary` (1–2 sentences: the Short's one idea and its key fact; the description adds a link line to the full video and `#Shorts`), `coldOpen.beats` (1 hook beat: stamp ≤ 16 chars over a strong visual), `coldOpen.title` (kicker = brand, `big` ≤ 4 chars such as "#1" or "VS", `small` ≤ 2 short lines), `segments` (1–3 items or text sections, each with stats and 1–3 visuals; a `map` shows full-height first, then the b-roll), `outro` (1–2 lines + `cta`). `sourcesCard` and `creditsCard` stay `false`: on Shorts the sources and credits go in the description. File-footage `note`s and AI-image notes apply as usual.
 

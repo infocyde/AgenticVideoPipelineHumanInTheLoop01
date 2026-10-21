@@ -5,7 +5,6 @@ import React, { useMemo } from "react";
 import { AbsoluteFill, Easing, interpolate, Sequence, useCurrentFrame } from "remotion";
 import { MusicBed, SfxTrack, Voiceover } from "../components/Audio";
 import { Backdrop, type BackdropVisual } from "../components/Backdrop";
-import { StatCard } from "../components/Cards";
 import { Captions, GlitchCut, Grain } from "../components/Chrome";
 import { fitLines, Headline, useFontsReady } from "../components/Headline";
 import { IssuesOverlay } from "../components/IssuesOverlay";
@@ -25,7 +24,13 @@ export const SHORT_WIDTH = 1080;
 export const SHORT_HEIGHT = 1920;
 const X = 70; // left margin
 const TEXT_W = SHORT_WIDTH - 2 * X;
-const CAPTIONS = { left: X, right: 160, bottom: 470, fontSize: 72 };
+// Captions sit on a small paper pill in the bottom band (no wash over the picture).
+const CAPTIONS = { left: X, right: 160, bottom: 470, fontSize: 68, panel: true };
+/** Text panels: solid paper cards that carry legibility, so the b-roll needs no fades. */
+const PANEL_W = TEXT_W - 90; // clear of the Shorts buttons on the right
+const PANEL_PAD = 30;
+const SHORT_VIGNETTE = 0.3;
+const NOTE_SIZE = 26;
 
 /** A tall frame shows a small bounding box as one blob of country; zoom out around it so the region reads in context. */
 const widen = (m: MapFocus, k = 2.2): MapFocus => {
@@ -34,18 +39,24 @@ const widen = (m: MapFocus, k = 2.2): MapFocus => {
   return { ...m, bbox: [[Math.max(-180, cx - hw), Math.max(-85, cy - hh)], [Math.min(180, cx + hw), Math.min(85, cy + hh)]] };
 };
 
-/** Dark top and bottom fades so text reads over any b-roll (the 16:9 side gradient doesn't suit a tall frame). */
-const Scrims: React.FC = () => {
+/** Optional paper wash at the top and bottom (`fade` on a beat or segment); off by default, since text sits on panels. */
+const Scrims: React.FC<{ strength?: number }> = ({ strength = 0 }) => {
   const { colors } = useTheme();
+  if (strength <= 0) return null;
   return (
-    <>
+    <AbsoluteFill style={{ opacity: strength }}>
       <AbsoluteFill style={{ background: `linear-gradient(180deg, ${alpha(colors.bg, 0.88)} 0%, ${alpha(colors.bg, 0.55)} 30%, transparent 52%)` }} />
       <AbsoluteFill style={{ background: `linear-gradient(0deg, ${alpha(colors.bg, 0.92)} 0%, ${alpha(colors.bg, 0.6)} 26%, transparent 46%)` }} />
-    </>
+    </AbsoluteFill>
   );
 };
 
 /** Brand and date, top left (the top right belongs to the Shorts player's own icons). */
+const Panel: React.FC<{ children: React.ReactNode; style?: React.CSSProperties }> = ({ children, style }) => {
+  const { colors } = useTheme();
+  return <div style={{ background: colors.panel, padding: PANEL_PAD, boxShadow: "0 12px 40px rgba(0,0,0,0.2)", ...style }}>{children}</div>;
+};
+
 const ShortTopBar: React.FC = () => {
   const frame = useCurrentFrame();
   const { episode, theme } = useEpisode();
@@ -53,12 +64,12 @@ const ShortTopBar: React.FC = () => {
   const blink = Math.floor(frame / 15) % 2 === 0;
   const enter = interpolate(frame, [0, 12], [-80, 0], { extrapolateRight: "clamp", easing: Easing.out(Easing.cubic) });
   return (
-    <div style={{ position: "absolute", top: 150, left: X, transform: `translateY(${enter}px)`, fontFamily: fonts.mono, letterSpacing: 4 }}>
+    <div style={{ position: "absolute", top: 140, left: X, transform: `translateY(${enter}px)`, fontFamily: fonts.mono, letterSpacing: 4, background: colors.panel, padding: "12px 20px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 14, color: colors.text, fontSize: 30, fontWeight: 700 }}>
         <div style={{ width: 16, height: 16, borderRadius: 8, background: colors.accent, opacity: blink ? 1 : 0.25, boxShadow: `0 0 16px ${colors.accent}` }} />
         {episode.brand.name}
       </div>
-      <div style={{ marginTop: 6, marginLeft: 30, color: colors.dim, fontSize: 24 }}>{episode.brand.dateLabel}</div>
+      <div style={{ marginTop: 6, marginLeft: 30, color: colors.dim, fontSize: 28 }}>{episode.brand.dateLabel}</div>
     </div>
   );
 };
@@ -73,17 +84,19 @@ const useFit = (text: string, width: number, maxSize: number, minSize: number, m
   );
 };
 
-/** Rubber stamp, centered in the upper half, wrapping to two lines if it must. */
-const VStamp: React.FC<{ text: string; sub?: string }> = ({ text, sub }) => {
+const STAMP_TOP = { top: 330, center: 640, bottom: 1020 } as const;
+
+/** Rubber stamp on a paper panel, wrapping to two lines if it must; `at` keeps it off the action. */
+const VStamp: React.FC<{ text: string; sub?: string; at?: keyof typeof STAMP_TOP }> = ({ text, sub, at = "center" }) => {
   const frame = useCurrentFrame();
   const { colors, fonts, effects } = useTheme();
-  const fit = useFit(text, TEXT_W - 80, 150, 84, 2);
+  const fit = useFit(text, PANEL_W - 150, 150, 84, 2);
   const s = interpolate(frame, [0, 6], [1.8, 1], { ...clamp, easing: Easing.out(Easing.exp) });
   const o = interpolate(frame, [0, 3], [0, 1], clamp);
   if (!fit) return null;
   return (
-    <AbsoluteFill style={{ alignItems: "center", paddingTop: 640 }}>
-      <div style={{ opacity: o, transform: `scale(${s}) rotate(-3deg)`, textAlign: "center" }}>
+    <AbsoluteFill style={{ alignItems: "center", paddingTop: STAMP_TOP[at] }}>
+      <div style={{ opacity: o, transform: `scale(${s}) rotate(-3deg)`, textAlign: "center", background: colors.panel, padding: "26px 34px", boxShadow: "0 12px 40px rgba(0,0,0,0.2)" }}>
         <div
           style={{
             display: "inline-block",
@@ -101,7 +114,7 @@ const VStamp: React.FC<{ text: string; sub?: string }> = ({ text, sub }) => {
             <div key={i}>{l}</div>
           ))}
         </div>
-        {sub && <div style={{ marginTop: 22, fontFamily: fonts.mono, fontWeight: 700, fontSize: 34, letterSpacing: 6, color: colors.text, maxWidth: TEXT_W }}>{sub}</div>}
+        {sub && <div style={{ marginTop: 22, fontFamily: fonts.mono, fontWeight: 700, fontSize: 36, letterSpacing: 5, color: colors.text, maxWidth: PANEL_W }}>{sub}</div>}
       </div>
     </AbsoluteFill>
   );
@@ -139,10 +152,10 @@ const ShortColdOpen: React.FC = () => {
               </AbsoluteFill>
             ) : (
               <>
-                {asset && <Backdrop visuals={[{ name: beat.visual!, asset, note: beat.note, from: 0 }]} durationInFrames={dur} seed={i} gradients={false} noteInset={X} />}
-                <Scrims />
+                {asset && <Backdrop visuals={[{ name: beat.visual!, asset, note: beat.note, from: 0 }]} durationInFrames={dur} seed={i} gradients={false} noteInset={X} noteSize={NOTE_SIZE} />}
+                <Scrims strength={beat.fade ?? 0} />
                 <Sequence from={4} layout="none">
-                  <VStamp text={beat.stamp} sub={beat.sub} />
+                  <VStamp text={beat.stamp} sub={beat.sub} at={beat.stampAt} />
                 </Sequence>
               </>
             )}
@@ -169,6 +182,25 @@ const ShortColdOpen: React.FC = () => {
   );
 };
 
+/** A stat inside the segment panel: big value, rule, typed label (larger than the 16:9 card's label, for phones). */
+const ShortStat: React.FC<{ value: string; label: string; since: number }> = ({ value, label, since }) => {
+  const { colors, fonts } = useTheme();
+  const scale = interpolate(since, [0, 6], [1.4, 1], { ...clamp, easing: Easing.out(Easing.back(1.6)) });
+  const opacity = interpolate(since, [0, 3], [0, 1], clamp);
+  const bar = interpolate(since, [2, 12], [0, 1], { ...clamp, easing: Easing.out(Easing.cubic) });
+  const chars = Math.floor(interpolate(since, [4, 4 + label.length * 0.7], [0, label.length], clamp));
+  return (
+    <div style={{ marginTop: 24, opacity }}>
+      <div style={{ fontFamily: fonts.display, fontSize: 112, lineHeight: 0.95, color: colors.highlight, transform: `scale(${scale})`, transformOrigin: "left center", whiteSpace: "nowrap" }}>{value}</div>
+      <div style={{ height: 6, width: 360 * bar, background: colors.accent, margin: "12px 0 10px" }} />
+      <div style={{ fontFamily: fonts.mono, fontWeight: 700, fontSize: 36, letterSpacing: 2, color: colors.text, textTransform: "uppercase", lineHeight: 1.2 }}>
+        {label.slice(0, chars)}
+        {chars < label.length && <span style={{ color: colors.accent }}>█</span>}
+      </div>
+    </div>
+  );
+};
+
 /** One item: b-roll full height (after its map, if it has one), region, headline and the stats stacked below it. */
 const ShortSegment: React.FC<{ s: ResolvedSegment }> = ({ s }) => {
   const frame = useCurrentFrame();
@@ -188,10 +220,13 @@ const ShortSegment: React.FC<{ s: ResolvedSegment }> = ({ s }) => {
   const visuals: BackdropVisual[] = s.visuals.flatMap((v, i) =>
     v.asset ? [{ name: v.name, asset: v.asset, note: v.note, from: i === 0 ? 0 : toFrame(v.at) - s.from }] : [],
   );
+  // overlay: where the text panel sits ('none', or the older card: "none", hides it).
+  const place = seg.overlay ?? (seg.card === "none" ? "none" : "top");
+  const panelIn = interpolate(frame, [2, 10], [0, 1], clamp);
 
   return (
     <AbsoluteFill>
-      {visuals.length ? <Backdrop visuals={visuals} durationInFrames={dur} seed={s.num * 3} gradients={false} noteInset={X} /> : <AbsoluteFill style={{ background: colors.bg }} />}
+      {visuals.length ? <Backdrop visuals={visuals} durationInFrames={dur} seed={s.num * 3} gradients={false} noteInset={X} noteSize={NOTE_SIZE} /> : <AbsoluteFill style={{ background: colors.bg }} />}
       {seg.map && (!visuals.length || frame < mapEnd) && (
         <AbsoluteFill style={{ background: colors.bg, opacity: visuals.length ? 1 : 0.6 }}>
           <WorldMap width={SHORT_WIDTH} height={SHORT_HEIGHT} focus={widen(seg.map)} showLabels={!!visuals.length} />
@@ -202,21 +237,21 @@ const ShortSegment: React.FC<{ s: ResolvedSegment }> = ({ s }) => {
           <GlitchCut seed={s.num * 11} />
         </Sequence>
       )}
-      <Scrims />
+      <Scrims strength={seg.fade ?? 0} />
       {isTop && <AbsoluteFill style={{ boxShadow: `inset 0 0 ${80 + alarmPulse * 120}px ${colors.accent}${Math.round((0.35 + alarmPulse * 0.35) * 255).toString(16).padStart(2, "0")}` }} />}
 
-      <div style={{ position: "absolute", left: X, top: 270, width: TEXT_W }}>
-        {isTop && (
-          <span style={{ fontFamily: fonts.mono, fontWeight: 700, fontSize: 30, letterSpacing: 4, color: colors.onAccent, background: colors.accent, padding: "6px 14px", opacity: 0.6 + alarmPulse * 0.4 }}>
-            {seg.emphasisLabel ?? theme.copy.topEmphasisLabel}
-          </span>
-        )}
-        <div style={{ marginTop: isTop ? 22 : 0, fontFamily: fonts.mono, fontWeight: 700, fontSize: 34, letterSpacing: 6, color: colors.highlight }}>{seg.region.slice(0, regionChars)}</div>
-        <Headline text={seg.headline} width={TEXT_W} wipe={headlineWipe} maxSize={132} minSize={72} maxLines={4} />
-      </div>
-      {activeStat >= 0 && (
-        <div style={{ position: "absolute", left: X, top: 900, width: TEXT_W }}>
-          <StatCard key={activeStat} value={seg.stats[activeStat].value} label={seg.stats[activeStat].label} since={frame - statFrames[activeStat]} />
+      {place !== "none" && (
+        <div style={{ position: "absolute", left: X, width: PANEL_W, opacity: panelIn, ...(place === "bottom" ? { bottom: 660 } : { top: 285 }) }}>
+          <Panel>
+            {isTop && (
+              <span style={{ display: "inline-block", marginBottom: 18, fontFamily: fonts.mono, fontWeight: 700, fontSize: 30, letterSpacing: 4, color: colors.onAccent, background: colors.accent, padding: "6px 14px", opacity: 0.6 + alarmPulse * 0.4 }}>
+                {seg.emphasisLabel ?? theme.copy.topEmphasisLabel}
+              </span>
+            )}
+            <div style={{ fontFamily: fonts.mono, fontWeight: 700, fontSize: 38, letterSpacing: 5, color: colors.highlight }}>{seg.region.slice(0, regionChars)}</div>
+            <Headline text={seg.headline} width={PANEL_W - 2 * PANEL_PAD} wipe={headlineWipe} maxSize={96} minSize={64} maxLines={3} />
+            {activeStat >= 0 && <ShortStat key={activeStat} value={seg.stats[activeStat].value} label={seg.stats[activeStat].label} since={frame - statFrames[activeStat]} />}
+          </Panel>
         </div>
       )}
     </AbsoluteFill>
@@ -238,19 +273,18 @@ const ShortText: React.FC<{ t: ResolvedText }> = ({ t }) => {
   return (
     <AbsoluteFill>
       {visuals.length ? (
-        <Backdrop visuals={visuals} durationInFrames={t.to - t.from} seed={t.index * 5 + 1} gradients={false} noteInset={X} />
+        <Backdrop visuals={visuals} durationInFrames={t.to - t.from} seed={t.index * 5 + 1} gradients={false} noteInset={X} noteSize={NOTE_SIZE} />
       ) : (
         <AbsoluteFill style={{ background: colors.bg, justifyContent: "center", alignItems: "center", opacity: 0.5 }}>
           <WorldMap width={SHORT_WIDTH} height={1300} allPins={allPins(episode)} pinDelay={0} zoomFrames={1} showLabels={false} />
         </AbsoluteFill>
       )}
-      <Scrims />
-      <div style={{ position: "absolute", left: X, top: 290, width: TEXT_W }}>
+      <div style={{ position: "absolute", left: X, top: 285, width: PANEL_W, background: colors.panel, padding: PANEL_PAD, boxShadow: "0 12px 40px rgba(0,0,0,0.2)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 18, height: 40 }}>
           <div style={{ width: 90 * barIn, height: 7, background: colors.accent, boxShadow: effects.accentGlow(16) }} />
           {label && <span style={{ fontFamily: fonts.mono, fontWeight: 700, fontSize: 32, letterSpacing: 6, color: colors.accent, textTransform: "uppercase" }}>{label.slice(0, labelChars)}</span>}
         </div>
-        <Headline text={seg.heading} width={TEXT_W} wipe={wipe} maxSize={128} minSize={70} maxLines={4} />
+        <Headline text={seg.heading} width={PANEL_W - 2 * PANEL_PAD} wipe={wipe} maxSize={96} minSize={64} maxLines={4} />
         {seg.body && (
           <div
             style={{
@@ -259,7 +293,7 @@ const ShortText: React.FC<{ t: ResolvedText }> = ({ t }) => {
               borderLeft: `5px solid ${colors.highlight}`,
               fontFamily: fonts.body,
               fontWeight: 600,
-              fontSize: 46,
+              fontSize: 42,
               lineHeight: 1.3,
               color: colors.text,
               textShadow: effects.textShadow,
@@ -333,7 +367,7 @@ export const Short: React.FC = () => {
   const OutroScene = v.Outro ?? ShortOutro;
   const Bar = v.TopBar ?? ShortTopBar;
   const Caps = v.Captions ?? Captions;
-  const Finish = skin.Finish ?? Grain;
+  const finish = skin.Finish ? <skin.Finish /> : <Grain vignette={SHORT_VIGNETTE} />;
   const End = skin.EndCard ?? EndCard;
   return (
     <AbsoluteFill style={{ background: theme.colors.bg }}>
@@ -368,7 +402,7 @@ export const Short: React.FC = () => {
           <End />
         </Sequence>
       )}
-      <Finish />
+      {finish}
       <Sequence durationInFrames={outro.to} layout="none">
         <Bar />
       </Sequence>

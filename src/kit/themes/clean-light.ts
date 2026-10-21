@@ -44,12 +44,17 @@ export const cleanLight: Theme = {
     labelHalo: "rgba(255,255,255,0.9)",
   },
   backdrop: {
-    filter: "grayscale(0.25) contrast(1.05) brightness(1.04) saturate(0.9)",
-    tintOpacity: 0.25,
+    // Light grade: the paper gradients carry legibility where text sits over the picture, and clear once it's gone.
+    filter: "grayscale(0.05) contrast(1.04)",
+    tintOpacity: 0.1,
     tintBlend: "soft-light",
     sideGradient:
       "linear-gradient(90deg, rgba(244,241,234,0.96) 0%, rgba(244,241,234,0.82) 40%, rgba(244,241,234,0.1) 72%, rgba(244,241,234,0.3) 100%)",
-    bottomGradient: "linear-gradient(0deg, rgba(244,241,234,0.92) 0%, transparent 35%)",
+    bottomGradient: "linear-gradient(0deg, rgba(244,241,234,0.8) 0%, transparent 26%)",
+    sideCleared: 0,
+    coldOpenSide: 0.5,
+    clearedScrim:
+      "radial-gradient(ellipse 760px 400px at 0% 0%, rgba(244,241,234,0.94) 0%, rgba(244,241,234,0.78) 50%, transparent 100%), linear-gradient(180deg, rgba(244,241,234,0.8) 0%, rgba(244,241,234,0.5) 6%, transparent 13%)",
   },
   effects: {
     accentGlow: () => "none",

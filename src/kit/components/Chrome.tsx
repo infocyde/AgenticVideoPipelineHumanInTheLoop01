@@ -2,11 +2,13 @@
 import React from "react";
 import { AbsoluteFill, Easing, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
 import { clamp, useEpisode, useTheme } from "../context";
+import { captionsHidden } from "../lib/resolve";
 import { FPS } from "../lib/timing";
 import { SPLIT } from "../scenes/SplitSegment";
 import { layoutOf } from "../themes";
 
-export const Grain: React.FC = () => {
+/** Film grain, scanlines and the theme's vignette; `vignette` scales the vignette (Shorts use a lighter one). */
+export const Grain: React.FC<{ vignette?: number }> = ({ vignette = 1 }) => {
   const frame = useCurrentFrame();
   const { effects } = useTheme();
   return (
@@ -28,7 +30,7 @@ export const Grain: React.FC = () => {
           }}
         />
       )}
-      <AbsoluteFill style={{ background: effects.vignette }} />
+      {vignette > 0 && <AbsoluteFill style={{ background: effects.vignette, opacity: vignette }} />}
     </AbsoluteFill>
   );
 };
@@ -169,7 +171,7 @@ export const Ticker: React.FC = () => {
 };
 
 /** Where captions sit; the vertical (Shorts) format passes its own box. */
-export type CaptionBox = { left: number; right?: number; width?: number; bottom: number; fontSize: number };
+export type CaptionBox = { left: number; right?: number; width?: number; bottom: number; fontSize: number; panel?: boolean };
 
 /** Word-by-word captions from the script's own words; hidden once the outro title slams in. */
 export const Captions: React.FC<{ box?: CaptionBox }> = ({ box: boxProp }) => {
@@ -177,7 +179,7 @@ export const Captions: React.FC<{ box?: CaptionBox }> = ({ box: boxProp }) => {
   const { timeline, theme } = useEpisode();
   const { colors, fonts, effects } = theme;
   const sec = frame / FPS;
-  if (sec >= timeline.outro.captionsOff - 0.1) return null;
+  if (sec >= timeline.outro.captionsOff - 0.1 || captionsHidden(timeline, frame)) return null;
   const chunk = timeline.chunks.find((c) => sec >= c.start - 0.05 && sec < c.end + 0.25);
   if (!chunk) return null;
   // Split layout: during a numbered segment, captions sit under the framed b-roll, clear of the spec column.
@@ -188,21 +190,9 @@ export const Captions: React.FC<{ box?: CaptionBox }> = ({ box: boxProp }) => {
     ? { left: SPLIT.captions.left, width: SPLIT.captions.width, bottom: SPLIT.captions.bottom, fontSize: SPLIT.captions.fontSize }
     : { left: 120, right: 120, bottom: 108, fontSize: 54 };
 
-  return (
-    <div
-      style={{
-        position: "absolute",
-        ...box,
-        display: "flex",
-        justifyContent: "center",
-        flexWrap: "wrap",
-        gap: "0 18px",
-        fontFamily: fonts.body,
-        fontWeight: 800,
-        textTransform: "uppercase",
-        lineHeight: 1.15,
-      }}
-    >
+  const { panel, ...place } = box;
+  const words = (
+    <>
       {chunk.words.map((w, i) => {
         if (sec < w.start - 0.04) return null;
         const active = sec >= w.start && sec < w.end + 0.05;
@@ -216,6 +206,15 @@ export const Captions: React.FC<{ box?: CaptionBox }> = ({ box: boxProp }) => {
           </span>
         );
       })}
-    </div>
+    </>
   );
+  const text: React.CSSProperties = { display: "flex", justifyContent: "center", flexWrap: "wrap", gap: "0 18px", fontFamily: fonts.body, fontWeight: 800, textTransform: "uppercase", lineHeight: 1.15 };
+  // panel: the words sit on a small paper pill instead of needing a wash over the picture (Shorts).
+  if (panel)
+    return (
+      <div style={{ position: "absolute", ...place, display: "flex", justifyContent: "center", alignItems: "flex-end" }}>
+        <div style={{ ...text, background: colors.panel, padding: "10px 24px 12px", boxShadow: "0 8px 30px rgba(0,0,0,0.18)" }}>{words}</div>
+      </div>
+    );
+  return <div style={{ position: "absolute", ...place, ...text }}>{words}</div>;
 };
