@@ -54,3 +54,38 @@ export const placeUnmatched = (times: (Span | null)[], lines: number[], duration
   }
   return out;
 };
+
+/** Shortest word kept when one has to be moved after its predecessor (seconds). */
+const MIN_WORD = 0.05;
+
+/**
+ * Keep words in sung order after alignment: a word that runs into the next is trimmed to end where the next starts,
+ * and a word that starts before its predecessor is moved to just after it (keeping at least MIN_WORD).
+ */
+export const enforceOrder = (spans: Span[]): Span[] => {
+  const out = spans.map((s) => [s[0], s[1]] as Span);
+  for (let i = 1; i < out.length; i++) {
+    const prev = out[i - 1];
+    const cur = out[i];
+    if (cur[0] >= prev[0]) {
+      if (cur[0] < prev[1]) prev[1] = Math.max(prev[0], cur[0]);
+    } else {
+      cur[0] = prev[1];
+      cur[1] = Math.max(cur[1], cur[0] + MIN_WORD);
+    }
+  }
+  return out;
+};
+
+/** A heard word whose forced-aligned start moves further than this from Whisper's keeps Whisper's time (seconds). */
+export const MAX_SHIFT = 1.5;
+/** Longest a sung word may last; the aligner can stretch one over the silence after it (seconds). */
+export const MAX_WORD = 4;
+
+/** Combine Whisper's times (null = not heard) with the forced aligner's: trust MMS unless it drifted far from a heard word. */
+export const reconcile = (whisper: (Span | null)[], mms: Span[]): Span[] =>
+  mms.map((m, i) => {
+    const w = whisper[i];
+    const s: Span = w && Math.abs(m[0] - w[0]) > MAX_SHIFT ? [w[0], w[1]] : [m[0], m[1]];
+    return [s[0], Math.min(s[1], s[0] + MAX_WORD)];
+  });

@@ -1,16 +1,23 @@
 // Music videos: time the lyric sheet to the song and find its beats, writing public/episodes/<slug>/timing.json.
-// Usage: npm run lyrics -- <slug> [--force] [--model medium] [--device cpu|cuda] [--language auto|en|…]
+// Usage: npm run lyrics -- <slug> [--force] [--model medium] [--device cpu|cuda] [--language auto|en|…] [--aligner mms|whisper]
 //   1. Demucs splits the vocal stem out of the mix (episodes/<slug>/stems/, cached; --force redoes it)
 //   2. Whisper transcribes the stem (.venv, cached) and difflib matches the sheet's words to it (scripts/lyrics_align.py)
 //   3. sheet words Whisper missed are placed inside their own lyric line (src/kit/lib/placeUnmatched.ts)
-//   4. librosa finds the beats (scripts/beats.py), for shots that cut on the beat in instrumentals
+//   4. (--aligner mms, the default) forced alignment refines every word on the vocal stem (scripts/lyrics_fa.py)
+//   5. librosa finds the beats (scripts/beats.py), for shots that cut on the beat in instrumentals
 // Writes timing.json (words with their line, beats, tempo), heard.txt (what Whisper heard) and lyrics-diff.txt (every
 // place the singing departs from the sheet: show these to the user, then fix lyrics.txt to match the audio, re-run).
 // An empty lyrics.txt gets Whisper's transcription as a draft, for the user to correct.
+//
+// Why MMS is the default (tested on "Empires", 6:21 of operatic metal, 2026-10-21): Whisper medium heard 168 of 293
+// sheet words (57%) and none of the first chorus. MMS forced alignment, with each chunk's window widened to the
+// nearest heard words, put every line on sung audio (12/12 chunks; median 0.10 s and 95th percentile 0.78 s from
+// Whisper on the words both placed). reconcile() keeps Whisper's time where MMS drifts > 1.5 s from a heard word and
+// caps words at 4 s; enforceOrder() keeps the words in sung order across chunks. Whole run: ~25 s with stems cached.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, extname, join } from "node:path";
 import { lyricWords, parseLyrics } from "../src/kit/lib/lyrics.ts";
-import { placeUnmatched } from "../src/kit/lib/placeUnmatched.ts";
+import { enforceOrder, placeUnmatched, reconcile } from "../src/kit/lib/placeUnmatched.ts";
 import type { Timing } from "../src/kit/schema.ts";
 import { scanAssets } from "./lib/assets.ts";
 import { isMusicVideoSlug, loadMusicVideoFromDisk } from "./lib/musicVideo.ts";
@@ -75,8 +82,28 @@ if (!words.length) {
   process.exit(0);
 }
 
-// 3. place unheard words, 4. beats
-const placed = placeUnmatched(a.times, words.map((w) => w.line), a.duration);
+// 3. place unheard words
+let placed = placeUnmatched(a.times, words.map((w) => w.line), a.duration);
+
+// 4. forced alignment (MMS) on the stem
+const aligner = str("aligner", "mms");
+if (aligner !== "mms" && aligner !== "whisper") fail('--aligner must be "mms" or "whisper"');
+if (aligner === "mms") {
+  info("forced alignment (MMS) on the vocal stem…");
+  const faIn = join(p.stems, "fa-in.json");
+  const faOut = join(p.stems, "fa-out.json");
+  writeFileSync(faIn, JSON.stringify({ words: words.map((w, i) => ({ word: w.word, start: placed[i][0], end: placed[i][1], line: w.line, heard: a.times[i] !== null })) }));
+  if (run(musicPython(), ["-I", join(ROOT, "scripts", "lyrics_fa.py"), vocals, faIn, faOut]) !== 0) fail("forced alignment failed (see the Python output above); --aligner whisper skips it");
+  const fa = readJson<{ words: { start: number; end: number }[]; chunks: { from: number; to: number; ok: boolean; reason?: string }[] }>(faOut);
+  fa.chunks.filter((c) => !c.ok).forEach((c) => warn(`lines with words ${c.from}–${c.to - 1} kept Whisper's times: ${c.reason}`));
+  // How far MMS moved the words Whisper did hear (a sanity check on both).
+  const deltas = a.times.flatMap((t, i) => (t ? [Math.abs(fa.words[i].start - t[0])] : [])).sort((x, y) => x - y);
+  const q = (f: number) => deltas[Math.min(deltas.length - 1, Math.floor(f * deltas.length))] ?? 0;
+  info(`MMS vs Whisper on ${deltas.length} heard words: median ${q(0.5).toFixed(2)}s, 95th percentile ${q(0.95).toFixed(2)}s`);
+  placed = enforceOrder(reconcile(a.times, fa.words.map((w) => [w.start, w.end])));
+}
+
+// 5. beats
 const beatsFile = join(p.stems, "beats.json");
 if (force || !existsSync(beatsFile)) {
   info("finding the beats (librosa)…");
