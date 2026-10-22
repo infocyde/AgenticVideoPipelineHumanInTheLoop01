@@ -17,7 +17,7 @@ import { scanAssets } from "./lib/assets.ts";
 import { loadConfig } from "./lib/config.ts";
 import { getSecret } from "./lib/env.ts";
 import { loadFromDisk } from "./lib/episode.ts";
-import { fail, info, ok, parseArgs, paths, readJson, ROOT, SLUG_RE, warn } from "./lib/util.ts";
+import { fail, info, musicPython, ok, parseArgs, paths, readJson, ROOT, SLUG_RE, warn } from "./lib/util.ts";
 
 const COMMIT = "77e0398c26f7d22d801ec1bb036307e8b231f741"; // stable-audio-3, as pinned in requirements-music.txt
 const HF = { medium: "stabilityai/stable-audio-3-medium", "small-music": "stabilityai/stable-audio-3-small-music" } as const;
@@ -39,7 +39,7 @@ const cfg = loadConfig().music_gen;
 const sample = str("sample");
 const model = (str("model") ?? cfg.model) as keyof typeof HF;
 if (!(model in HF)) fail(`--model must be medium or small-music`);
-const py = process.platform === "win32" ? join(ROOT, ".venv-music", "Scripts", "python.exe") : join(ROOT, ".venv-music", "bin", "python");
+const py = musicPython();
 if (!existsSync(py)) fail("The music environment isn't installed. Run: npm run setup:music  (one time)");
 
 // --- what to make

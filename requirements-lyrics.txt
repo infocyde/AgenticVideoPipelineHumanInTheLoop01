@@ -1,0 +1,13 @@
+# Python dependencies for music-video lyrics (npm run lyrics), installed into .venv-music by `npm run setup:lyrics`
+# on top of requirements-music.txt (it reuses that environment's torch 2.7.1 + CUDA). Versions tested with the kit.
+# Transcription itself runs in .venv (faster-whisper, requirements.txt), like npm run align.
+--extra-index-url https://download.pytorch.org/whl/cu126
+
+# keep the music environment's torch: pip must not swap it
+torch==2.7.1+cu126
+torchaudio==2.7.1+cu126
+
+# Demucs (MIT): splits the vocal stem out of the mix, so Whisper and the aligner hear the singing
+demucs==4.0.1
+# librosa (ISC): beat tracking, for shots that cut on the beat in instrumental passages
+librosa==0.11.0

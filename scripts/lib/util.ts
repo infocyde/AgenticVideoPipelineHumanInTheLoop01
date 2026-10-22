@@ -97,6 +97,10 @@ export const bin = (name: string) => join(ROOT, "node_modules", ".bin", process.
 export const venvPython = () =>
   process.platform === "win32" ? join(ROOT, ".venv", "Scripts", "python.exe") : join(ROOT, ".venv", "bin", "python");
 
+/** Python inside .venv-music (PyTorch + CUDA: npm run compose, and Demucs / librosa / MMS for npm run lyrics). */
+export const musicPython = () =>
+  process.platform === "win32" ? join(ROOT, ".venv-music", "Scripts", "python.exe") : join(ROOT, ".venv-music", "bin", "python");
+
 export const fmtTime = (sec: number) => {
   const s = Math.max(0, Math.floor(sec));
   const h = Math.floor(s / 3600);
