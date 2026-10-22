@@ -1,12 +1,12 @@
 // "Blackout": dark tech dystopia. Crimson alarm red and phosphor-green terminal data on a cold near-black field,
 // drained, hard-contrast footage under a dark red cast, heavy scanlines, grain and glitch. For AI, cyber and
 // surveillance stories told as a warning rather than a product launch.
-import { loadFont as loadBigShoulders } from "@remotion/google-fonts/BigShouldersDisplay";
+import { loadFont as loadBigShoulders } from "@remotion/google-fonts/BigShoulders";
 import { loadFont as loadPlexMono } from "@remotion/google-fonts/IBMPlexMono";
 import { loadFont as loadSaira } from "@remotion/google-fonts/Saira";
 import { alpha, type Theme } from "./types";
 
-// Big Shoulders Display (condensed, industrial) fits the layouts sized for Anton and Bebas; IBM Plex Mono for the
+// Big Shoulders (condensed, industrial) fits the layouts sized for Anton and Bebas; IBM Plex Mono for the
 // terminal labels; Saira (squared, 800) for captions and body.
 const shoulders = loadBigShoulders("normal", { weights: ["800", "900"], subsets: ["latin", "latin-ext"] });
 const mono = loadPlexMono("normal", { weights: ["400", "700"], subsets: ["latin", "latin-ext"] });
