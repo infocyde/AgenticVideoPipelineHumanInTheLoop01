@@ -74,6 +74,19 @@ export const captionChunks = (words: Word[]): Chunk[] => {
   return chunks;
 };
 
+/**
+ * The caption chunk to show at `sec`: the latest chunk that has started (50 ms early), held up to 0.25 s past its last
+ * word. When speech runs straight on, the next chunk replaces the previous one as soon as it starts.
+ */
+export const activeChunk = (chunks: Chunk[], sec: number): Chunk | undefined => {
+  let hit: Chunk | undefined;
+  for (const c of chunks) {
+    if (sec < c.start - 0.05) break;
+    if (sec < c.end + 0.25) hit = c;
+  }
+  return hit;
+};
+
 /** Gaps in speech longer than `min` seconds (used to swell the music bed). */
 export const speechGaps = (words: Word[], duration: number, min = 0.4): [number, number][] => {
   const gaps: [number, number][] = [];

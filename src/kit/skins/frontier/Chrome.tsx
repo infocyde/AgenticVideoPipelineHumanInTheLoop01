@@ -5,7 +5,7 @@ import { Easing, interpolate, useCurrentFrame } from "remotion";
 import type { CaptionBox } from "../../components/Chrome";
 import { clamp, useEpisode } from "../../context";
 import { captionsHidden } from "../../lib/resolve";
-import { FPS } from "../../lib/timing";
+import { activeChunk, FPS } from "../../lib/timing";
 import { F, pad2 } from "./fx";
 import { SPATIAL } from "./Segment";
 import { TEXT_LAYOUT } from "./Text";
@@ -132,7 +132,7 @@ export const CaptionWords: React.FC<{ box: CaptionBox; align?: "center" | "flex-
   const { fonts, effects } = theme;
   const sec = frame / FPS;
   if (sec >= timeline.outro.captionsOff - 0.1 || captionsHidden(timeline, frame)) return null;
-  const chunk = timeline.chunks.find((c) => sec >= c.start - 0.05 && sec < c.end + 0.25);
+  const chunk = activeChunk(timeline.chunks, sec);
   if (!chunk) return null;
   const padX = box.fontSize * 0.2;
   return (

@@ -3,7 +3,7 @@ import React from "react";
 import { AbsoluteFill, Easing, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
 import { clamp, useEpisode, useTheme } from "../context";
 import { captionsHidden } from "../lib/resolve";
-import { FPS } from "../lib/timing";
+import { activeChunk, FPS } from "../lib/timing";
 import { SPLIT } from "../scenes/SplitSegment";
 import { layoutOf } from "../themes";
 
@@ -180,7 +180,7 @@ export const Captions: React.FC<{ box?: CaptionBox }> = ({ box: boxProp }) => {
   const { colors, fonts, effects } = theme;
   const sec = frame / FPS;
   if (sec >= timeline.outro.captionsOff - 0.1 || captionsHidden(timeline, frame)) return null;
-  const chunk = timeline.chunks.find((c) => sec >= c.start - 0.05 && sec < c.end + 0.25);
+  const chunk = activeChunk(timeline.chunks, sec);
   if (!chunk) return null;
   // Split layout: during a numbered segment, captions sit under the framed b-roll, clear of the spec column.
   const split = layoutOf(theme.id) === "split" && timeline.segments.some((s) => frame >= s.from && frame < s.to);
