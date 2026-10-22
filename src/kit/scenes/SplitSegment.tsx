@@ -157,7 +157,7 @@ export const SplitSegment: React.FC<{ s: ResolvedSegment; slam: boolean }> = ({ 
   const showPrev = panel > 0 && sincePanel < CLEAR;
 
   const visuals: BackdropVisual[] = s.visuals.flatMap((v, i) =>
-    v.asset ? [{ name: v.name, asset: v.asset, note: v.note, from: i === 0 ? 0 : toFrame(v.at) - s.from }] : [],
+    v.asset ? [{ name: v.name, asset: v.asset, note: v.note, grade: v.grade, from: i === 0 ? 0 : toFrame(v.at) - s.from }] : [],
   );
   const visualIdx = visuals.reduce((acc, v, i) => (frame >= v.from ? i : acc), 0);
   const pad = (n: number) => String(n).padStart(2, "0");

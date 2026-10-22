@@ -5,7 +5,7 @@ import { Headline } from "../components/Headline";
 import { WorldMap } from "../components/WorldMap";
 import { clamp, useEpisode } from "../context";
 import { allPins, type ResolvedText } from "../lib/resolve";
-import { toFrame, WIDTH } from "../lib/timing";
+import { MAP_SLIDE, TEXT_SHRINK, toFrame, WIDTH } from "../lib/timing";
 
 /** Unnumbered text section (intro, summary, recap): 1–4 cue-cut visuals full-bleed, one block of text over them. */
 export const TextSection: React.FC<{ t: ResolvedText }> = ({ t }) => {
@@ -15,20 +15,29 @@ export const TextSection: React.FC<{ t: ResolvedText }> = ({ t }) => {
   const { seg } = t;
   const dur = t.to - t.from;
 
+  // textAt: the label and heading wait off screen and come in at that cue; until then the side gradient stays light.
+  const textFrom = t.textAt !== undefined ? Math.max(0, toFrame(t.textAt) - t.from) : 0;
+  const f = frame - textFrom;
   const label = seg.label ?? "";
-  const barIn = interpolate(frame, [4, 14], [0, 1], { ...clamp, easing: Easing.out(Easing.cubic) });
-  const labelChars = Math.floor(interpolate(frame, [8, 8 + label.length * 0.8], [0, label.length], clamp));
-  const headingWipe = interpolate(frame, [12, 26], [100, 0], { ...clamp, easing: Easing.out(Easing.cubic) });
-  const bodyIn = interpolate(frame, [24, 38], [0, 1], { ...clamp, easing: Easing.out(Easing.cubic) });
+  const barIn = interpolate(f, [4, 14], [0, 1], { ...clamp, easing: Easing.out(Easing.cubic) });
+  const labelChars = Math.floor(interpolate(f, [8, 8 + label.length * 0.8], [0, label.length], clamp));
+  const headingWipe = interpolate(f, [12, 26], [100, 0], { ...clamp, easing: Easing.out(Easing.cubic) });
+  const bodyIn = interpolate(f, [24, 38], [0, 1], { ...clamp, easing: Easing.out(Easing.cubic) });
+  const slideIn = textFrom ? interpolate(f, [0, 12], [0, 1], { ...clamp, easing: Easing.out(Easing.cubic) }) : 1;
+  // tuckAt: the block shrinks into the top-left corner, as a numbered segment's text does once its map card leaves.
+  const tuckFrom = t.tuckAt !== undefined ? toFrame(t.tuckAt) - t.from : null;
+  const tuck = tuckFrom === null ? 0 : interpolate(frame, [tuckFrom, tuckFrom + MAP_SLIDE + 4], [0, 1], { ...clamp, easing: Easing.inOut(Easing.cubic) });
+  const blockTransform = `translate(${-1400 * (1 - slideIn) - 56 * tuck}px, ${-130 * tuck}px) scale(${1 - (1 - TEXT_SHRINK) * tuck})`;
+  const clear = Math.max(1 - slideIn, tuck);
 
   const visuals: BackdropVisual[] = t.visuals.flatMap((v, i) =>
-    v.asset ? [{ name: v.name, asset: v.asset, note: v.note, from: i === 0 ? 0 : toFrame(v.at) - t.from }] : [],
+    v.asset ? [{ name: v.name, asset: v.asset, note: v.note, grade: v.grade, from: i === 0 ? 0 : toFrame(v.at) - t.from }] : [],
   );
 
   return (
     <AbsoluteFill>
       {visuals.length ? (
-        <Backdrop visuals={visuals} durationInFrames={dur} seed={t.index * 5 + 1} />
+        <Backdrop visuals={visuals} durationInFrames={dur} seed={t.index * 5 + 1} clear={clear} />
       ) : (
         <AbsoluteFill style={{ background: colors.bg }}>
           <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: 0.4 }}>
@@ -38,7 +47,7 @@ export const TextSection: React.FC<{ t: ResolvedText }> = ({ t }) => {
         </AbsoluteFill>
       )}
 
-      <div style={{ position: "absolute", left: 120, top: 230, width: 1120 }}>
+      <div style={{ position: "absolute", left: 120, top: 230, width: 1120, transformOrigin: "top left", transform: blockTransform }}>
         <div style={{ display: "flex", alignItems: "center", gap: 18, height: 34 }}>
           <div style={{ width: 90 * barIn, height: 6, background: colors.accent, boxShadow: effects.accentGlow(16) }} />
           {label && (

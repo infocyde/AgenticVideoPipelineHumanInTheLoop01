@@ -46,6 +46,10 @@ export const visualSchema = z.object({
   name: visualName,
   cue: cue.optional().describe("Required for every visual after the first: the spoken phrase it cuts on"),
   note: z.string().optional().describe("On-screen tag for footage that isn't of the event, e.g. 'FILE FOOTAGE · LVIV, UKRAINE, 2022'"),
+  grade: z
+    .boolean()
+    .optional()
+    .describe("false shows this visual as it is, without the theme's filter and tint (for explainers and infographics already drawn in the theme). The side and bottom gradients still apply"),
 });
 
 export const segmentSchema = z.object({
@@ -94,6 +98,12 @@ export const textSectionSchema = z.object({
     .optional()
     .describe("frontier: 'full' shows the visual large across the frame (a summary board, a big chart) with just the label; default 'window'"),
   captions: z.boolean().optional().describe("false hides the word-by-word captions for this section"),
+  textAt: cue
+    .optional()
+    .describe("Overlay layouts: the label and heading stay off screen until this spoken phrase, then come in (e.g. after an explainer that needs the whole frame). The side gradient stays light until then"),
+  tuckAt: cue
+    .optional()
+    .describe("Overlay layouts: at this spoken phrase the label and heading shrink into the top-left corner, like a numbered segment's text once its map card leaves"),
 });
 
 /** One entry of `segments`: a numbered item, or a text section (`kind: "text"`). */

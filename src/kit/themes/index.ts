@@ -1,4 +1,5 @@
 // Theme registry. To add a theme, create a file like threat-brief.ts and list it here (and in ids.ts).
+// Keep the b-roll treatment (backdrop filter, tint, gradients, vignette) light: use fades and grayscale washes sparingly.
 import { afterDark } from "./after-dark";
 import { blackout } from "./blackout";
 import { cleanLight } from "./clean-light";

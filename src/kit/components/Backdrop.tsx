@@ -5,7 +5,8 @@ import type { Asset } from "../lib/resolve";
 import { FPS } from "../lib/timing";
 import { GlitchCut } from "./Chrome";
 
-export type BackdropVisual = { name: string; asset: Asset; note?: string; from: number };
+/** `grade: false` skips the theme filter and tint for this visual (an explainer or infographic already drawn in the theme). */
+export type BackdropVisual = { name: string; asset: Asset; note?: string; grade?: boolean; from: number };
 
 export const KenBurns: React.FC<{ frames: number; seed: number; children: React.ReactNode }> = ({ frames, seed, children }) => {
   const frame = useCurrentFrame();
@@ -14,9 +15,9 @@ export const KenBurns: React.FC<{ frames: number; seed: number; children: React.
   return <AbsoluteFill style={{ transform: `scale(${s}) translateX(${x}px)` }}>{children}</AbsoluteFill>;
 };
 
-const VisualLayer: React.FC<{ asset: Asset; frames: number; seed: number }> = ({ asset, frames, seed }) => {
+const VisualLayer: React.FC<{ asset: Asset; frames: number; seed: number; grade: boolean }> = ({ asset, frames, seed, grade }) => {
   const { backdrop } = useTheme();
-  const style: React.CSSProperties = { width: "100%", height: "100%", objectFit: "cover", filter: backdrop.filter };
+  const style: React.CSSProperties = { width: "100%", height: "100%", objectFit: "cover", filter: grade ? backdrop.filter : "none" };
   if (asset.kind === "image") {
     return (
       <KenBurns frames={frames} seed={seed}>
@@ -62,8 +63,9 @@ export const Backdrop: React.FC<{ visuals: BackdropVisual[]; durationInFrames: n
         return (
           <Sequence key={i} from={from} durationInFrames={slot} layout="none">
             <AbsoluteFill>
-              <VisualLayer asset={v.asset} frames={slot} seed={seed + i} />
+              <VisualLayer asset={v.asset} frames={slot} seed={seed + i} grade={v.grade !== false} />
             </AbsoluteFill>
+            {v.grade !== false && <AbsoluteFill style={{ background: colors.accentDeep, mixBlendMode: backdrop.tintBlend, opacity: backdrop.tintOpacity }} />}
             {v.note && (
               <div
                 style={{
@@ -86,7 +88,6 @@ export const Backdrop: React.FC<{ visuals: BackdropVisual[]; durationInFrames: n
           </Sequence>
         );
       })}
-      <AbsoluteFill style={{ background: colors.accentDeep, mixBlendMode: backdrop.tintBlend, opacity: backdrop.tintOpacity }} />
       {gradients && <AbsoluteFill style={{ background: backdrop.sideGradient, opacity: side * (1 - (1 - (backdrop.sideCleared ?? 0.35)) * clear) }} />}
       {gradients && scrim && backdrop.clearedScrim && clear > 0 && <AbsoluteFill style={{ background: backdrop.clearedScrim, opacity: clear }} />}
       {gradients && <AbsoluteFill style={{ background: backdrop.bottomGradient }} />}

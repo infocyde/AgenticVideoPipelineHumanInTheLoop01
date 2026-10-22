@@ -218,7 +218,7 @@ const ShortSegment: React.FC<{ s: ResolvedSegment }> = ({ s }) => {
   // A segment with a map opens on it full height, then glitch-cuts to the b-roll (the "mapExit" sound lands here).
   const mapEnd = seg.map ? MAP_EXIT + o : 0;
   const visuals: BackdropVisual[] = s.visuals.flatMap((v, i) =>
-    v.asset ? [{ name: v.name, asset: v.asset, note: v.note, from: i === 0 ? 0 : toFrame(v.at) - s.from }] : [],
+    v.asset ? [{ name: v.name, asset: v.asset, note: v.note, grade: v.grade, from: i === 0 ? 0 : toFrame(v.at) - s.from }] : [],
   );
   // overlay: where the text panel sits ('none', or the older card: "none", hides it).
   const place = seg.overlay ?? (seg.card === "none" ? "none" : "top");
@@ -269,7 +269,7 @@ const ShortText: React.FC<{ t: ResolvedText }> = ({ t }) => {
   const labelChars = Math.floor(interpolate(frame, [8, 8 + label.length * 0.8], [0, label.length], clamp));
   const wipe = interpolate(frame, [12, 26], [100, 0], { ...clamp, easing: Easing.out(Easing.cubic) });
   const bodyIn = interpolate(frame, [24, 38], [0, 1], { ...clamp, easing: Easing.out(Easing.cubic) });
-  const visuals: BackdropVisual[] = t.visuals.flatMap((v, i) => (v.asset ? [{ name: v.name, asset: v.asset, note: v.note, from: i === 0 ? 0 : toFrame(v.at) - t.from }] : []));
+  const visuals: BackdropVisual[] = t.visuals.flatMap((v, i) => (v.asset ? [{ name: v.name, asset: v.asset, note: v.note, grade: v.grade, from: i === 0 ? 0 : toFrame(v.at) - t.from }] : []));
   return (
     <AbsoluteFill>
       {visuals.length ? (

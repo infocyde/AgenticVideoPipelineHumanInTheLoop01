@@ -48,13 +48,15 @@ export const blackout: Theme = {
     labelHalo: "rgba(2,4,4,0.9)",
   },
   backdrop: {
-    // Drained and cold, but the footage must still read: light grayscale, mild contrast, a soft red cast.
-    filter: "grayscale(0.55) contrast(1.15) brightness(0.88) saturate(0.95)",
+    // Cold, but the footage must read: a light grayscale wash (use washes and fades sparingly), mild contrast, a soft red cast.
+    filter: "grayscale(0.2) contrast(1.12) brightness(0.9) saturate(0.95)",
     tintOpacity: 0.22,
     tintBlend: "multiply",
     sideGradient:
       "linear-gradient(90deg, rgba(2,4,4,0.88) 0%, rgba(3,6,6,0.55) 36%, rgba(20,2,6,0.08) 66%, rgba(2,4,4,0.22) 100%)",
-    bottomGradient: "linear-gradient(0deg, rgba(2,4,4,0.82) 0%, rgba(24,2,6,0.15) 22%, transparent 38%)",
+    bottomGradient: "linear-gradient(0deg, rgba(2,4,4,0.7) 0%, rgba(24,2,6,0.1) 20%, transparent 34%)",
+    // Cold-open stamps carry their own frame and glow, so the side gradient behind them can stay light.
+    coldOpenSide: 0.4,
   },
   effects: {
     accentGlow: (size) => `0 0 ${Math.round(size)}px ${alpha(crimson, size >= 80 ? 0.65 : size >= 50 ? 0.55 : 0.45)}, 0 0 ${Math.round(size / 3)}px ${alpha(crimson, 0.45)}`,

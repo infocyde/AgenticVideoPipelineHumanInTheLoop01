@@ -7,7 +7,7 @@ export type Issue = { level: "error" | "warning"; where: string; msg: string };
 
 export type Asset = { kind: "clip"; file: string; duration: number } | { kind: "image"; file: string };
 
-export type ResolvedVisual = { name: string; note?: string; at: number; asset: Asset | null };
+export type ResolvedVisual = { name: string; note?: string; grade?: boolean; at: number; asset: Asset | null };
 export type ResolvedStat = Stat & { at: number };
 export type ResolvedSegment = {
   /** Position in episode.segments (text sections included), as used in issue paths like `segments[3]`. */
@@ -33,6 +33,9 @@ export type ResolvedText = {
   from: number;
   to: number;
   visuals: ResolvedVisual[];
+  /** `textAt` / `tuckAt` cue times in seconds, when set. */
+  textAt?: number;
+  tuckAt?: number;
 };
 export type ResolvedBeat = { beat: Beat; start: number; end: number; asset: Asset | null };
 
@@ -192,21 +195,29 @@ export const resolveEpisode = (ep: Episode, timing: Timing, assets: AssetManifes
         if (!asset) err(`${where}.visuals[${k}]`, `visual ${quote(v.name)} not found in clips/ or images/ (run \`npm run assets -- ${ep.slug}\` after adding files)`);
         if (k === 0) {
           if (v.cue) issues.push({ level: "warning", where: `${where}.visuals[0].cue`, msg: `the first visual always starts with the ${what}; its cue is ignored` });
-          return { name: v.name, note: v.note, at: start, asset };
+          return { name: v.name, note: v.note, grade: v.grade, at: start, asset };
         }
         if (!v.cue) {
           err(`${where}.visuals[${k}].cue`, `visual ${quote(v.name)} needs a cue (the spoken phrase it cuts on)`);
-          return { name: v.name, note: v.note, at: start + ((end - start) * k) / list.length, asset };
+          return { name: v.name, note: v.note, grade: v.grade, at: start + ((end - start) * k) / list.length, asset };
         }
         const m = findPhrase(words, v.cue, vFrom, hi);
         if (!m) err(`${where}.visuals[${k}].cue`, `${quote(v.cue)} not found inside ${what} "${seg.marker}"${k > 1 ? " after the previous visual cue" : ""}`);
         else vFrom = m.endIndex;
-        return { name: v.name, note: v.note, at: m?.start ?? start + ((end - start) * k) / list.length, asset };
+        return { name: v.name, note: v.note, grade: v.grade, at: m?.start ?? start + ((end - start) * k) / list.length, asset };
       });
 
     const base = { index: i, start, markerEnd: hit?.end ?? start + 0.6, end, from: toFrame(start - LEAD), to: toFrame(end - LEAD) };
     if (isTextSection(seg)) {
-      texts.push({ ...base, seg, visuals: resolveVisuals(seg.visuals) });
+      const visuals = resolveVisuals(seg.visuals);
+      const cueIn = (field: "textAt" | "tuckAt") => {
+        const phrase = seg[field];
+        if (!phrase) return undefined;
+        const m = findPhrase(words, phrase, lo, hi);
+        if (!m) err(`${where}.${field}`, `${quote(phrase)} not found inside section "${seg.marker}"`);
+        return m?.start;
+      };
+      texts.push({ ...base, seg, visuals, textAt: cueIn("textAt"), tuckAt: cueIn("tuckAt") });
       return;
     }
 

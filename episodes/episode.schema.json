@@ -383,6 +383,10 @@
                         "note": {
                           "description": "On-screen tag for footage that isn't of the event, e.g. 'FILE FOOTAGE · LVIV, UKRAINE, 2022'",
                           "type": "string"
+                        },
+                        "grade": {
+                          "description": "false shows this visual as it is, without the theme's filter and tint (for explainers and infographics already drawn in the theme). The side and bottom gradients still apply",
+                          "type": "boolean"
                         }
                       },
                       "required": [
@@ -561,6 +565,10 @@
                         "note": {
                           "description": "On-screen tag for footage that isn't of the event, e.g. 'FILE FOOTAGE · LVIV, UKRAINE, 2022'",
                           "type": "string"
+                        },
+                        "grade": {
+                          "description": "false shows this visual as it is, without the theme's filter and tint (for explainers and infographics already drawn in the theme). The side and bottom gradients still apply",
+                          "type": "boolean"
                         }
                       },
                       "required": [
@@ -579,6 +587,16 @@
                   "captions": {
                     "description": "false hides the word-by-word captions for this section",
                     "type": "boolean"
+                  },
+                  "textAt": {
+                    "description": "Overlay layouts: the label and heading stay off screen until this spoken phrase, then come in (e.g. after an explainer that needs the whole frame). The side gradient stays light until then",
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "tuckAt": {
+                    "description": "Overlay layouts: at this spoken phrase the label and heading shrink into the top-left corner, like a numbered segment's text once its map card leaves",
+                    "type": "string",
+                    "minLength": 1
                   }
                 },
                 "required": [

@@ -334,8 +334,8 @@ export const TopFrame: React.FC = () => {
 
 // ------------------------------------------------------------------------------------------------ the scene
 
-export const visualsOf = (list: { name: string; asset: BackdropVisual["asset"] | null; note?: string; at: number }[], from: number): BackdropVisual[] =>
-  list.flatMap((v, i) => (v.asset ? [{ name: v.name, asset: v.asset, note: v.note, from: i === 0 ? 0 : toFrame(v.at) - from }] : []));
+export const visualsOf = (list: { name: string; asset: BackdropVisual["asset"] | null; note?: string; grade?: boolean; at: number }[], from: number): BackdropVisual[] =>
+  list.flatMap((v, i) => (v.asset ? [{ name: v.name, asset: v.asset, note: v.note, grade: v.grade, from: i === 0 ? 0 : toFrame(v.at) - from }] : []));
 
 export const FrontierSegment: React.FC<{ s: ResolvedSegment; slam: boolean }> = ({ s, slam }) => {
   const frame = useCurrentFrame();
