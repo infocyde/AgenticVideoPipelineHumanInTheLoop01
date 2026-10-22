@@ -29,7 +29,8 @@
     "shot": "tsx scripts/shot.ts",
     "infographic": "tsx scripts/infographic.ts",
     "explainer": "tsx scripts/explainer.ts",
-    "sfx": "tsx scripts/sfx.ts"
+    "sfx": "tsx scripts/sfx.ts",
+    "test": "tsx --test \"src/**/*.test.ts\" \"scripts/**/*.test.ts\""
   },
   "dependencies": {
     "@remotion/cli": "4.0.536",
