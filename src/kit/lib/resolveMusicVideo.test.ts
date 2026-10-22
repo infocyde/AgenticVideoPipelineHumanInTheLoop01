@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { type AssetManifest, assetsSchema, type MusicVideoInput, musicVideoSchema, type Timing } from "../schema.ts";
-import { resolveMusicVideo, subtitleLines } from "./resolveMusicVideo.ts";
+import { clipPlayback, resolveMusicVideo, subtitleLines } from "./resolveMusicVideo.ts";
 import { LEAD, toFrame } from "./timing.ts";
 
 // The chorus, sung at 10 s and again at 60 s: words every 0.5 s on three lines.
@@ -132,4 +132,37 @@ test("subtitles drop a trailing comma, semicolon or colon but keep question mark
   ]);
   assert.equal(subs[0].text, "Jekyll Island");
   assert.equal(subs[1].text, "last?");
+});
+
+test("credits started on a cue run until the song ends, pages spread over the tail", () => {
+  const tl = resolveMusicVideo(
+    mv([{ visual: "a" }, { visual: "b", cue: "Managed Freedom" }, { visual: "c", beat: 100 }], { credits: { seconds: 8, cue: "Empires Go" } }),
+    timing,
+    assets,
+    2,
+  );
+  assert.equal(tl.credits.to, tl.durationInFrames);
+  assert.equal(tl.durationInFrames, toFrame(121));
+  assert.equal(tl.credits.pageFrames, Math.floor((tl.credits.to - tl.credits.from) / 2));
+});
+
+test("credits after the song keep their page length", () => {
+  const tl = resolveMusicVideo(mv([{ visual: "a" }]), timing, assets, 2);
+  assert.equal(tl.credits.pageFrames, toFrame(8));
+});
+
+test("clipPlayback plays a long-enough clip at full speed without looping", () => {
+  assert.deepEqual(clipPlayback(10, 0, 240), { rate: 1, loopFrames: null });
+});
+
+test("clipPlayback slows a slightly short clip to fill the slot without looping back", () => {
+  const p = clipPlayback(6, 0, 240); // 6 s for an 8 s slot
+  assert.equal(p.loopFrames, null);
+  assert.ok(p.rate < 0.75 && p.rate >= 0.5);
+});
+
+test("clipPlayback loops only when even half speed is too short", () => {
+  const p = clipPlayback(3, 0, 240);
+  assert.equal(p.rate, 0.5);
+  assert.ok(p.loopFrames !== null && p.loopFrames < 240);
 });

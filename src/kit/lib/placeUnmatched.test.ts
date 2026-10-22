@@ -60,3 +60,8 @@ test("reconcile takes MMS when it agrees with Whisper or Whisper missed the word
 test("reconcile caps a word stretched over silence", () => {
   near(reconcile([[347.62, 348]], [[347.43, 361.29]]), [[347.43, 351.43]]);
 });
+
+test("unheard lines after the last heard word follow it, not the song's end", () => {
+  const out = placeUnmatched([[300, 300.5], null, null, null], [5, 6, 6, 7], 381);
+  near(out, [[300, 300.5], [300.5, 300.85], [300.85, 301.2], [301.2, 301.55]]);
+});

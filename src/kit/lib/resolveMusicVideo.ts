@@ -26,7 +26,8 @@ export type MusicVideoTimeline = {
   shots: ResolvedShot[];
   subtitles: SubtitleLine[];
   titleCard: { from: number; to: number } | null;
-  credits: { from: number; to: number; pages: number };
+  /** Frames: the roll from `from` to `to`, `pages` pages of `pageFrames` each. */
+  credits: { from: number; to: number; pages: number; pageFrames: number };
   issues: Issue[];
 };
 
@@ -37,6 +38,18 @@ const SUB_GAP = 0.05;
 /** Shots shorter than this are an error; longer than SHOT_LONG a warning (seconds). */
 export const SHOT_MIN = 0.4;
 export const SHOT_LONG = 12;
+
+/**
+ * How a clip fills its slot from its in-point: at full speed when it can, slowed (to half speed at most) when it is a
+ * little short, and looped (`loopFrames`, the frames before it restarts at the in-point) only when even half speed is
+ * too short. The last 0.1 s of a file is left unused (decoders can stall on it).
+ */
+export const clipPlayback = (duration: number, inPoint: number, slotFrames: number): { rate: number; loopFrames: number | null } => {
+  const usable = Math.max(0.1, duration - inPoint - 0.1);
+  const rate = Math.max(0.5, Math.min(1, usable / (slotFrames / FPS)));
+  const playFrames = Math.floor((usable / rate) * FPS + 1e-6);
+  return { rate, loopFrames: rate <= 0.5 && playFrames < slotFrames ? Math.max(1, playFrames) : null };
+};
 
 /** Group aligned words into subtitle lines by their `line` (words without one are skipped). */
 export const subtitleLines = (words: Timing["words"]): SubtitleLine[] => {
@@ -118,7 +131,9 @@ export const resolveMusicVideo = (ep: MusicVideo, timing: Timing, assets: AssetM
   const c = ep.credits;
   const creditsHit = c.cue !== undefined || c.beat !== undefined ? place("credits", c, "the last shot") : null;
   const creditsFrom = creditsHit?.from ?? toFrame(songDuration) + FPS / 2;
-  const credits = { from: creditsFrom, to: creditsFrom + creditPages * toFrame(c.seconds), pages: creditPages };
+  // A roll started inside the song runs until the song ends (pages spread over the tail), so the picture never goes blank.
+  const creditsTo = Math.max(creditsFrom + creditPages * toFrame(c.seconds), creditsHit ? toFrame(songDuration + 1) : 0);
+  const credits = { from: creditsFrom, to: creditsTo, pages: creditPages, pageFrames: Math.floor((creditsTo - creditsFrom) / creditPages) };
 
   // Unresolved shots are spaced evenly between resolved neighbours so the preview still shows them (check fails).
   const froms = hits.map((h) => h?.from ?? null);

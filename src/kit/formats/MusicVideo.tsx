@@ -6,7 +6,7 @@ import { KenBurns } from "../components/Backdrop";
 import { GlitchCut } from "../components/Chrome";
 import { clamp } from "../context";
 import { pagedCreditColumns } from "../lib/credits";
-import type { ResolvedShot } from "../lib/resolveMusicVideo";
+import { clipPlayback, type ResolvedShot } from "../lib/resolveMusicVideo";
 import { FPS, toFrame } from "../lib/timing";
 import { useMusicVideo } from "../musicVideoContext";
 import { CreditsRoll } from "../scenes/CreditsCard";
@@ -30,11 +30,9 @@ const ShotLayer: React.FC<{ s: ResolvedShot }> = ({ s }) => {
     );
   } else if (s.asset?.kind === "clip") {
     // Play from the in-point at full speed; a clip too short for its slot is slowed (to half speed at most), then looped.
-    const left = Math.max(0.1, s.asset.duration - s.in);
-    const rate = Math.max(0.5, Math.min(1, left / (slot / FPS)));
-    const loopFrames = Math.max(1, Math.floor(((left - 0.1) / rate) * FPS));
+    const { rate, loopFrames } = clipPlayback(s.asset.duration, s.in, slot);
     const video = <OffthreadVideo src={staticFile(s.asset.file)} muted playbackRate={rate} trimBefore={toFrame(s.in)} style={media} />;
-    picture = loopFrames < slot ? <Loop durationInFrames={loopFrames}>{video}</Loop> : video;
+    picture = loopFrames ? <Loop durationInFrames={loopFrames}>{video}</Loop> : video;
   }
   const t = s.shot.transition;
   return (
@@ -140,7 +138,7 @@ const Issues: React.FC = () => {
 export const MusicVideo: React.FC = () => {
   const { episode, timeline, assets, credits, theme } = useMusicVideo();
   const pages = useMemo(() => pagedCreditColumns(credits, false), [credits]);
-  const pageFrames = toFrame(episode.credits.seconds);
+  const { pageFrames } = timeline.credits;
   return (
     <AbsoluteFill style={{ background: theme.colors.bg }}>
       {timeline.shots.map((s) => (
@@ -160,7 +158,11 @@ export const MusicVideo: React.FC = () => {
       )}
       <Subtitles />
       {pages.map((columns, i) => (
-        <Sequence key={`credits${i}`} from={timeline.credits.from + i * pageFrames} durationInFrames={pageFrames}>
+        <Sequence
+          key={`credits${i}`}
+          from={timeline.credits.from + i * pageFrames}
+          durationInFrames={i === pages.length - 1 ? timeline.credits.to - timeline.credits.from - i * pageFrames : pageFrames}
+        >
           <CreditsRoll credits={credits} theme={theme} mapData={false} columns={columns} />
         </Sequence>
       ))}

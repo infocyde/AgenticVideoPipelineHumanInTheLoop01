@@ -48,7 +48,8 @@ export const placeUnmatched = (times: (Span | null)[], lines: number[], duration
         after.forEach((s, k) => (out[i + k] = s));
         lo = after[after.length - 1][1];
       }
-      if (j > split) pack(j - split, lo, nextStart, "end").forEach((s, k) => (out[split + k] = s));
+      // With no heard word after them (the song's last lines), they follow the previous one instead of the song's end.
+      if (j > split) pack(j - split, lo, nextStart, j < n ? "end" : "start").forEach((s, k) => (out[split + k] = s));
     }
     i = j;
   }
