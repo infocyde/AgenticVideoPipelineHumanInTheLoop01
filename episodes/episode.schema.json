@@ -496,7 +496,7 @@
                     ]
                   },
                   "exitAt": {
-                    "description": "Overlay layouts: at this spoken phrase the number/headline/stat block slides off screen and stays off (e.g. when a full-frame explainer or infographic comes up)",
+                    "description": "Overlay layouts and Shorts: at this spoken phrase the number/headline/stat block (the text panel, on a Short) leaves the screen and stays off (e.g. when a full-frame explainer or infographic comes up)",
                     "type": "string",
                     "minLength": 1
                   },

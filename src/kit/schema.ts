@@ -74,7 +74,7 @@ export const segmentSchema = z.object({
     .describe("Overlay layouts: which side the number/region/headline/stat block sits on (default 'left'). 'right' mirrors the side gradient, tucks the block into the top-right corner and moves the map card to the left"),
   exitAt: cue
     .optional()
-    .describe("Overlay layouts: at this spoken phrase the number/headline/stat block slides off screen and stays off (e.g. when a full-frame explainer or infographic comes up)"),
+    .describe("Overlay layouts and Shorts: at this spoken phrase the number/headline/stat block (the text panel, on a Short) leaves the screen and stays off (e.g. when a full-frame explainer or infographic comes up)"),
   card: z
     .enum(["tuck", "exit", "none"])
     .optional()

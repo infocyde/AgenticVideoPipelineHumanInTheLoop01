@@ -223,6 +223,9 @@ const ShortSegment: React.FC<{ s: ResolvedSegment }> = ({ s }) => {
   // overlay: where the text panel sits ('none', or the older card: "none", hides it).
   const place = seg.overlay ?? (seg.card === "none" ? "none" : "top");
   const panelIn = interpolate(frame, [2, 10], [0, 1], clamp);
+  // exitAt: the panel fades away at that cue and stays off (e.g. when a graphic needs the frame).
+  const exitFrom = s.exitAt !== undefined ? toFrame(s.exitAt) - s.from : null;
+  const panelOut = exitFrom === null ? 0 : interpolate(frame, [exitFrom, exitFrom + 10], [0, 1], clamp);
 
   return (
     <AbsoluteFill>
@@ -241,7 +244,7 @@ const ShortSegment: React.FC<{ s: ResolvedSegment }> = ({ s }) => {
       {isTop && <AbsoluteFill style={{ boxShadow: `inset 0 0 ${80 + alarmPulse * 120}px ${colors.accent}${Math.round((0.35 + alarmPulse * 0.35) * 255).toString(16).padStart(2, "0")}` }} />}
 
       {place !== "none" && (
-        <div style={{ position: "absolute", left: X, width: PANEL_W, opacity: panelIn, ...(place === "bottom" ? { bottom: 660 } : { top: 285 }) }}>
+        <div style={{ position: "absolute", left: X, width: PANEL_W, opacity: panelIn * (1 - panelOut), ...(place === "bottom" ? { bottom: 660 } : { top: 285 }) }}>
           <Panel>
             {isTop && (
               <span style={{ display: "inline-block", marginBottom: 18, fontFamily: fonts.mono, fontWeight: 700, fontSize: 30, letterSpacing: 4, color: colors.onAccent, background: colors.accent, padding: "6px 14px", opacity: 0.6 + alarmPulse * 0.4 }}>
