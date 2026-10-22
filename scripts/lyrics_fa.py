@@ -6,6 +6,9 @@ model's attention fits in GPU memory; each chunk is aligned on its own. Lines Wh
 coarse times, so a chunk's audio window also reaches back to the last heard word before it and on to the first heard
 word after it (up to MAX_WINDOW s): the aligner then finds the unheard lines wherever they were sung in that gap.
 A chunk that fails keeps its coarse times.
+A second pass then re-aligns every run of words Whisper didn't hear on its own, inside the exact gap between the
+heard words around it (Whisper's times there are reliable): a chunk mixing heard and unheard lines can otherwise
+crush a whole unheard chorus into a few seconds next to the heard words.
 Runs in .venv-music (torch + torchaudio 2.7.1).
 
 Usage: .venv-music/Scripts/python -I scripts/lyrics_fa.py <vocals.wav> <in.json> <out.json> [device]
@@ -82,6 +85,26 @@ def main() -> None:
     tokenizer, aligner = bundle.get_tokenizer(), bundle.get_aligner()
 
     times = [[w["start"], w["end"]] for w in words]
+
+    def align(f: int, t: int, lo: float, hi: float) -> dict:
+        """Force-align words[f:t] inside [lo, hi] seconds of the stem; on failure keep their current times."""
+        idx = [k for k in range(f, t) if romanize(words[k]["word"])]
+        try:
+            if not idx:
+                raise ValueError("no alignable words")
+            seg = wave[int(lo * SR):int(hi * SR)].unsqueeze(0).to(device)
+            with torch.inference_mode():
+                emission, _ = model(seg)
+            spans = aligner(emission[0], tokenizer([romanize(words[k]["word"]) for k in idx]))
+            sec = seg.size(1) / emission.size(1) / SR
+            for k, sp in zip(idx, spans):
+                times[k] = [round(lo + sp[0].start * sec, 3), round(lo + sp[-1].end * sec, 3)]
+            return {"ok": True}
+        except Exception as e:  # noqa: BLE001 — any failure keeps these words' times
+            if device == "cuda":
+                torch.cuda.empty_cache()
+            return {"ok": False, "reason": f"{type(e).__name__}: {e}"[:200]}
+
     report = []
     prev_end = 0.0  # chunks don't reach back over words the previous chunk already placed
     for f, t in chunks(words):
@@ -95,27 +118,31 @@ def main() -> None:
                 lo, hi = wide
         if hi - max(lo, prev_end) >= 1.0:
             lo = max(lo, prev_end)
-        idx = [k for k in range(f, t) if romanize(words[k]["word"])]
-        try:
-            if not idx:
-                raise ValueError("no alignable words")
-            seg = wave[int(lo * SR):int(hi * SR)].unsqueeze(0).to(device)
-            with torch.inference_mode():
-                emission, _ = model(seg)
-            spans = aligner(emission[0], tokenizer([romanize(words[k]["word"]) for k in idx]))
-            sec = seg.size(1) / emission.size(1) / SR
-            for k, sp in zip(idx, spans):
-                times[k] = [round(lo + sp[0].start * sec, 3), round(lo + sp[-1].end * sec, 3)]
-            report.append({"from": f, "to": t, "ok": True})
-            prev_end = max(times[k][1] for k in idx)
-        except Exception as e:  # noqa: BLE001 — any failure keeps this chunk's coarse times
-            if device == "cuda":
-                torch.cuda.empty_cache()
-            report.append({"from": f, "to": t, "ok": False, "reason": f"{type(e).__name__}: {e}"[:200]})
+        r = align(f, t, lo, hi)
+        report.append({"from": f, "to": t, **r})
+        if r["ok"]:
+            prev_end = max(times[k][1] for k in range(f, t) if romanize(words[k]["word"]))
+
+    # Second pass: each run of unheard words, alone in the gap between the heard words around it.
+    n = len(words)
+    k = 0
+    while k < n:
+        if words[k].get("heard"):
+            k += 1
+            continue
+        j = k
+        while j < n and not words[j].get("heard"):
+            j += 1
+        lo = words[k - 1]["end"] if k > 0 else 0.0
+        hi = words[j]["start"] if j < n else wave.numel() / SR
+        if j - k >= 2 and 0.5 <= hi - lo <= MAX_WINDOW:
+            report.append({"from": k, "to": j, "gap": True, **align(k, j, lo, hi)})
+        k = j
 
     out.write_text(json.dumps({"words": [{"start": s, "end": e} for s, e in times], "chunks": report}), encoding="utf-8")
     bad = [c for c in report if not c["ok"]]
-    print(f"forced alignment: {len(report) - len(bad)}/{len(report)} chunks aligned on {device}", flush=True)
+    gaps = [c for c in report if c.get("gap")]
+    print(f"forced alignment: {len(report) - len(bad)}/{len(report)} chunks aligned on {device} ({len(gaps)} unheard runs re-aligned in their gaps)", flush=True)
 
 
 if __name__ == "__main__":

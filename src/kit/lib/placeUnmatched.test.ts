@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { enforceOrder, placeUnmatched, reconcile } from "./placeUnmatched.ts";
+import { dropWeakAnchors, enforceOrder, placeUnmatched, reconcile } from "./placeUnmatched.ts";
 
 const near = (a: number[][], b: number[][]) =>
   a.forEach((p, i) => p.forEach((x, k) => assert.ok(Math.abs(x - b[i][k]) < 1e-9, `word ${i}: ${JSON.stringify(a)} vs ${JSON.stringify(b)}`)));
@@ -64,4 +64,14 @@ test("reconcile caps a word stretched over silence", () => {
 test("unheard lines after the last heard word follow it, not the song's end", () => {
   const out = placeUnmatched([[300, 300.5], null, null, null], [5, 6, 6, 7], 381);
   near(out, [[300, 300.5], [300.5, 300.85], [300.85, 301.2], [301.2, 301.55]]);
+});
+
+test("dropWeakAnchors drops a short word heard alone, keeps runs and long words", () => {
+  const words = ["Two", "choices", "out", "of", "Millions", "Gold", "at", "forty", "thousand", "lunch", "at"];
+  const times: ([number, number] | null)[] = [null, null, [248.7, 249], null, null, null, null, null, [273, 273.4], [273.8, 273.9], [273.9, 274]];
+  const out = dropWeakAnchors(times, words);
+  assert.equal(out[2], null); // "out", alone and short: dropped
+  assert.deepEqual(out[8], [273, 273.4]); // "thousand": long enough to trust alone
+  assert.deepEqual(out[9], [273.8, 273.9]); // part of a heard run
+  assert.deepEqual(out[10], [273.9, 274]);
 });

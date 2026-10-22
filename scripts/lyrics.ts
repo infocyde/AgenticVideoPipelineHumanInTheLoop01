@@ -17,7 +17,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, extname, join } from "node:path";
 import { lyricWords, parseLyrics } from "../src/kit/lib/lyrics.ts";
-import { enforceOrder, placeUnmatched, reconcile } from "../src/kit/lib/placeUnmatched.ts";
+import { dropWeakAnchors, enforceOrder, placeUnmatched, reconcile } from "../src/kit/lib/placeUnmatched.ts";
 import type { Timing } from "../src/kit/schema.ts";
 import { scanAssets } from "./lib/assets.ts";
 import { MATCH_WARN } from "./lib/checkMusicVideo.ts";
@@ -82,7 +82,9 @@ if (!words.length) {
 }
 
 // 3. place unheard words
-let placed = placeUnmatched(a.times, words.map((w) => w.line), a.duration);
+// Single short words heard alone are usually mismatched; don't let them anchor anything.
+const heard = dropWeakAnchors(a.times, words.map((w) => w.word));
+let placed = placeUnmatched(heard, words.map((w) => w.line), a.duration);
 
 // 4. forced alignment (MMS) on the stem
 const aligner = str("aligner", "mms");
@@ -91,15 +93,15 @@ if (aligner === "mms") {
   info("forced alignment (MMS) on the vocal stem…");
   const faIn = join(p.stems, "fa-in.json");
   const faOut = join(p.stems, "fa-out.json");
-  writeFileSync(faIn, JSON.stringify({ words: words.map((w, i) => ({ word: w.word, start: placed[i][0], end: placed[i][1], line: w.line, heard: a.times[i] !== null })) }));
+  writeFileSync(faIn, JSON.stringify({ words: words.map((w, i) => ({ word: w.word, start: placed[i][0], end: placed[i][1], line: w.line, heard: heard[i] !== null })) }));
   if (run(musicPython(), ["-I", join(ROOT, "scripts", "lyrics_fa.py"), vocals, faIn, faOut]) !== 0) fail("forced alignment failed (see the Python output above); --aligner whisper skips it");
   const fa = readJson<{ words: { start: number; end: number }[]; chunks: { from: number; to: number; ok: boolean; reason?: string }[] }>(faOut);
   fa.chunks.filter((c) => !c.ok).forEach((c) => warn(`lines with words ${c.from}–${c.to - 1} kept Whisper's times: ${c.reason}`));
   // How far MMS moved the words Whisper did hear (a sanity check on both).
-  const deltas = a.times.flatMap((t, i) => (t ? [Math.abs(fa.words[i].start - t[0])] : [])).sort((x, y) => x - y);
+  const deltas = heard.flatMap((t, i) => (t ? [Math.abs(fa.words[i].start - t[0])] : [])).sort((x, y) => x - y);
   const q = (f: number) => deltas[Math.min(deltas.length - 1, Math.floor(f * deltas.length))] ?? 0;
   info(`MMS vs Whisper on ${deltas.length} heard words: median ${q(0.5).toFixed(2)}s, 95th percentile ${q(0.95).toFixed(2)}s`);
-  placed = enforceOrder(reconcile(a.times, fa.words.map((w) => [w.start, w.end])));
+  placed = enforceOrder(reconcile(heard, fa.words.map((w) => [w.start, w.end])));
 }
 
 // 5. beats

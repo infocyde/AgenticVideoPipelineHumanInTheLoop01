@@ -90,3 +90,18 @@ export const reconcile = (whisper: (Span | null)[], mms: Span[]): Span[] =>
     const s: Span = w && Math.abs(m[0] - w[0]) > MAX_SHIFT ? [w[0], w[1]] : [m[0], m[1]];
     return [s[0], Math.min(s[1], s[0] + MAX_WORD)];
   });
+
+/** A word heard on its own (no heard neighbour) is trusted as an anchor only when it has at least this many letters. */
+export const ALONE_MIN_LETTERS = 5;
+
+/**
+ * Drop unreliable matches before placing words: a short word ("out", "a") that Whisper matched with neither neighbour
+ * matched is usually a mishearing that difflib paired with the wrong line (sung "Managed freedom" heard as "When it
+ * freezes out" lands "out" in the next line), and a false anchor squeezes or stretches everything around it.
+ */
+export const dropWeakAnchors = (times: (Span | null)[], words: string[]): (Span | null)[] =>
+  times.map((t, i) => {
+    if (!t) return t;
+    const alone = !times[i - 1] && !times[i + 1];
+    return alone && words[i].replace(/[^\p{L}\p{N}]/gu, "").length < ALONE_MIN_LETTERS ? null : t;
+  });
