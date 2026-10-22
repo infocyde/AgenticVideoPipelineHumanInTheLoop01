@@ -32,8 +32,15 @@ export const Segment: React.FC<{ s: ResolvedSegment; slam: boolean }> = ({ s, sl
   const tuck = interpolate(frame, [tuckAt, tuckAt + MAP_SLIDE + 4], [0, 1], { ...clamp, easing: Easing.inOut(Easing.cubic) });
   const textScale = 1 - (1 - TEXT_SHRINK) * tuck;
   // card: "exit" slides the whole block off the left edge instead of tucking it (its later stats stay off screen too).
+  // side: "right" mirrors the block (it tucks into the top-right corner and exits off the right edge).
+  const right = seg.side === "right";
+  const dir = right ? -1 : 1;
   const cardTransform =
-    seg.card === "exit" ? `translateX(${-1400 * tuck}px)` : seg.card === "none" ? "translateX(-2400px)" : `translate(${-56 * tuck}px, ${-36 * tuck}px) scale(${textScale})`;
+    seg.card === "exit"
+      ? `translateX(${-1400 * dir * tuck}px)`
+      : seg.card === "none"
+        ? `translateX(${-2400 * dir}px)`
+        : `translate(${-56 * dir * tuck}px, ${-36 * tuck}px) scale(${textScale})`;
 
   const statFrames = s.stats.map((st) => toFrame(st.at) - s.from);
   const activeStat = statFrames.reduce((acc, f, i) => (frame >= f ? i : acc), -1);
@@ -47,7 +54,7 @@ export const Segment: React.FC<{ s: ResolvedSegment; slam: boolean }> = ({ s, sl
   return (
     <AbsoluteFill style={{ transform: `translate(${sx}px, ${sy}px)` }}>
       {visuals.length ? (
-        <Backdrop visuals={visuals} durationInFrames={dur} seed={s.num * 3} clear={tuck} scrim={seg.card !== "exit" && seg.card !== "none"} />
+        <Backdrop visuals={visuals} durationInFrames={dur} seed={s.num * 3} clear={tuck} scrim={seg.card !== "exit" && seg.card !== "none"} mirror={right} />
       ) : (
         <AbsoluteFill style={{ background: colors.bg }}>
           {seg.map && (
@@ -64,10 +71,10 @@ export const Segment: React.FC<{ s: ResolvedSegment; slam: boolean }> = ({ s, sl
       <div
         style={{
           position: "absolute",
-          left: 120,
+          left: right ? WIDTH - 120 - 1040 : 120,
           top: 128,
           width: 1040,
-          transformOrigin: "top left",
+          transformOrigin: right ? "top right" : "top left",
           transform: cardTransform,
         }}
       >
@@ -101,7 +108,7 @@ export const Segment: React.FC<{ s: ResolvedSegment; slam: boolean }> = ({ s, sl
         {activeStat >= 0 && <StatCard key={activeStat} value={seg.stats[activeStat].value} label={seg.stats[activeStat].label} since={frame - statFrames[activeStat]} />}
       </div>
 
-      {seg.map && <LocatorCard map={seg.map} enter={mapIn} mapDelay={20 + o} exit={frame - (MAP_EXIT + o)} />}
+      {seg.map && <LocatorCard map={seg.map} enter={mapIn} mapDelay={20 + o} exit={frame - (MAP_EXIT + o)} side={right ? "left" : "right"} />}
 
       {slam && (
         <Sequence durationInFrames={24} layout="none">

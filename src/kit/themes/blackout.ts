@@ -48,9 +48,9 @@ export const blackout: Theme = {
     labelHalo: "rgba(2,4,4,0.9)",
   },
   backdrop: {
-    // Cold, but the footage must read: a light grayscale wash (use washes and fades sparingly), mild contrast, a soft red cast.
-    filter: "grayscale(0.2) contrast(1.12) brightness(0.9) saturate(0.95)",
-    tintOpacity: 0.22,
+    // No grayscale wash, brightness cut or tint: the footage plays as shot. Only the gradients behind text remain.
+    filter: "none",
+    tintOpacity: 0,
     tintBlend: "multiply",
     sideGradient:
       "linear-gradient(90deg, rgba(2,4,4,0.88) 0%, rgba(3,6,6,0.55) 36%, rgba(20,2,6,0.08) 66%, rgba(2,4,4,0.22) 100%)",
@@ -62,7 +62,7 @@ export const blackout: Theme = {
     accentGlow: (size) => `0 0 ${Math.round(size)}px ${alpha(crimson, size >= 80 ? 0.65 : size >= 50 ? 0.55 : 0.45)}, 0 0 ${Math.round(size / 3)}px ${alpha(crimson, 0.45)}`,
     textShadow: "0 6px 30px rgba(0,0,0,0.92)",
     captionShadow: `0 4px 18px rgba(0,0,0,0.95), 0 0 2px #000, 0 0 20px ${alpha(phosphor, 0.18)}`,
-    vignette: "radial-gradient(ellipse at center, transparent 58%, rgba(0,0,0,0.6) 100%)",
+    vignette: "radial-gradient(ellipse at center, transparent 68%, rgba(0,0,0,0.35) 100%)",
     grainOpacity: 0.1,
     scanlineOpacity: 0.4,
     glitchColors: [alpha(crimson, 0.6), alpha(phosphor, 0.4)],

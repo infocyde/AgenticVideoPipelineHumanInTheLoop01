@@ -41,9 +41,9 @@ const VisualLayer: React.FC<{ asset: Asset; frames: number; seed: number; grade:
  * Full-bleed b-roll (fills its parent). Each visual starts at its `from` frame (cue-based) and glitch-cuts from the previous one.
  * `clear` (0–1) eases off the side gradient once the text no longer needs it (and fades in the theme's `clearedScrim`
  * behind what stays on screen, unless `scrim={false}`); `side` (0–1) scales the side gradient; `gradients={false}` drops the
- * side and bottom gradients entirely (for b-roll in a frame with no text over it).
+ * side and bottom gradients entirely (for b-roll in a frame with no text over it); `mirror` flips the side gradient for text on the right.
  */
-export const Backdrop: React.FC<{ visuals: BackdropVisual[]; durationInFrames: number; seed?: number; clear?: number; side?: number; scrim?: boolean; gradients?: boolean; noteInset?: number; noteSize?: number }> = ({
+export const Backdrop: React.FC<{ visuals: BackdropVisual[]; durationInFrames: number; seed?: number; clear?: number; side?: number; scrim?: boolean; gradients?: boolean; noteInset?: number; noteSize?: number; mirror?: boolean }> = ({
   visuals,
   durationInFrames,
   seed = 0,
@@ -53,6 +53,7 @@ export const Backdrop: React.FC<{ visuals: BackdropVisual[]; durationInFrames: n
   gradients = true,
   noteInset,
   noteSize = 18,
+  mirror = false,
 }) => {
   const { colors, backdrop, fonts } = useTheme();
   return (
@@ -88,7 +89,7 @@ export const Backdrop: React.FC<{ visuals: BackdropVisual[]; durationInFrames: n
           </Sequence>
         );
       })}
-      {gradients && <AbsoluteFill style={{ background: backdrop.sideGradient, opacity: side * (1 - (1 - (backdrop.sideCleared ?? 0.35)) * clear) }} />}
+      {gradients && <AbsoluteFill style={{ background: backdrop.sideGradient, opacity: side * (1 - (1 - (backdrop.sideCleared ?? 0.35)) * clear), transform: mirror ? "scaleX(-1)" : undefined }} />}
       {gradients && scrim && backdrop.clearedScrim && clear > 0 && <AbsoluteFill style={{ background: backdrop.clearedScrim, opacity: clear }} />}
       {gradients && <AbsoluteFill style={{ background: backdrop.bottomGradient }} />}
     </AbsoluteFill>

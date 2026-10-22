@@ -487,6 +487,14 @@
                     "description": "false hides the word-by-word captions for this segment, e.g. over an explainer whose own text they would cover",
                     "type": "boolean"
                   },
+                  "side": {
+                    "description": "Overlay layouts: which side the number/region/headline/stat block sits on (default 'left'). 'right' mirrors the side gradient, tucks the block into the top-right corner and moves the map card to the left",
+                    "type": "string",
+                    "enum": [
+                      "left",
+                      "right"
+                    ]
+                  },
                   "card": {
                     "description": "Overlay layouts: what the number/headline/stat block does once the map card leaves. 'tuck' (default) shrinks it into the top-left corner; 'exit' slides it off the left edge so the b-roll has the whole frame; 'none' never shows the region and headline (Shorts too). Split and spatial layouts ignore it",
                     "type": "string",

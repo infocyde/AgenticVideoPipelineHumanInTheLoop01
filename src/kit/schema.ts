@@ -68,6 +68,10 @@ export const segmentSchema = z.object({
     .boolean()
     .optional()
     .describe("false hides the word-by-word captions for this segment, e.g. over an explainer whose own text they would cover"),
+  side: z
+    .enum(["left", "right"])
+    .optional()
+    .describe("Overlay layouts: which side the number/region/headline/stat block sits on (default 'left'). 'right' mirrors the side gradient, tucks the block into the top-right corner and moves the map card to the left"),
   card: z
     .enum(["tuck", "exit", "none"])
     .optional()
