@@ -21,6 +21,7 @@ import { basename, join, relative, resolve } from "node:path";
 import type { EpisodeInput } from "../src/kit/schema.ts";
 import { loadConfig } from "./lib/config.ts";
 import { getSecret } from "./lib/env.ts";
+import { isMusicVideoSlug } from "./lib/musicVideo.ts";
 import { fail, info, ok, parseArgs, paths, readJson, requireSlug, ROOT, run, warn } from "./lib/util.ts";
 
 const { flags } = parseArgs();
@@ -124,6 +125,7 @@ if (isSample) {
 
 // --- a whole episode
 const slug = requireSlug("npm run voice -- <slug> [--engine …] [--force]");
+if (isMusicVideoSlug(slug)) fail(`${slug} is a music video: there is no voiceover; music videos use \`npm run lyrics -- ${slug}\`.`);
 const p = paths(slug);
 if (!existsSync(p.script)) fail(`episodes/${slug}/voiceover.txt is missing. Write (and get approval for) the script first.`);
 let voName = "voiceover.mp3";

@@ -7,10 +7,12 @@ import { estimateTiming } from "../src/kit/lib/timing.ts";
 import type { EpisodeInput } from "../src/kit/schema.ts";
 import { scanAssets } from "./lib/assets.ts";
 import { loadFromDisk } from "./lib/episode.ts";
+import { isMusicVideoSlug } from "./lib/musicVideo.ts";
 import { bold, fail, fmtTime, info, ok, parseArgs, paths, readJson, requireSlug, ROOT, run, venvPython, warn } from "./lib/util.ts";
 import { sync } from "./sync.ts";
 
 const slug = requireSlug("npm run align -- <slug> [--estimate]");
+if (isMusicVideoSlug(slug)) fail(`${slug} is a music video: music videos use \`npm run lyrics -- ${slug}\` (it aligns the lyric sheet to the song).`);
 const { flags } = parseArgs();
 const p = paths(slug);
 if (!existsSync(p.script)) fail(`episodes/${slug}/voiceover.txt is missing. Write the script first.`);

@@ -26,6 +26,11 @@ export const paths = (slug: string) => {
     timing: join(pub, "timing.json"),
     assets: join(pub, "assets.json"),
     credits: join(pub, "credits.json"),
+    // music videos
+    lyrics: join(src, "lyrics.txt"),
+    /** Vocal stem and transcription cache (npm run lyrics); git-ignored with the episode folder. */
+    stems: join(src, "stems"),
+    lyricsDiff: join(src, "lyrics-diff.txt"),
   };
 };
 

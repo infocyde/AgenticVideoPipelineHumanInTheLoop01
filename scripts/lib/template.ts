@@ -1,6 +1,6 @@
 // The placeholder episode `npm run new` writes: a complete, valid episode with a matching script,
 // so Studio previews immediately. The producer replaces every field and line.
-import type { EpisodeInput } from "../../src/kit/schema.ts";
+import type { EpisodeInput, MusicVideoInput } from "../../src/kit/schema.ts";
 
 type Preset = NonNullable<EpisodeInput["audio"]>["sfxPreset"];
 /** The frontier theme has its own sound preset; it replaces the default "intense" (a deliberate calm/none is kept). */
@@ -166,6 +166,36 @@ export const templateShort = ({ slug, theme, scenes = 1, parent, title, carry, v
   };
   return { episode, script };
 };
+
+export type MusicVideoTemplateOpts = { slug: string; title: string; subtitle?: string; artist: string; songFile: string; theme: string };
+
+/** Placeholder music video: one shot on a placeholder visual, subtitles on. The lyrics file starts empty. */
+export const templateMusicVideo = ({ slug, title, subtitle, artist, songFile, theme }: MusicVideoTemplateOpts) => {
+  const episode: MusicVideoInput = {
+    $schema: "../episode.schema.json",
+    slug,
+    format: "music-video",
+    title: subtitle ? `${title} (${subtitle})` : title,
+    theme: theme as MusicVideoInput["theme"],
+    song: { file: songFile, title, ...(subtitle ? { subtitle } : {}), artist },
+    subtitles: true,
+    titleCard: { seconds: 4 },
+    shots: [{ visual: "placeholder" }],
+    credits: { seconds: 8 },
+    sources: [],
+  };
+  return { episode, lyrics: "" };
+};
+
+export const MUSIC_VIDEO_NOTES_TEMPLATE = (slug: string) => `# ${slug}: producer notes (music video)
+
+- Theme / subtitles on or off / title card wording confirmed with user:
+- Lyric sheet display fixes (sheet said -> now says):
+- Where the sung audio differs from the sheet (from lyrics-diff.txt) and what the user decided:
+- Aligner used and its numbers:
+- Facts added on screen (explainers, captions) and their sources:
+- AI-generated stills:
+`;
 
 export const ARTICLE_PLACEHOLDER = `<!-- Paste the source article here (or save the file over this one).
      Everything said or shown in the video must be supported by this text. -->

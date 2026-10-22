@@ -17,11 +17,13 @@ import type { EpisodeInput } from "../src/kit/schema.ts";
 import { scanAssets } from "./lib/assets.ts";
 import { templateShort } from "./lib/template.ts";
 import { loadConfig } from "./lib/config.ts";
+import { isMusicVideoSlug } from "./lib/musicVideo.ts";
 import { fail, info, ok, parseArgs, paths, readJson, requireSlug, warn } from "./lib/util.ts";
 import { sync } from "./sync.ts";
 
 const usage = "npm run short -- <parent-slug> [--count N] [--only N]";
 const parent = requireSlug(usage);
+if (isMusicVideoSlug(parent)) fail(`${parent} is a music video: Shorts from music videos aren't supported.`);
 const { flags } = parseArgs();
 const cfg = loadConfig().shorts;
 const pp = paths(parent);

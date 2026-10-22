@@ -1,7 +1,7 @@
 // Scan clips, images, sfx and music (episode + shared library) with ffprobe and write assets.json.
 // Usage: npm run assets -- <slug>
 import { existsSync } from "node:fs";
-import type { EpisodeInput } from "../src/kit/schema.ts";
+import { type EpisodeInput, isMusicVideo, type MusicVideoInput } from "../src/kit/schema.ts";
 import { scanAssets } from "./lib/assets.ts";
 import { info, ok, paths, readJson, requireSlug, warn } from "./lib/util.ts";
 import { sync } from "./sync.ts";
@@ -10,7 +10,9 @@ const slug = requireSlug("npm run assets -- <slug>");
 const p = paths(slug);
 let voiceover = "voiceover.mp3";
 try {
-  voiceover = readJson<EpisodeInput>(p.episode).audio?.voiceover ?? voiceover;
+  const raw = readJson<unknown>(p.episode);
+  // A music video's song sits in the manifest's voiceover slot (it is the only audio).
+  voiceover = isMusicVideo(raw) ? ((raw as MusicVideoInput).song.file ?? "song.wav") : ((raw as EpisodeInput).audio?.voiceover ?? voiceover);
 } catch {
   /* check reports a broken episode.json */
 }
@@ -22,7 +24,7 @@ const fmt = (r: Record<string, { duration?: number; width?: number }>) =>
     .map(([k, v]) => `${k}${v.duration ? ` (${v.duration.toFixed(1)}s)` : v.width ? ` (${v.width}px)` : ""}`)
     .join(", ") || "-";
 
-info(`voiceover: ${m.voiceover ? `${m.voiceover.file} (${m.voiceover.duration?.toFixed(2)}s)` : "not recorded yet"}`);
+info(`voiceover/song: ${m.voiceover ? `${m.voiceover.file} (${m.voiceover.duration?.toFixed(2)}s)` : "not recorded yet"}`);
 info(`clips:  ${fmt(m.clips)}`);
 info(`images: ${fmt(m.images)}`);
 info(`sfx:    ${Object.keys(m.sfx).join(", ") || "-"}`);
