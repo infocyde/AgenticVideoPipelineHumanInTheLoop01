@@ -495,6 +495,11 @@
                       "right"
                     ]
                   },
+                  "exitAt": {
+                    "description": "Overlay layouts: at this spoken phrase the number/headline/stat block slides off screen and stays off (e.g. when a full-frame explainer or infographic comes up)",
+                    "type": "string",
+                    "minLength": 1
+                  },
                   "card": {
                     "description": "Overlay layouts: what the number/headline/stat block does once the map card leaves. 'tuck' (default) shrinks it into the top-left corner; 'exit' slides it off the left edge so the b-roll has the whole frame; 'none' never shows the region and headline (Shorts too). Split and spatial layouts ignore it",
                     "type": "string",

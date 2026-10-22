@@ -35,12 +35,16 @@ export const Segment: React.FC<{ s: ResolvedSegment; slam: boolean }> = ({ s, sl
   // side: "right" mirrors the block (it tucks into the top-right corner and exits off the right edge).
   const right = seg.side === "right";
   const dir = right ? -1 : 1;
-  const cardTransform =
+  // exitAt: the block slides off screen at that cue and stays off.
+  const exitFrom = s.exitAt !== undefined ? toFrame(s.exitAt) - s.from : null;
+  const gone = exitFrom === null ? 0 : interpolate(frame, [exitFrom, exitFrom + 12], [0, 1], { ...clamp, easing: Easing.in(Easing.cubic) });
+  const cardTransformBase =
     seg.card === "exit"
       ? `translateX(${-1400 * dir * tuck}px)`
       : seg.card === "none"
         ? `translateX(${-2400 * dir}px)`
         : `translate(${-56 * dir * tuck}px, ${-36 * tuck}px) scale(${textScale})`;
+  const cardTransform = gone ? `translateX(${-1400 * dir * gone}px) ${cardTransformBase}` : cardTransformBase;
 
   const statFrames = s.stats.map((st) => toFrame(st.at) - s.from);
   const activeStat = statFrames.reduce((acc, f, i) => (frame >= f ? i : acc), -1);

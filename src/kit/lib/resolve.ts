@@ -22,6 +22,8 @@ export type ResolvedSegment = {
   to: number; // first frame after the scene
   stats: ResolvedStat[];
   visuals: ResolvedVisual[];
+  /** `exitAt` cue time in seconds, when set. */
+  exitAt?: number;
 };
 /** A text section (`kind: "text"`): no number, no stats or map; same timing fields as a segment. */
 export type ResolvedText = {
@@ -228,7 +230,13 @@ export const resolveEpisode = (ep: Episode, timing: Timing, assets: AssetManifes
       else sFrom = m.endIndex;
       return { ...st, at: m?.start ?? start + 2 + k * 2 };
     });
-    segments.push({ ...base, num: segmentNum(ep, i), seg, stats, visuals: resolveVisuals(seg.visuals) });
+    let exitAt: number | undefined;
+    if (seg.exitAt) {
+      const m = findPhrase(words, seg.exitAt, lo, hi);
+      if (!m) err(`${where}.exitAt`, `${quote(seg.exitAt)} not found inside segment "${seg.marker}"`);
+      exitAt = m?.start;
+    }
+    segments.push({ ...base, num: segmentNum(ep, i), seg, stats, visuals: resolveVisuals(seg.visuals), exitAt });
   });
 
   [...segments, ...texts].forEach((s) => {
