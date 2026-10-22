@@ -9,7 +9,7 @@ import type { Credit } from "../src/kit/schema.ts";
 import { LIBRARY } from "./lib/assets.ts";
 import { loadFromDisk } from "./lib/episode.ts";
 import { isMusicVideoSlug, loadMusicVideoFromDisk } from "./lib/musicVideo.ts";
-import { musicVideoDescription } from "./lib/musicVideoDescription.ts";
+import { musicVideoDescription, musicVideoFullCredits } from "./lib/musicVideoDescription.ts";
 import { fail, fmtTime, ok, requireSlug, warn } from "./lib/util.ts";
 
 const slug = requireSlug("npm run credits -- <slug>");
@@ -23,6 +23,9 @@ if (isMusicVideoSlug(slug)) {
   const used = musicVideoCredits(mv.episode!, credits);
   mkdirSync(mv.p.out, { recursive: true });
   writeFileSync(join(mv.p.out, "DESCRIPTION.md"), musicVideoDescription(mv.episode!, lyrics, used));
+  const full = musicVideoFullCredits(mv.episode!, used);
+  writeFileSync(join(mv.p.out, "CREDITS.md"), full);
+  if (full.length > 10000) warn(`CREDITS.md is ${full.length} characters; a YouTube comment holds 10,000, so split it over two comments`);
   if (mv.episode!.sources.length) {
     writeFileSync(join(mv.p.out, "REFERENCES.md"), `REFERENCES: ${mv.episode!.title}\n\n${mv.episode!.sources.map((s, i) => `${i + 1}. ${s.title}\n   ${s.url}`).join("\n")}\n`);
   }
