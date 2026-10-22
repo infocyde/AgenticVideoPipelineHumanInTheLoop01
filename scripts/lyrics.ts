@@ -16,6 +16,7 @@
 // caps words at 4 s; enforceOrder() keeps the words in sung order across chunks. Whole run: ~25 s with stems cached.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, extname, join } from "node:path";
+import { extendBeats } from "../src/kit/lib/beats.ts";
 import { lyricWords, parseLyrics } from "../src/kit/lib/lyrics.ts";
 import { dropWeakAnchors, enforceOrder, placeUnmatched, reconcile } from "../src/kit/lib/placeUnmatched.ts";
 import type { Timing } from "../src/kit/schema.ts";
@@ -116,7 +117,7 @@ const timing: Timing = {
   duration: a.duration,
   match: { matched: a.matched, total: a.total },
   words: words.map((w, i) => ({ word: w.word, start: +placed[i][0].toFixed(3), end: +placed[i][1].toFixed(3), line: w.line })),
-  beats: beats.beats,
+  beats: extendBeats(beats.beats, a.duration),
   tempo: beats.tempo,
 };
 writeFileSync(p.timing, JSON.stringify(timing, null, 1) + "\n");
@@ -137,7 +138,7 @@ writeFileSync(
 // Song map: sections and instrumentals (with their beat ranges, for beat cuts).
 const firstWord = (line: number) => timing.words.find((w) => w.line === line);
 const beatRange = (from: number, to: number) => {
-  const idx = beats.beats.map((b, i) => [b, i] as const).filter(([b]) => b >= from && b <= to);
+  const idx = timing.beats!.map((b, i) => [b, i] as const).filter(([b]) => b >= from && b <= to);
   return idx.length ? `beats ${idx[0][1]}–${idx[idx.length - 1][1]}` : "no beats";
 };
 const map: { t: number; text: string }[] = [];
@@ -160,7 +161,7 @@ if (last && a.duration - last[1] > INSTRUMENTAL) gaps.push([last[1], a.duration]
 gaps.forEach(([f, t]) => map.push({ t: f, text: `  instrumental ${at(f)}–${at(t)} (${(t - f).toFixed(1)}s), ${beatRange(f, t)}` }));
 map.sort((x, y) => x.t - y.t);
 
-console.log(bold(`\nsong map (${beats.beats.length} beats, ${beats.tempo} BPM)`));
+console.log(bold(`\nsong map (${timing.beats!.length} beats, ${beats.tempo} BPM)`));
 map.forEach((m) => console.log(`  ${at(m.t).padStart(7)}  ${m.text}`));
 console.log(bold(`\n${a.diffs.length} places where the singing differs from the sheet`) + ` (full list: episodes/${slug}/lyrics-diff.txt)`);
 diffLines.slice(0, 12).forEach((l) => console.log(l));
