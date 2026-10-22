@@ -17,7 +17,7 @@ This repo turns an article plus a voiceover into a short narrated YouTube video 
 ## Commands (all take the episode slug)
 
 ```
-npm run new -- <slug> [--format countdown|list|short] [--count N] [--theme threat-brief|clean-light|after-dark|military|military-comparisons|erotic|frontier]
+npm run new -- <slug> [--format countdown|list|short] [--count N] [--theme threat-brief|clean-light|after-dark|military|military-comparisons|erotic|frontier|blackout]
 npm run new -- <slug> --format music-video --song <path> [--title "…"] [--subtitle "…"] [--artist "…"]   # music video (music-video skill)
 npm run lyrics -- <slug> [--force] [--aligner mms|whisper]   # music videos: lyrics.txt + song -> timing.json (words, lines, beats), lyrics-diff.txt
 npm run voice -- <slug> [--force]         # local TTS (config.yaml voice:): voiceover.txt -> voiceover.mp3, then align

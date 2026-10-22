@@ -1,5 +1,5 @@
 // Scaffold a new episode: episodes/<slug>/ (data) and public/episodes/<slug>/ (media), then sync.
-// Usage: npm run new -- <slug> [--format countdown|list|short] [--count N] [--theme threat-brief|clean-light|after-dark|military|military-comparisons|erotic|frontier]
+// Usage: npm run new -- <slug> [--format countdown|list|short] [--count N] [--theme threat-brief|clean-light|after-dark|military|military-comparisons|erotic|frontier|blackout]
 //        npm run new -- <slug> --format music-video --song <path> [--title "…"] [--subtitle "…"] [--artist "…"] [--theme id]
 //   --format short: a standalone YouTube Short (vertical 9:16, its own article and facts); --count = scenes (1-3, default 1).
 //   --format music-video: a song cut to licensed shots (music-video skill). The song is copied in as song.<ext>; the title

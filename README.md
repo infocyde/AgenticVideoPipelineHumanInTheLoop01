@@ -415,6 +415,7 @@ It stops only processes whose executable lives in this repo, plus node processes
 - `threat-brief` (default): dark, red and amber, with Anton, JetBrains Mono and Inter.
 - `clean-light`: a light demo theme with a blue accent, Oswald, IBM Plex Mono and DM Sans.
 - `after-dark`: neon-noir, magenta and cyan on violet-black, with Bebas Neue, Space Mono and Sora.
+- `blackout`: dark tech dystopia, crimson alarm red and phosphor-green data on near-black, drained footage, heavy scanlines and glitch, with Big Shoulders Display, IBM Plex Mono and Saira.
 - `military`: tactical briefing, sand text on olive-black with a signal-amber accent and phosphor-green readouts, with Big Shoulders Stencil, Share Tech Mono and Barlow Condensed.
 - `military-comparisons`: weapons-system spec briefing in the **split layout**. Footage plays in a bracketed frame on the left; the number, headline and stats sit on the right, and the stats build into a spec sheet that stays up (5 rows a panel, then panel 2, 3). The map card shows briefly over the footage and slides off to the left. Cool white on gunmetal, HUD-cyan readouts, signal-orange accent, with Teko, IBM Plex Mono and Saira Condensed.
 - `erotic`: a boudoir-editorial comparison sheet in the same **split layout** as `military-comparisons`. Blush cream on wine-black, lipstick-crimson accent, champagne-gold readouts, a warm low-key b-roll grade and soft grain with no scanlines. Fonts are Playfair Display, Josefin Sans and Jost. Default labels: AFTER HOURS ticker, TOP PICK, PROFILE panels. The mood comes from color and type only. The theme has no imagery of its own, and b-roll still has to pass YouTube's rules and the license gate.
@@ -441,7 +442,7 @@ src/kit/lib/                     cue resolution, captions, sfx presets, music du
 src/kit/components/              WorldMap, Backdrop, Headline, cards, titles, chrome, audio
 src/kit/scenes/                  ColdOpen, Segment, SplitSegment, TextSection, Outro, EndCard
 src/kit/formats/                 Countdown, List, Short (vertical 9:16)
-src/kit/themes/                  threat-brief, clean-light, after-dark, military, military-comparisons, erotic, frontier
+src/kit/themes/                  threat-brief, clean-light, after-dark, military, military-comparisons, erotic, frontier, blackout
 src/kit/skins/                   themes with scenes of their own (frontier)
 scripts/                         the npm commands (TypeScript, run with tsx) + align.py and voice.py
 scripts/lib/config.ts            reads and validates config.yaml (voice:, shorts:, music_gen:, image_gen:)

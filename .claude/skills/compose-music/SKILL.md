@@ -49,6 +49,7 @@ the mood and energy, the production.> <Tempo> BPM.
 | `frontier` (tech) | `TrackType: Music, VocalType: Instrumental, Genre: Electronic, Genre: Ambient. A sleek, forward-moving bed with soft analog synth arpeggios, a warm sub-bass pulse, airy pads and crisp minimal percussion, optimistic and curious, polished modern production. 108 BPM.` |
 | `military`, `military-comparisons`, `threat-brief` | `TrackType: Music, VocalType: Instrumental, Genre: Cinematic, Genre: Electronic. A tense, steady briefing bed: low pulsing synth bass, muted taiko and ticking percussion, dark sustained strings, restrained and serious, no big hits. 92 BPM.` |
 | `after-dark`, `erotic` | `TrackType: Music, VocalType: Instrumental, Genre: Downtempo, Genre: Lounge. A slow, intimate late-night bed: warm Rhodes chords, soft brushed drums, round upright-style bass, hazy reverb, sultry but understated. 76 BPM.` |
+| `blackout` (dystopian tech) | `TrackType: Music, VocalType: Instrumental, Genre: Electronic, Genre: Dark Ambient. A cold, uneasy bed: a slow detuned analog synth pulse, deep sub-bass drone, glitchy ticking percussion, distant metallic textures and sparse dissonant pads, tense and steady, no big hits. 88 BPM.` |
 | `clean-light` | `TrackType: Music, VocalType: Instrumental, Genre: Corporate, Genre: Electronic. A light, clean bed: plucked synths, soft marimba, gentle claps, bright but calm. 100 BPM.` |
 
 Rewrite these for the episode's subject and mood (a space story, a court case and a gadget launch want different beds), and say what you changed in `notes.md`.
