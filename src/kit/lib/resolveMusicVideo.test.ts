@@ -123,3 +123,13 @@ test("subtitle display windows", () => {
   near(subs[1].start, 11.85);
   near(subs[1].end, 13.8);
 });
+
+test("subtitles drop a trailing comma, semicolon or colon but keep question marks", () => {
+  const subs = subtitleLines([
+    { word: "Jekyll", start: 1, end: 1.5, line: 0 },
+    { word: "Island,", start: 1.5, end: 2, line: 0 },
+    { word: "last?", start: 3, end: 3.5, line: 1 },
+  ]);
+  assert.equal(subs[0].text, "Jekyll Island");
+  assert.equal(subs[1].text, "last?");
+});

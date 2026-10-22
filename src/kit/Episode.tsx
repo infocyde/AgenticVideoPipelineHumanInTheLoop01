@@ -56,7 +56,7 @@ export const loadEpisode = (entry: RegistryEntry, rawEpisode: unknown = entry.ep
   return { ok: true, ctx: { episode, timeline, assets, credits, theme: getTheme(episode.theme), base: `episodes/${slug}` } };
 };
 
-const ErrorCard: React.FC<{ slug: string; errors: string[] }> = ({ slug, errors }) => (
+export const ErrorCard: React.FC<{ slug: string; errors: string[] }> = ({ slug, errors }) => (
   <AbsoluteFill style={{ background: "#1a0606", color: "#fff", padding: 80, fontFamily: "monospace", fontSize: 30, lineHeight: 1.4 }}>
     <div style={{ fontSize: 48, fontWeight: 700, marginBottom: 30, color: "#ff6b6b" }}>{slug} can't be shown yet</div>
     {errors.slice(0, 14).map((e, i) => (

@@ -17,9 +17,15 @@ export type EpisodeCtx = {
 };
 
 const Ctx = createContext<EpisodeCtx | null>(null);
+/** The theme on its own, so shared pieces (GlitchCut, Backdrop…) also work inside a music video (musicVideoContext). */
+const ThemeCtx = createContext<Theme | null>(null);
 
 export const EpisodeProvider: React.FC<{ value: EpisodeCtx; children: React.ReactNode }> = ({ value, children }) => (
   <Ctx.Provider value={value}>{children}</Ctx.Provider>
+);
+
+export const ThemeProvider: React.FC<{ value: Theme; children: React.ReactNode }> = ({ value, children }) => (
+  <ThemeCtx.Provider value={value}>{children}</ThemeCtx.Provider>
 );
 
 export const useEpisode = (): EpisodeCtx => {
@@ -28,6 +34,12 @@ export const useEpisode = (): EpisodeCtx => {
   return v;
 };
 
-export const useTheme = (): Theme => useEpisode().theme;
+export const useTheme = (): Theme => {
+  const own = useContext(ThemeCtx);
+  const episode = useContext(Ctx);
+  const theme = own ?? episode?.theme;
+  if (!theme) throw new Error("useTheme() must be used inside <EpisodeProvider> or <ThemeProvider>");
+  return theme;
+};
 
 export const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;

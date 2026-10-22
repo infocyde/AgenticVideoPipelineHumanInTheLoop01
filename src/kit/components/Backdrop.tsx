@@ -7,7 +7,7 @@ import { GlitchCut } from "./Chrome";
 
 export type BackdropVisual = { name: string; asset: Asset; note?: string; from: number };
 
-const KenBurns: React.FC<{ frames: number; seed: number; children: React.ReactNode }> = ({ frames, seed, children }) => {
+export const KenBurns: React.FC<{ frames: number; seed: number; children: React.ReactNode }> = ({ frames, seed, children }) => {
   const frame = useCurrentFrame();
   const s = interpolate(frame, [0, frames], [1.06, 1.18]);
   const x = interpolate(frame, [0, frames], [0, 30 * (seed % 2 ? 1 : -1)]);

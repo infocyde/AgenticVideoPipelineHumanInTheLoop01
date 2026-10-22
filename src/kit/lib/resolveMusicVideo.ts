@@ -52,7 +52,7 @@ export const subtitleLines = (words: Timing["words"]): SubtitleLine[] => {
     const lastEnd = ws[ws.length - 1].end + SUB_HOLD;
     return {
       line,
-      text: ws.map((w) => w.word).join(" "),
+      text: ws.map((w) => w.word).join(" ").replace(/[,;:]$/, ""),
       start: ws[0].start - SUB_LEAD,
       end: next ? Math.min(lastEnd, next.start - SUB_GAP) : lastEnd,
     };
