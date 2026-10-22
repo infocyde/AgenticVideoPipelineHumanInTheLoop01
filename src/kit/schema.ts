@@ -220,6 +220,63 @@ export const episodeSchema = z.object({
   sources: z.array(z.object({ title: z.string(), url: z.string().url() })).default([]),
 });
 
+// ---- music videos (format "music-video"): a song cut to licensed shots, placed by sung words or beats ----
+
+export const shotSchema = z
+  .object({
+    visual: visualName,
+    cue: cue.optional().describe("A sung phrase from lyrics.txt the shot cuts on, searched in order after the previous shot (choruses repeat, so it finds the next one)"),
+    beat: z.number().int().nonnegative().optional().describe("Index into timing.json `beats` (npm run lyrics prints them per instrumental) the shot cuts on; for passages with no words"),
+    in: z.number().nonnegative().optional().describe("Seconds into the clip to start from (clips only)"),
+    transition: z.enum(["cut", "flash", "glitch"]).default("cut").describe("How the shot arrives: a hard cut (default), a white flash, or a glitch"),
+    subtitles: z.boolean().optional().describe("false hides the lyric subtitles during this shot, e.g. over an explainer's own text"),
+    note: z.string().optional().describe("On-screen tag; required ('AI-GENERATED ILLUSTRATION') for AI stills, otherwise leave it out"),
+  })
+  .refine((s) => s.cue === undefined || s.beat === undefined, { message: "a shot cuts on a cue or a beat, not both", path: ["beat"] });
+
+export const musicVideoSchema = z.object({
+  $schema: z.string().optional(),
+  slug: z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/),
+  format: z.literal("music-video").describe("A music video: the song is the only audio, the lyric sheet stands in for the script"),
+  title: z.string().min(1).describe("Video title, e.g. 'Empires (Plata o Plomo Power Mix)'"),
+  summary: z.string().min(1).optional().describe("1–2 sentences for the top of the YouTube description (npm run credits)"),
+  theme: z.enum(THEME_IDS).default("threat-brief").describe("Fonts and colors for subtitles, title card and credits"),
+  song: z.object({
+    file: z.string().default("song.wav").describe("The song in public/episodes/<slug>/"),
+    title: z.string().min(1),
+    subtitle: z.string().optional().describe("e.g. the mix name, 'Plata o Plomo Power Mix'"),
+    artist: z.string().min(1),
+  }),
+  subtitles: z.boolean().default(true).describe("Show the lyrics one line at a time (asked per video)"),
+  titleCard: z
+    .union([z.object({ seconds: z.number().min(1).max(10).default(4) }), z.literal(false)])
+    .default({ seconds: 4 })
+    .describe("Song title and artist over the opening shot; false = none"),
+  shots: z.array(shotSchema).min(1).describe("Shots in order; every shot after the first needs a `cue` or a `beat`"),
+  credits: z
+    .object({
+      seconds: z.number().min(4).max(20).default(8).describe("Seconds per page of the credits roll"),
+      cue: cue.optional().describe("Start the roll on this sung phrase (after the last shot) instead of after the song"),
+      beat: z.number().int().nonnegative().optional().describe("Start the roll on this beat instead of after the song"),
+    })
+    .default({ seconds: 8 }),
+  thumbnail: z
+    .object({
+      visual: visualName.optional().describe("Background image or clip frame; defaults to the first shot"),
+      frame: z.number().optional().describe("Seconds into the clip to grab when `visual` is a clip"),
+    })
+    .optional(),
+  sources: z.array(z.object({ title: z.string(), url: z.string().url() })).default([]).describe("Sources for any facts the video adds on screen (YouTube description only)"),
+});
+
+export type MusicVideoInput = z.input<typeof musicVideoSchema>;
+export type MusicVideo = z.output<typeof musicVideoSchema>;
+export type Shot = MusicVideo["shots"][number];
+
+/** True for a raw episode.json that is a music video (checked before choosing which schema parses it). */
+export const isMusicVideo = (raw: unknown): boolean =>
+  typeof raw === "object" && raw !== null && (raw as { format?: unknown }).format === "music-video";
+
 export type EpisodeInput = z.input<typeof episodeSchema>;
 export type Episode = z.output<typeof episodeSchema>;
 export type Scene = Episode["segments"][number];
@@ -239,7 +296,16 @@ export const timingSchema = z.object({
   duration: z.number().positive(),
   estimated: z.boolean().optional().describe("True when written by `align --estimate` from text only, without audio"),
   match: z.object({ matched: z.number(), total: z.number() }).optional(),
-  words: z.array(z.object({ word: z.string(), start: z.number(), end: z.number() })),
+  words: z.array(
+    z.object({
+      word: z.string(),
+      start: z.number(),
+      end: z.number(),
+      line: z.number().int().nonnegative().optional().describe("Music videos: index of the lyric line (subtitle) this word belongs to"),
+    }),
+  ),
+  beats: z.array(z.number()).optional().describe("Music videos: beat times in seconds (npm run lyrics); shots cut on them by index"),
+  tempo: z.number().optional(),
 });
 export type Timing = z.output<typeof timingSchema>;
 export type Word = Timing["words"][number];

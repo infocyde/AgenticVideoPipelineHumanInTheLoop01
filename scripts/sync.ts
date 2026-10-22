@@ -3,7 +3,7 @@
 import { existsSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
-import { episodeSchema } from "../src/kit/schema.ts";
+import { episodeSchema, musicVideoSchema } from "../src/kit/schema.ts";
 import { isMain, ok, paths, ROOT, SLUG_RE, warn } from "./lib/util.ts";
 
 export const sync = () => {
@@ -44,8 +44,8 @@ export const sync = () => {
   ].join("\n");
   writeFileSync(join(ROOT, "src", "episodes.generated.ts"), src);
 
-  // JSON Schema for editor autocompletion and hover docs in episode.json ("$schema": "../episode.schema.json").
-  const json = z.toJSONSchema(episodeSchema, { io: "input", unrepresentable: "any" });
+  // JSON Schema for editor autocompletion and hover docs in episode.json ("$schema": "../episode.schema.json"): news episodes or music videos.
+  const json = z.toJSONSchema(z.union([episodeSchema, musicVideoSchema]), { io: "input", unrepresentable: "any" });
   writeFileSync(join(dir, "episode.schema.json"), JSON.stringify(json, null, 2) + "\n");
 
   ok(`synced ${good.length} episode${good.length === 1 ? "" : "s"}${good.length ? `: ${good.join(", ")}` : ""}`);
