@@ -55,12 +55,12 @@ Read the lyrics and the song map, then write the plan as a table:
 
 | time | lyric line (or "instrumental, beats N–M") | on screen | source idea |
 
-- **Pacing follows the song:**
-  - roughly one shot per lyric line, faster through dense passages
-  - in instrumentals, a cut every 1–2 bars (every 4–8 beats)
-  - longer holds only where the music breathes
+- **Pacing: a new shot every 3–4 seconds, for the whole song** (the user's standing rule; a 6-minute song is about 100 shots):
+  - cut on each lyric line's first word
+  - split lines longer than ~4 s on a beat
+  - cut every instrumental, including the intro and outro, every ~6 beats (about 3.6 s at 100 BPM)
   
-  Shots over ~12 s drag (`check` warns).
+  `check` warns on shots over 5 s. Never show the user a preview with long holds, even as a timing check.
 - **Archive and news footage** illustrates the lyric: the literal subject ("Jekyll Island", "income taxes"), or a juxtaposition (a politician laughing against a war clip). Historical subjects are mostly public domain:
   - National Archives
   - Library of Congress

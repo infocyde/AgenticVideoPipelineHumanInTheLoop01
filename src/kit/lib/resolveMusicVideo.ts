@@ -37,7 +37,7 @@ export const SUB_HOLD = 0.8;
 const SUB_GAP = 0.05;
 /** Shots shorter than this are an error; longer than SHOT_LONG a warning (seconds). */
 export const SHOT_MIN = 0.4;
-export const SHOT_LONG = 12;
+export const SHOT_LONG = 5;
 
 /**
  * How a clip fills its slot from its in-point: at full speed when it can, slowed (to half speed at most) when it is a
@@ -155,7 +155,7 @@ export const resolveMusicVideo = (ep: MusicVideo, timing: Timing, assets: AssetM
     if (!asset) err(`${where}.visual`, `visual ${quote(shot.visual)} not found in clips/ or images/ (run \`npm run assets -- ${ep.slug}\` after adding files)`);
     const secs = (to - from) / FPS;
     if (to - from < toFrame(SHOT_MIN)) err(where, `shot ${quote(shot.visual)} is only ${secs.toFixed(2)}s long (minimum ${SHOT_MIN}s); its cut points are probably out of order`);
-    else if (secs > SHOT_LONG) warn(where, `shot ${quote(shot.visual)} holds for ${secs.toFixed(1)}s; over ${SHOT_LONG}s usually drags in a music video`);
+    else if (secs > SHOT_LONG) warn(where, `shot ${quote(shot.visual)} holds for ${secs.toFixed(1)}s; over ${SHOT_LONG}s drags: music videos cut every 3–4 s`);
     const inPoint = shot.in ?? 0;
     if (asset?.kind === "clip") {
       if (inPoint >= asset.duration) err(`${where}.in`, `in-point ${inPoint}s is past the end of ${quote(shot.visual)} (${asset.duration.toFixed(1)}s)`);
