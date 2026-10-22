@@ -11,6 +11,8 @@ There are three stops where you wait for the user: **script approval**, **the MP
 
 ## 1. Intake
 
+A music video (the user's song, not an article) uses the **music-video** skill instead.
+
 1. Get the article (a file path or pasted text).
 2. Confirm with the user: format (`countdown` 10→1, `list` 1..N, or `short` for a **standalone YouTube Short**), item count, theme (default `threat-brief`), and the date label shown on screen (e.g. `OCT 2026` or `WEEK OF OCT 11–17, 2026`). A standalone Short follows this same procedure with the Short rules in section 8: `npm run new -- <slug> --format short [--count 1-3 scenes]`.
 3. Pick a slug: `<YYYY-MM-DD>-<show>`, e.g. `2026-10-24-threat-brief`. Run:

@@ -322,6 +322,32 @@ YouTube Shorts are vertical videos (9:16, 1080×1920), 60 seconds or less here. 
 - **config.yaml** turns the per-episode Shorts on (`shorts.enabled`), sets how many (`shorts.count`, 1–3) and the target length (`shorts.maxSeconds`; check warns above it and errors past YouTube's 3-minute limit). When it's on, Claude writes the Short scripts at the script-approval step, so you record everything in one session, and renders the Shorts after the main video.
 - Shorts have no on-screen sources and credits rolls; `npm run credits -- <short>` puts the sources, credits, a link line for the full video and `#Shorts` in its `DESCRIPTION.md`. There's no thumbnail step: YouTube picks a frame.
 
+### 8. Music videos
+
+A music video turns one of your songs into a video: licensed archive footage and illustrated explainers cut to the lyrics, with optional subtitles, a title card and a credits roll. The song is the only audio. Ask Claude for a music video and hand over the song (and the lyric sheet if you have one); the `music-video` skill runs it.
+
+```powershell
+npm run setup:lyrics                     # one-time: Demucs and librosa into .venv-music (needs setup:music and setup:align)
+npm run new -- 2026-10-21-empires --format music-video --song "temp_input/PTRA - Empires (Plata o Plomo Power Mix).wav"
+# paste the lyric sheet into episodes/2026-10-21-empires/lyrics.txt (one line per subtitle, [Section] tags allowed)
+npm run lyrics -- 2026-10-21-empires     # vocal stem, Whisper + forced alignment, beats -> timing.json, lyrics-diff.txt
+```
+
+`npm run lyrics` prints a song map (sections, and instrumentals with their beat numbers) and lists every place the singing differs from the sheet. `episode.json` is a list of shots, each cutting on a sung phrase (`cue`) or, in instrumentals, a beat number (`beat`):
+
+```jsonc
+"shots": [
+  { "visual": "jekyll_island_club" },
+  { "visual": "ww1_trenches", "cue": "First European" },
+  { "visual": "irs_form", "cue": "Income", "in": 2.5 },
+  { "visual": "factory", "beat": 412, "transition": "glitch" }
+],
+"subtitles": true,
+"credits": { "seconds": 8 }
+```
+
+Then `assets`, `check`, `preview`, `render`, `thumb` and `credits` as for any episode. The description includes the full lyrics. Footage gets no "FILE FOOTAGE" tags in a music video; AI stills still carry theirs.
+
 ---
 
 ## Commands
@@ -329,6 +355,9 @@ YouTube Shorts are vertical videos (9:16, 1080×1920), 60 seconds or less here. 
 | Command | Does |
 |---|---|
 | `npm run new -- <slug> [--format list\|short] [--count N] [--theme id]` | Scaffold an episode (or a standalone Short) with placeholder content |
+| `npm run new -- <slug> --format music-video --song <path> [--title "…"] [--subtitle "…"] [--artist "…"]` | Scaffold a music video from a song (copied in as `song.<ext>`, credited OWN WORK) |
+| `npm run lyrics -- <slug> [--force] [--model medium] [--aligner mms\|whisper]` | Music videos: align `lyrics.txt` to the song (vocal stem, Whisper, forced alignment) and find the beats |
+| `npm run setup:lyrics` | One-time: add Demucs and librosa to `.venv-music` (for `npm run lyrics`) |
 | `npm run short -- <slug> [--count 1-3] [--only N]` | Scaffold YouTube Shorts from an episode: `<slug>-short1…`, media hard-linked from the parent |
 | `npm run sync` | Regenerate `src/episodes.generated.ts` (run by `new`, `dev`, `render`, `align`) |
 | `npm run voice -- <slug> [--engine qwen\|chatterbox\|kokoro] [--reference voices/x.wav] [--seed N] [--force] [--out file.mp3] [--ignore-off]` | Local TTS: voice `voiceover.txt` to `voiceover.mp3`, then align (settings in `config.yaml`) |
