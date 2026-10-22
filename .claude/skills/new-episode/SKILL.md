@@ -5,7 +5,7 @@ description: Make one Brief Kit video episode from a source article, from intake
 
 # New episode
 
-You take an article to a finished, licensed, loudness-mastered MP4 by writing **data and media only**. Read `CLAUDE.md` first: its hard rules apply at every step. Keep a running log in `episodes/<slug>/notes.md`.
+You take an article to a finished, licensed, loudness-mastered MP4 by writing **data and media only**. Read `CLAUDE.md` first: its hard rules apply at every step. Keep a running log in `episodes/<slug>/notes.md`. Raw downloads go in `episodes/<slug>/raw/` and working files in `episodes/<slug>/work/` (CLAUDE.md, "Where things are"), never in a temp folder.
 
 There are three stops where you wait for the user: **script approval**, **the MP3**, and **preview approval / AC power**.
 

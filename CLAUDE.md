@@ -52,6 +52,7 @@ npm run kill                              # stop leftover render processes from 
 
 ## Where things are
 
+- **Keep every episode file with the episode, never in a temp or scratchpad folder.** Raw downloads (original clips, stills, logos, sounds) go in `episodes/<slug>/raw/<name>/`, one new folder each, never executed. Working files go in `episodes/<slug>/work/`: contact sheets, test stills and sync clips, explainer drafts, storyboard review pages, logs. Finished media stays in `public/episodes/<slug>/`. Both folders are local-only (gitignored).
 - Schema with every field documented: `src/kit/schema.ts`. Each `episode.json` gets autocomplete from `episodes/episode.schema.json`.
 - Text limits: `LIMITS` in `scripts/lib/check.ts`, e.g. headline ≤ 6 words, stamp ≤ 16 chars, stat value ≤ 10 chars.
 - To add a one-off sound on a spoken cue, use `audio.sfxExtra` (`{ "sfx": "glitch", "cue": "...", "volume": 0.45 }`). To silence one preset sound for an episode, list its event in `audio.sfxOff` (e.g. `["stampBeat"]`; events are `SFX_EVENTS` in `src/kit/schema.ts`).

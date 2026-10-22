@@ -57,7 +57,7 @@ You write one self-contained HTML page per graphic, and `npm run infographic` re
    npm run infographic -- <slug> <name> --open          # only build the page, to open it in a browser
    ```
    Re-render with `--force`. The credit (`OWN WORK`, with the data sources in the notes) and `assets.json` are written for you.
-4. **Look at it.** For a still, Read the PNG. For a clip, pull frames: `ffmpeg -v error -ss 1 -i public/episodes/<slug>/clips/<name>.mp4 -frames:v 1 <scratchpad>/f1.png`, plus one near the end. Check the numbers against the script, clipping at the safe area, wrapping, and contrast.
+4. **Look at it.** For a still, Read the PNG. For a clip, pull frames: `ffmpeg -v error -ss 1 -i public/episodes/<slug>/clips/<name>.mp4 -frames:v 1 episodes/<slug>/work/stills/<name>-1s.png`, plus one near the end. Check the numbers against the script, clipping at the safe area, wrapping, and contrast.
 5. Use it: `{ "name": "<name>", "cue": "<spoken phrase>" }` in the segment's `visuals`. It needs no `note`.
 6. Log it in `notes.md` (which beat, which figures, which sources).
 

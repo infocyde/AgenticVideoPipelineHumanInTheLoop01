@@ -1,6 +1,6 @@
 # Asset-sourcing subagent prompts
 
-Fill in the `<…>` parts and send each prompt to its own subagent. Paths are relative to the kit root. `<scratch>` is your session scratchpad directory.
+Fill in the `<…>` parts and send each prompt to its own subagent. Paths are relative to the kit root. Raw downloads go in `episodes/<slug>/raw/` and working files (contact sheets, test frames) in `episodes/<slug>/work/`, never in a temp or scratchpad folder, so they stay with the episode.
 
 These prompts sourced all 15 shots for the first episode in about 50 minutes and 100 tool calls. That agent correctly rejected clips with burned-in "UNCLASSIFIED" text, an unclear "Courtesy of Natochannel" credit and a TV logo. It cropped a photographer's signature off a CC BY-SA image, and it flagged its substitutions: a Tomahawk launch standing in for a North Korean missile, and a 2022 Lviv fuel-depot fire standing in for Baltic sabotage. Those flags became `note` tags.
 
@@ -23,7 +23,7 @@ These prompts sourced all 15 shots for the first episode in about 50 minutes and
 > ★ [drone] military drone in flight
 > [sheep] flock of sheep grazing (generic farm stand-in is fine)>
 >
-> Processing: download raw files into `<scratch>/clips_raw/<name>/` (never run downloaded files). Pick the most dynamic ~8s segment, skipping intros, titles and black frames. Extract frames with `ffmpeg -ss T -frames:v 1` and LOOK at them to confirm the content and that there is no burned-in text, logos or watermarks. Output `public/episodes/<slug>/clips/<name>.mp4`: libx264, yuv420p, crf 23, `scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080`, 30fps, `-an`, ≤8s, `-movflags +faststart`. Images: `public/episodes/<slug>/images/<name>.jpg`, ≤1920px wide, JPEG quality 85. Verify each output with ffprobe and one viewed frame.
+> Processing: download raw files into `episodes/<slug>/raw/<name>/`, one new folder per shot (never run downloaded files). Put contact sheets and check frames in `episodes/<slug>/work/sheets/`. Pick the most dynamic ~8s segment, skipping intros, titles and black frames. Extract frames with `ffmpeg -ss T -frames:v 1` and LOOK at them to confirm the content and that there is no burned-in text, logos or watermarks. Output `public/episodes/<slug>/clips/<name>.mp4`: libx264, yuv420p, crf 23, `scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080`, 30fps, `-an`, ≤8s, `-movflags +faststart`. Images: `public/episodes/<slug>/images/<name>.jpg`, ≤1920px wide, JPEG quality 85. Verify each output with ffprobe and one viewed frame.
 >
 > Write `public/episodes/<slug>/credits.json` (a JSON array; merge with existing entries, don't overwrite them). One entry per file, in exactly this shape:
 > `{ "file": "clips/<name>.mp4", "title": "<source file title>", "author": "<creator as credited>", "license": "PD" | "CC0" | "CC BY" | "CC BY-SA", "licenseVersion": "4.0" (omit for PD/CC0), "sourceUrl": "<Commons/landing page>", "originalUrl": "<direct media URL>", "notes": "<segment used, what it shows, any crop>" }`
