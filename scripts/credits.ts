@@ -2,14 +2,34 @@
 // Usage: npm run credits -- <slug>
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { isStableAudio, licenseLabel, parseCredits, usedCredits } from "../src/kit/lib/credits.ts";
+import { isStableAudio, licenseLabel, musicVideoCredits, parseCredits, usedCredits } from "../src/kit/lib/credits.ts";
+import { parseLyrics } from "../src/kit/lib/lyrics.ts";
 import { FPS } from "../src/kit/lib/timing.ts";
 import type { Credit } from "../src/kit/schema.ts";
 import { LIBRARY } from "./lib/assets.ts";
 import { loadFromDisk } from "./lib/episode.ts";
+import { isMusicVideoSlug, loadMusicVideoFromDisk } from "./lib/musicVideo.ts";
+import { musicVideoDescription } from "./lib/musicVideoDescription.ts";
 import { fail, fmtTime, ok, requireSlug, warn } from "./lib/util.ts";
 
 const slug = requireSlug("npm run credits -- <slug>");
+
+// Music videos: summary, song credit, lyrics and media credits; no chapters (scripts/lib/musicVideoDescription.ts).
+if (isMusicVideoSlug(slug)) {
+  const mv = loadMusicVideoFromDisk(slug);
+  if (!mv.episode) fail(`episode.json doesn't validate; run: npm run check -- ${slug}`);
+  const lyrics = parseLyrics(existsSync(mv.p.lyrics) ? readFileSync(mv.p.lyrics, "utf8") : "");
+  const credits = existsSync(mv.p.credits) ? parseCredits(JSON.parse(readFileSync(mv.p.credits, "utf8"))) : [];
+  const used = musicVideoCredits(mv.episode!, credits);
+  mkdirSync(mv.p.out, { recursive: true });
+  writeFileSync(join(mv.p.out, "DESCRIPTION.md"), musicVideoDescription(mv.episode!, lyrics, used));
+  if (mv.episode!.sources.length) {
+    writeFileSync(join(mv.p.out, "REFERENCES.md"), `REFERENCES: ${mv.episode!.title}\n\n${mv.episode!.sources.map((s, i) => `${i + 1}. ${s.title}\n   ${s.url}`).join("\n")}\n`);
+  }
+  ok(`out/${slug}/DESCRIPTION.md (music video, ${lyrics.lines.length} lyric lines, ${used.visuals.length + used.generated.length + used.audio.length} credits)`);
+  process.exit(0);
+}
+
 const d = loadFromDisk(slug);
 if (!d.episode || !d.timeline) fail(`episode or timing doesn't load; run: npm run check -- ${slug}`);
 const ep = d.episode!;
