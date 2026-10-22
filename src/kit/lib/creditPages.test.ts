@@ -40,3 +40,16 @@ test("pagedCreditColumns gives one undefined page when everything fits, else one
   const many = { visuals: Array.from({ length: 30 }, (_, i) => credit(`clips/${i}.mp4`, "PD")), generated: [], audio: [] };
   assert.equal(pagedCreditColumns(many, false).length, 3);
 });
+
+test("creditPages counts wrapped lines when a column is narrow", () => {
+  const long = { heading: "FOOTAGE & IMAGES", items: Array.from({ length: 10 }, (_, i) => ({ who: "x".repeat(100), what: "" })) };
+  // each item wraps to 3 lines at 44 chars: heading 1.6 + 4 x 3 = 13.6 rows a page -> 3 pages
+  assert.equal(creditPages([long], 14, 44).length, 3);
+});
+
+test("pagedCreditColumns lays out three columns a page for a music video", () => {
+  const many = { visuals: Array.from({ length: 80 }, (_, i) => credit(`clips/${i}.mp4`, "PD")), generated: [], audio: [credit("song.wav", "OWN WORK")] };
+  const pages = pagedCreditColumns(many, false, { columns: 3, maxRows: 25, charsPerLine: 44 });
+  assert.equal(pages.length, 2);
+  pages.forEach((p) => assert.ok(p && p.length <= 3));
+});

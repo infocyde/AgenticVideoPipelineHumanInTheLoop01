@@ -5,7 +5,7 @@ import { AbsoluteFill, Audio, Easing, getRemotionEnvironment, Img, interpolate, 
 import { KenBurns } from "../components/Backdrop";
 import { GlitchCut } from "../components/Chrome";
 import { clamp } from "../context";
-import { pagedCreditColumns } from "../lib/credits";
+import { MUSIC_VIDEO_ROLL, pagedCreditColumns } from "../lib/credits";
 import { clipPlayback, type ResolvedShot } from "../lib/resolveMusicVideo";
 import { FPS, toFrame } from "../lib/timing";
 import { useMusicVideo } from "../musicVideoContext";
@@ -137,7 +137,7 @@ const Issues: React.FC = () => {
 
 export const MusicVideo: React.FC = () => {
   const { episode, timeline, assets, credits, theme } = useMusicVideo();
-  const pages = useMemo(() => pagedCreditColumns(credits, false), [credits]);
+  const pages = useMemo(() => pagedCreditColumns(credits, false, MUSIC_VIDEO_ROLL), [credits]);
   const { pageFrames } = timeline.credits;
   return (
     <AbsoluteFill style={{ background: theme.colors.bg }}>
@@ -163,7 +163,7 @@ export const MusicVideo: React.FC = () => {
           from={timeline.credits.from + i * pageFrames}
           durationInFrames={i === pages.length - 1 ? timeline.credits.to - timeline.credits.from - i * pageFrames : pageFrames}
         >
-          <CreditsRoll credits={credits} theme={theme} mapData={false} columns={columns} />
+          <CreditsRoll credits={credits} theme={theme} mapData={false} columns={columns} size={MUSIC_VIDEO_ROLL.size} />
         </Sequence>
       ))}
       <Issues />

@@ -4,7 +4,7 @@ import React, { useMemo } from "react";
 import { z } from "zod";
 import { ErrorCard, type RegistryEntry } from "./Episode";
 import { MusicVideo } from "./formats/MusicVideo";
-import { musicVideoCredits, pagedCreditColumns, parseCredits } from "./lib/credits";
+import { MUSIC_VIDEO_ROLL, musicVideoCredits, pagedCreditColumns, parseCredits } from "./lib/credits";
 import { resolveMusicVideo } from "./lib/resolveMusicVideo";
 import { type MusicVideoCtx, MusicVideoProvider } from "./musicVideoContext";
 import { MusicVideoThumbnail } from "./MusicVideoThumbnail";
@@ -28,7 +28,7 @@ export const loadMusicVideo = (entry: RegistryEntry, raw: unknown = entry.episod
   const episode = ep.data;
   const assets = assetsSchema.parse(entry.assets ?? {});
   const credits = musicVideoCredits(episode, parseCredits(entry.credits));
-  const timeline = resolveMusicVideo(episode, t.data, assets, pagedCreditColumns(credits, false).length);
+  const timeline = resolveMusicVideo(episode, t.data, assets, pagedCreditColumns(credits, false, MUSIC_VIDEO_ROLL).length);
   return { ok: true, ctx: { episode, timeline, assets, credits, theme: getTheme(episode.theme), base: `episodes/${slug}` } };
 };
 

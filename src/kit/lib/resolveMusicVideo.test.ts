@@ -143,7 +143,19 @@ test("credits started on a cue run until the song ends, pages spread over the ta
   );
   assert.equal(tl.credits.to, tl.durationInFrames);
   assert.equal(tl.durationInFrames, toFrame(121));
-  assert.equal(tl.credits.pageFrames, Math.floor((tl.credits.to - tl.credits.from) / 2));
+  // a long tail: pages hold for their full length; the last one runs on to the song's end
+  assert.equal(tl.credits.pageFrames, toFrame(8));
+});
+
+test("credit pages started on a cue squeeze into the song's tail, down to 4 s a page", () => {
+  const ep = mv([{ visual: "a" }, { visual: "b", cue: "Managed Freedom" }, { visual: "c", beat: 100 }], { credits: { seconds: 8, cue: "Empires Go" } });
+  // "Empires Go" (second chorus) at 63.5 s; a 120 s song leaves ~57.6 s of tail
+  const fits = resolveMusicVideo(ep, { ...timing, duration: 80 }, assets, 3); // 17.6 s tail for 3 pages
+  assert.equal(fits.credits.pageFrames, Math.floor((toFrame(81) - fits.credits.from) / 3));
+  assert.equal(fits.credits.to, toFrame(81));
+  const tight = resolveMusicVideo(ep, { ...timing, duration: 70 }, assets, 3); // 7.6 s tail for 3 pages
+  assert.equal(tight.credits.pageFrames, toFrame(4));
+  assert.equal(tight.credits.to, tight.credits.from + 3 * toFrame(4));
 });
 
 test("credits after the song keep their page length", () => {

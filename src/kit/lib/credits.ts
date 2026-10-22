@@ -88,8 +88,15 @@ export const creditColumns = (credits: UsedCredits, mapData: boolean): { left: C
 /** Rows a heading takes up in a column (it is larger and spaced). */
 export const HEADING_ROWS = 1.6;
 
-/** Split a column's groups into pages of at most `maxRows` rows; a group that continues repeats its heading. */
-export const creditPages = (groups: CreditGroup[], maxRows = 14): CreditGroup[][] => {
+/** Lines a credit row wraps to in a column `charsPerLine` characters wide (the license label is set smaller). */
+const rowLines = (r: CreditRow, charsPerLine: number) =>
+  Number.isFinite(charsPerLine) ? Math.max(1, Math.ceil((r.who.length + (r.what ? 1 + r.what.length * 0.75 : 0)) / charsPerLine)) : 1;
+
+/**
+ * Split a column's groups into pages of at most `maxRows` lines; a group that continues repeats its heading. With a
+ * finite `charsPerLine`, a long row counts as the lines it wraps to.
+ */
+export const creditPages = (groups: CreditGroup[], maxRows = 14, charsPerLine = Infinity): CreditGroup[][] => {
   const pages: CreditGroup[][] = [[]];
   let used = 0;
   for (const g of groups) {
@@ -105,13 +112,14 @@ export const creditPages = (groups: CreditGroup[], maxRows = 14): CreditGroup[][
     };
     open();
     for (const item of g.items) {
-      if (used + 1 > maxRows) {
+      const lines = rowLines(item, charsPerLine);
+      if (used + lines > maxRows) {
         pages.push([]);
         used = 0;
         open();
       }
       cur!.items.push(item);
-      used += 1;
+      used += lines;
     }
   }
   return pages;
@@ -120,14 +128,24 @@ export const creditPages = (groups: CreditGroup[], maxRows = 14): CreditGroup[][
 /** Rows per credits column before a paged roll (music videos) turns the page. */
 export const CREDIT_ROWS = 14;
 
+/** A dense roll: `columns` columns a page, `maxRows` lines a column, wrapping at `charsPerLine`, text at `size` px. */
+export type RollLayout = { columns: number; maxRows: number; charsPerLine: number; size?: number };
+/** Music videos: three columns of 22 px text (a hundred archive credits would otherwise run to eight pages). */
+export const MUSIC_VIDEO_ROLL: RollLayout = { columns: 3, maxRows: 24, charsPerLine: 44, size: 22 };
+
 /**
- * The roll's pages, each with its two columns. One page when everything fits, given as `undefined` so it lays out
- * exactly like a news episode's single-page roll.
+ * The roll's pages, each a list of columns. With a row count, the news layout: footage on the left, music and map data
+ * on the right; one page when everything fits, given as `undefined` so it lays out exactly like a news episode's
+ * single-page roll. With a RollLayout, every group flows down column after column, `columns` to a page.
  */
-export const pagedCreditColumns = (credits: UsedCredits, mapData: boolean, maxRows = CREDIT_ROWS): ({ left: CreditGroup[]; right: CreditGroup[] } | undefined)[] => {
+export const pagedCreditColumns = (credits: UsedCredits, mapData: boolean, layout: number | RollLayout = CREDIT_ROWS): (CreditGroup[][] | undefined)[] => {
   const { left, right } = creditColumns(credits, mapData);
-  const l = creditPages(left, maxRows);
-  const r = creditPages(right, maxRows);
-  const n = Math.max(l.length, r.length);
-  return n === 1 ? [undefined] : Array.from({ length: n }, (_, i) => ({ left: l[i] ?? [], right: r[i] ?? [] }));
+  if (typeof layout === "number") {
+    const l = creditPages(left, layout);
+    const r = creditPages(right, layout);
+    const n = Math.max(l.length, r.length);
+    return n === 1 ? [undefined] : Array.from({ length: n }, (_, i) => [l[i] ?? [], r[i] ?? []]);
+  }
+  const cols = creditPages([...left, ...right], layout.maxRows, layout.charsPerLine);
+  return Array.from({ length: Math.ceil(cols.length / layout.columns) }, (_, i) => cols.slice(i * layout.columns, (i + 1) * layout.columns));
 };

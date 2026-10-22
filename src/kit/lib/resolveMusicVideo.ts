@@ -38,6 +38,8 @@ const SUB_GAP = 0.05;
 /** Shots shorter than this are an error; longer than SHOT_LONG a warning (seconds). */
 export const SHOT_MIN = 0.4;
 export const SHOT_LONG = 5;
+/** Shortest a credits page holds when a roll is squeezed into the song's tail (seconds). */
+export const CREDIT_PAGE_MIN = 4;
 
 /**
  * How a clip fills its slot from its in-point: at full speed when it can, slowed (to half speed at most) when it is a
@@ -131,9 +133,14 @@ export const resolveMusicVideo = (ep: MusicVideo, timing: Timing, assets: AssetM
   const c = ep.credits;
   const creditsHit = c.cue !== undefined || c.beat !== undefined ? place("credits", c, "the last shot") : null;
   const creditsFrom = creditsHit?.from ?? toFrame(songDuration) + FPS / 2;
-  // A roll started inside the song runs until the song ends (pages spread over the tail), so the picture never goes blank.
-  const creditsTo = Math.max(creditsFrom + creditPages * toFrame(c.seconds), creditsHit ? toFrame(songDuration + 1) : 0);
-  const credits = { from: creditsFrom, to: creditsTo, pages: creditPages, pageFrames: Math.floor((creditsTo - creditsFrom) / creditPages) };
+  // A roll started inside the song spreads its pages over the song's tail (each between CREDIT_PAGE_MIN and
+  // credits.seconds), and its last page holds until the song ends, so the video neither goes blank nor runs on silent.
+  const songEnd = toFrame(songDuration + 1);
+  const pageFrames = creditsHit
+    ? Math.max(toFrame(CREDIT_PAGE_MIN), Math.min(toFrame(c.seconds), Math.floor((songEnd - creditsFrom) / creditPages)))
+    : toFrame(c.seconds);
+  const creditsTo = Math.max(creditsFrom + creditPages * pageFrames, creditsHit ? songEnd : 0);
+  const credits = { from: creditsFrom, to: creditsTo, pages: creditPages, pageFrames };
 
   // Unresolved shots are spaced evenly between resolved neighbours so the preview still shows them (check fails).
   const froms = hits.map((h) => h?.from ?? null);
