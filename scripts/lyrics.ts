@@ -20,12 +20,11 @@ import { lyricWords, parseLyrics } from "../src/kit/lib/lyrics.ts";
 import { enforceOrder, placeUnmatched, reconcile } from "../src/kit/lib/placeUnmatched.ts";
 import type { Timing } from "../src/kit/schema.ts";
 import { scanAssets } from "./lib/assets.ts";
+import { MATCH_WARN } from "./lib/checkMusicVideo.ts";
 import { isMusicVideoSlug, loadMusicVideoFromDisk } from "./lib/musicVideo.ts";
 import { bold, fail, fmtTime, info, musicPython, ok, parseArgs, readJson, requireSlug, ROOT, run, venvPython, warn } from "./lib/util.ts";
 import { sync } from "./sync.ts";
 
-/** Under this share of sheet words heard, the sheet probably differs from the recording. */
-export const MATCH_WARN = 0.8;
 /** A gap between lyric lines longer than this is listed as an instrumental in the song map (seconds). */
 const INSTRUMENTAL = 4;
 

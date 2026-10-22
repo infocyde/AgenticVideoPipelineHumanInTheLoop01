@@ -6,12 +6,14 @@ import { feature } from "topojson-client";
 import type { Issue } from "../../src/kit/lib/resolve.ts";
 import { sfxCues } from "../../src/kit/lib/sfx.ts";
 import { norm } from "../../src/kit/lib/timing.ts";
-import { AI_LICENSE, assetsSchema, type Credit, creditSchema, isTextSection, LICENSES, OWN_LICENSE, PRESS_LICENSE } from "../../src/kit/schema.ts";
+import { AI_LICENSE, type AssetManifest, assetsSchema, type Credit, creditSchema, isTextSection, LICENSES, OWN_LICENSE, PRESS_LICENSE } from "../../src/kit/schema.ts";
 import { layoutOf } from "../../src/kit/themes/ids.ts";
 import { AUDIO_EXT, IMAGE_EXT, LIBRARY, listMedia, VIDEO_EXT } from "./assets.ts";
 import { loadFromDisk, scriptWords, zodIssues } from "./episode.ts";
 import { loadConfig } from "./config.ts";
-import { PUBLIC } from "./util.ts";
+import { runMusicVideoCheck } from "./checkMusicVideo.ts";
+import { isMusicVideoSlug } from "./musicVideo.ts";
+import { paths, PUBLIC } from "./util.ts";
 
 const require = createRequire(import.meta.url);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -52,7 +54,7 @@ export const LIMITS = {
 
 type Credits = { entries: Credit[]; issues: Issue[] };
 
-const loadCredits = (file: string, where: string): Credits => {
+export const loadCredits = (file: string, where: string): Credits => {
   const issues: Issue[] = [];
   if (!existsSync(file)) return { entries: [], issues };
   let raw: unknown;
@@ -79,7 +81,90 @@ const loadCredits = (file: string, where: string): Credits => {
   return { entries, issues };
 };
 
+/**
+ * Every media file in the episode (clips, images, sfx, music, plus `extraFiles` such as a music video's song) and every
+ * library file it uses needs an allowed-license credit; AI-GENERATED is only for generated stills and composed beds.
+ * Shared by news episodes and music videos. Also returns the parsed episode credits for the checks that follow.
+ */
+export const creditCoverageIssues = (slug: string, usedLib: Set<string>, extraFiles: string[] = []) => {
+  const p = paths(slug);
+  const issues: Issue[] = [];
+  const err = (where: string, msg: string) => issues.push({ level: "error", where, msg });
+  const epCredits = loadCredits(p.credits, "credits.json");
+  const libCredits = loadCredits(join(LIBRARY, "credits.json"), "library/credits.json");
+  issues.push(...epCredits.issues, ...libCredits.issues);
+  if (!existsSync(p.credits)) err("credits.json", `public/episodes/${slug}/credits.json is missing`);
+  const epFiles = new Set(epCredits.entries.map((c) => c.file));
+  const libFiles = new Set(libCredits.entries.map((c) => c.file));
+  const need = (set: Set<string>, rel: string, where: string) => {
+    if (!set.has(rel)) err(where, `${rel} has no credits entry with an allowed license (${LICENSES.join(", ")})`);
+  };
+  for (const [dir, exts] of [
+    ["clips", VIDEO_EXT],
+    ["images", IMAGE_EXT],
+    ["sfx", AUDIO_EXT],
+    ["music", AUDIO_EXT],
+  ] as const) {
+    listMedia(join(p.pub, dir), exts).forEach((f) => need(epFiles, `${dir}/${f}`, "credits.json"));
+  }
+  extraFiles.forEach((f) => need(epFiles, f, "credits.json"));
+  usedLib.forEach((f) => need(libFiles, f, "library/credits.json"));
+  epCredits.entries
+    .filter((c) => !existsSync(join(p.pub, c.file)))
+    .forEach((c) => issues.push({ level: "warning", where: "credits.json", msg: `${c.file} is credited but not on disk` }));
+
+  const composed = (c: Credit) => c.file.startsWith("music/") && c.generator?.provider === "local" && /stable-audio-3/.test(c.generator.model);
+  epCredits.entries
+    .filter((c) => c.license === AI_LICENSE && !c.file.startsWith("images/") && !composed(c))
+    .forEach((c) => err("credits.json", `${c.file}: ${AI_LICENSE} is only allowed for images/ made by \`npm run generate\` and music/ made by \`npm run compose\``));
+  libCredits.entries.filter((c) => c.license === AI_LICENSE).forEach((c) => err("library/credits.json", `${c.file}: ${AI_LICENSE} isn't allowed in the shared library`));
+  return { epCredits, issues };
+};
+
+/** Basenames of the episode's AI-generated stills (npm run generate), which must carry an on-screen note. */
+export const generatedStills = (entries: Credit[]) =>
+  new Set(entries.filter((c) => c.license === AI_LICENSE && c.file.startsWith("images/")).map((c) => c.file.replace(/^images\//, "").replace(/\.[^.]+$/, "")));
+
+/** Press images: only when config.yaml allows them, only images/ and clips/, never in the library, never the thumbnail. */
+export const pressIssues = (entries: Credit[], thumbnailVisual?: string): Issue[] => {
+  const issues: Issue[] = [];
+  const err = (where: string, msg: string) => issues.push({ level: "error", where, msg });
+  const pressOn = loadConfig().licensing.press_images;
+  const press = entries.filter((c) => c.license === PRESS_LICENSE);
+  press.forEach((c) => {
+    if (!pressOn) err("credits.json", `${c.file}: press images are off (config.yaml licensing.press_images: false); replace it with licensed media`);
+    if (!/^(images|clips)\//.test(c.file)) err("credits.json", `${c.file}: ${PRESS_LICENSE} is only for images/ and clips/`);
+  });
+  loadCredits(join(LIBRARY, "credits.json"), "library/credits.json")
+    .entries.filter((c) => c.license === PRESS_LICENSE)
+    .forEach((c) => err("library/credits.json", `${c.file}: press images stay per episode, not in the shared library`));
+  const pressNames = new Set(press.map((c) => c.file.replace(/^.*\//, "").replace(/\.[^.]+$/, "")));
+  if (thumbnailVisual && pressNames.has(thumbnailVisual)) err("thumbnail.visual", `"${thumbnailVisual}" is a press image: press images can't be the thumbnail (it promotes the video, not the product)`);
+  return issues;
+};
+
+/** assets.json must list exactly the clips and images on disk. */
+export const staleAssetIssues = (slug: string, assets: AssetManifest): Issue[] => {
+  const p = paths(slug);
+  const stale: string[] = [];
+  const onDisk = (dir: string, exts: string[]) => listMedia(dir, exts).map((f) => f.replace(/\.[^.]+$/, ""));
+  for (const [kind, dir, exts] of [
+    ["clips", join(p.pub, "clips"), VIDEO_EXT],
+    ["images", join(p.pub, "images"), IMAGE_EXT],
+  ] as const) {
+    const names = onDisk(dir, exts);
+    names.filter((n) => !assets[kind][n]).forEach((n) => stale.push(`${kind}/${n} not in assets.json`));
+    Object.keys(assets[kind])
+      .filter((n) => !names.includes(n))
+      .forEach((n) => stale.push(`${kind}/${n} listed but missing on disk`));
+  }
+  return stale.length
+    ? [{ level: "error", where: "assets", msg: `assets.json is out of date (${stale.slice(0, 4).join("; ")}${stale.length > 4 ? "; …" : ""}): run \`npm run assets -- ${slug}\`` }]
+    : [];
+};
+
 export const runCheck = (slug: string): Issue[] => {
+  if (isMusicVideoSlug(slug)) return runMusicVideoCheck(slug);
   const d = loadFromDisk(slug);
   const { p } = d;
   const issues: Issue[] = [];
@@ -113,19 +198,7 @@ export const runCheck = (slug: string): Issue[] => {
   const assets = d.assets ?? assetsSchema.parse({});
 
   // Manifest must match what's on disk.
-  const stale: string[] = [];
-  const onDisk = (dir: string, exts: string[]) => listMedia(dir, exts).map((f) => f.replace(/\.[^.]+$/, ""));
-  for (const [kind, dir, exts] of [
-    ["clips", join(p.pub, "clips"), VIDEO_EXT],
-    ["images", join(p.pub, "images"), IMAGE_EXT],
-  ] as const) {
-    const names = onDisk(dir, exts);
-    names.filter((n) => !assets[kind][n]).forEach((n) => stale.push(`${kind}/${n} not in assets.json`));
-    Object.keys(assets[kind])
-      .filter((n) => !names.includes(n))
-      .forEach((n) => stale.push(`${kind}/${n} listed but missing on disk`));
-  }
-  if (stale.length) err("assets", `assets.json is out of date (${stale.slice(0, 4).join("; ")}${stale.length > 4 ? "; …" : ""}): run \`npm run assets -- ${slug}\``);
+  issues.push(...staleAssetIssues(slug, assets));
 
   // --- voiceover vs timing vs script ---
   if (!assets.voiceover) err("audio.voiceover", `public/episodes/${slug}/${ep.audio.voiceover} not found (or assets.json is stale)`);
@@ -243,40 +316,16 @@ export const runCheck = (slug: string): Issue[] => {
   }
 
   // --- licensing: every media file needs an allowed-license credit ---
-  const epCredits = loadCredits(p.credits, "credits.json");
-  const libCredits = loadCredits(join(LIBRARY, "credits.json"), "library/credits.json");
-  issues.push(...epCredits.issues, ...libCredits.issues);
-  if (!existsSync(p.credits)) err("credits.json", `public/episodes/${slug}/credits.json is missing`);
-  const epFiles = new Set(epCredits.entries.map((c) => c.file));
-  const libFiles = new Set(libCredits.entries.map((c) => c.file));
-  const need = (set: Set<string>, rel: string, where: string) => {
-    if (!set.has(rel)) err(where, `${rel} has no credits entry with an allowed license (${LICENSES.join(", ")})`);
-  };
-  for (const [dir, exts] of [
-    ["clips", VIDEO_EXT],
-    ["images", IMAGE_EXT],
-    ["sfx", AUDIO_EXT],
-    ["music", AUDIO_EXT],
-  ] as const) {
-    listMedia(join(p.pub, dir), exts).forEach((f) => need(epFiles, `${dir}/${f}`, "credits.json"));
-  }
   const usedLib = new Set<string>();
   const sfxUsed = d.timeline ? new Set(sfxCues(ep, d.timeline).map((c) => c.sfx)) : new Set<string>();
   sfxUsed.forEach((s) => assets.sfx[s]?.file.startsWith("library/") && usedLib.add(assets.sfx[s].file.slice("library/".length)));
   const mf = ep.audio.music && assets.music[ep.audio.music.file]?.file;
   if (mf && mf.startsWith("library/")) usedLib.add(mf.slice("library/".length));
-  usedLib.forEach((f) => need(libFiles, f, "library/credits.json"));
-  epCredits.entries
-    .filter((c) => !existsSync(join(p.pub, c.file)))
-    .forEach((c) => warn("credits.json", `${c.file} is credited but not on disk`));
+  const { epCredits, issues: coverage } = creditCoverageIssues(slug, usedLib);
+  issues.push(...coverage);
 
   // --- AI-generated media: stills (npm run generate, always tagged on screen) and music beds (npm run compose) ---
-  const generated = new Set(epCredits.entries.filter((c) => c.license === AI_LICENSE && c.file.startsWith("images/")).map((c) => c.file.replace(/^images\//, "").replace(/\.[^.]+$/, "")));
-  const composed = (c: Credit) => c.file.startsWith("music/") && c.generator?.provider === "local" && /stable-audio-3/.test(c.generator.model);
-  epCredits.entries
-    .filter((c) => c.license === AI_LICENSE && !c.file.startsWith("images/") && !composed(c))
-    .forEach((c) => err("credits.json", `${c.file}: ${AI_LICENSE} is only allowed for images/ made by \`npm run generate\` and music/ made by \`npm run compose\``));
-  libCredits.entries.filter((c) => c.license === AI_LICENSE).forEach((c) => err("library/credits.json", `${c.file}: ${AI_LICENSE} isn't allowed in the shared library`));
+  const generated = generatedStills(epCredits.entries);
   const usesAi: string[] = [];
   ep.segments.forEach((s, i) =>
     s.visuals.forEach((v, k) => {
@@ -296,15 +345,7 @@ export const runCheck = (slug: string): Issue[] => {
   }
 
   // --- press images (config.yaml licensing.press_images): official manufacturer images of a product being discussed ---
-  const pressOn = loadConfig().licensing.press_images;
-  const press = epCredits.entries.filter((c) => c.license === PRESS_LICENSE);
-  press.forEach((c) => {
-    if (!pressOn) err("credits.json", `${c.file}: press images are off (config.yaml licensing.press_images: false); replace it with licensed media`);
-    if (!/^(images|clips)\//.test(c.file)) err("credits.json", `${c.file}: ${PRESS_LICENSE} is only for images/ and clips/`);
-  });
-  libCredits.entries.filter((c) => c.license === PRESS_LICENSE).forEach((c) => err("library/credits.json", `${c.file}: press images stay per episode, not in the shared library`));
-  const pressNames = new Set(press.map((c) => c.file.replace(/^.*\//, "").replace(/\.[^.]+$/, "")));
-  if (ep.thumbnail?.visual && pressNames.has(ep.thumbnail.visual)) err("thumbnail.visual", `"${ep.thumbnail.visual}" is a press image: press images can't be the thumbnail (it promotes the video, not the product)`);
+  issues.push(...pressIssues(epCredits.entries, ep.thumbnail?.visual));
 
   // --- source material ---
   if (!existsSync(p.article) || readFileSync(p.article, "utf8").replace(/<!--[\s\S]*?-->/g, "").trim().length < 200) {
