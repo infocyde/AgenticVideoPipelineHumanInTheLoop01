@@ -1,7 +1,9 @@
 // Scan an episode's media plus the shared library with ffprobe and write public/episodes/<slug>/assets.json.
 import { execFileSync } from "node:child_process";
-import { existsSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, extname, join, relative } from "node:path";
+import { youtubeAttributions } from "../../src/kit/lib/attribution.ts";
+import { parseCredits } from "../../src/kit/lib/credits.ts";
 import type { AssetManifest, MediaFile } from "../../src/kit/schema.ts";
 import { paths, PUBLIC } from "./util.ts";
 
@@ -44,6 +46,12 @@ export const scanAssets = (slug: string, voiceover = "voiceover.mp3"): AssetMani
     sfx: { ...scanDir(join(LIBRARY, "sfx"), AUDIO_EXT, true), ...scanDir(join(p.pub, "sfx"), AUDIO_EXT, true) },
     music: { ...scanDir(join(LIBRARY, "music"), AUDIO_EXT, true), ...scanDir(join(p.pub, "music"), AUDIO_EXT, true) },
   };
+  // Clips from YouTube carry their channel (the credit author) so the kit can tag them on screen.
+  const attr = youtubeAttributions(parseCredits(existsSync(p.credits) ? JSON.parse(readFileSync(p.credits, "utf8")) : []));
+  for (const clip of Object.values(manifest.clips)) {
+    const a = attr[`clips/${basename(clip.file)}`];
+    if (a) clip.attribution = a;
+  }
   writeFileSync(p.assets, JSON.stringify(manifest, null, 1) + "\n");
   return manifest;
 };

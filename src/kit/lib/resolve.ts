@@ -5,7 +5,7 @@ import { captionChunks, type Chunk, findPhrase, FPS, LEAD, TAIL, toFrame } from 
 
 export type Issue = { level: "error" | "warning"; where: string; msg: string };
 
-export type Asset = { kind: "clip"; file: string; duration: number } | { kind: "image"; file: string };
+export type Asset = { kind: "clip"; file: string; duration: number; attribution?: string } | { kind: "image"; file: string };
 
 export type ResolvedVisual = { name: string; note?: string; grade?: boolean; at: number; asset: Asset | null };
 export type ResolvedStat = Stat & { at: number };
@@ -64,7 +64,7 @@ export type Timeline = {
 
 export const resolveVisual = (assets: AssetManifest, name: string): Asset | null => {
   const clip = assets.clips[name];
-  if (clip) return { kind: "clip", file: clip.file, duration: clip.duration ?? 1 };
+  if (clip) return { kind: "clip", file: clip.file, duration: clip.duration ?? 1, ...(clip.attribution ? { attribution: clip.attribution } : {}) };
   const img = assets.images[name];
   if (img) return { kind: "image", file: img.file };
   return null;

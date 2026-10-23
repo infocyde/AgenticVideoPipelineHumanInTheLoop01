@@ -327,7 +327,13 @@ export const timingSchema = z.object({
 export type Timing = z.output<typeof timingSchema>;
 export type Word = Timing["words"][number];
 
-const media = z.object({ file: z.string(), duration: z.number().optional(), width: z.number().optional(), height: z.number().optional() });
+const media = z.object({
+  file: z.string(),
+  duration: z.number().optional(),
+  width: z.number().optional(),
+  height: z.number().optional(),
+  attribution: z.string().optional().describe("Channel shown in the kit's YouTube source tag; written by npm run assets from credits.json"),
+});
 export const assetsSchema = z.object({
   voiceover: media.nullable().default(null),
   clips: z.record(z.string(), media).default({}),
