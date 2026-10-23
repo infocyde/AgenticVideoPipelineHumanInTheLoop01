@@ -119,3 +119,15 @@ licensing:
   #   true:  sourcing agents may use them when no PD/CC media shows the product
   #   false: PD / CC0 / CC BY / CC BY-SA, own work and AI stills only (check errors on PRESS credits)
   press_images: true
+
+youtube:
+  # YouTube as a research source and, for Creative Commons videos, a clip source (the youtube skill;
+  # npm run youtube). No API key: search, transcripts and clips go through yt-dlp.
+  #   search_youtube true:  the producer searches YouTube during the fact-check and asset steps, previews each
+  #                         transcript's first ~300 words, and reads the full transcript of the useful ones.
+  #   search_youtube false: no YouTube (no search, transcripts or clips) unless you ask for it.
+  search_youtube: true
+  #   use_video_as_citation true:  a video can be a cited source (listed in sources, on the sources card).
+  #   use_video_as_citation false: videos are leads only; a fact from one is used only when a non-YouTube source
+  #                                confirms it, and that source is cited instead.
+  use_video_as_citation: true

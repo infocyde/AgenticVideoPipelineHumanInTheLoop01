@@ -51,6 +51,12 @@ export const configSchema = z.object({
       press_images: z.boolean().default(false), // allow official manufacturer press images (license "PRESS")
     })
     .prefault({}),
+  youtube: z
+    .object({
+      search_youtube: z.boolean().default(true), // search YouTube, read transcripts, use CC BY clips
+      use_video_as_citation: z.boolean().default(true), // a video may be a cited source (else leads only)
+    })
+    .prefault({}),
   image_gen: z
     .object({
       mode: z.enum(["local_render", "cloud_render", "mixed"]).default("mixed"),
