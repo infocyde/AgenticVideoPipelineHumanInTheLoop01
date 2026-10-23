@@ -76,6 +76,7 @@ Read the lyrics and the song map, then write the plan as a table:
 ## 4. Sourcing
 
 Use the find-media subagents with the prompts in `.claude/skills/new-episode/asset-prompts.md` and the **find-media** skill, driven by the plan, with the usual license gate (CLAUDE.md rule 3) and a `credits.json` entry for every file. Two differences from news episodes:
+- **YouTube.** The **youtube** skill can supply facts for an explainer and CC BY clips (`npm run youtube -- <slug> clip`). The channel tag shows on those clips.
 - **No FILE FOOTAGE notes.** A music video doesn't claim a clip shows a specific event; the credits roll and the description carry the sourcing.
 - **AI stills** (`npm run generate`, last resort) still need `"note": "AI-GENERATED ILLUSTRATION"`. Never make an AI image of a real, identifiable person, and never arrange footage to look like a real record of something that didn't happen. Juxtaposition is fine; putting words in someone's mouth is not.
 

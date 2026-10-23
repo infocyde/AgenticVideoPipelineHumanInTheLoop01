@@ -39,7 +39,10 @@ Reject everything else: NC, ND, Sampling+, GFDL-only, "editorial use only" (apar
 | Weather, disasters, earth science | Commons `insource:noaa.gov` / `insource:usgs.gov` | NASA |
 | Sound effects | Openverse audio (Freesound + Commons) | Freesound API (key) |
 | Music bed | ccMixter (`lic=by`/`zero`, `tags=instrumental`) | Openverse audio `category=music`, Internet Archive netlabels |
+| A clip the archives lack, from a Creative Commons YouTube video or a federal agency channel | `npm run youtube -- <slug> search "<query>" --cc` (youtube skill) | Commons mirrors of the same video |
 | Federal-site photos and odd one-offs the archives miss (last step) | DuckDuckGo lead finder `ddg_images.py --federal` (images only) | `ddg_images.py --license public`, then trace each hit |
+
+YouTube clips come only through `npm run youtube ... clip` (see the **youtube** skill), which checks the license (CC BY, or a federal channel's own footage as PD) and credits the clip. A creator's burned-in logo or watermark is rejected here as for any footage. A YouTube video that Commons mirrored and license-reviewed is a Commons file, credited to Commons with no tag.
 
 DuckDuckGo finds leads only: its license labels are never trusted. Confirm every hit on its origin page before downloading (sources.md §13).
 

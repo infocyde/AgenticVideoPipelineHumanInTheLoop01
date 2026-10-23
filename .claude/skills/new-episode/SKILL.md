@@ -26,7 +26,7 @@ A music video (the user's song, not an article) uses the **music-video** skill i
 Articles are often AI-generated research reports, so check them before you script. Do this every episode, before the user sees a script.
 
 1. List every figure and claim you plan to put in the script or on screen: dates, ranges, speeds, warheads, costs, production rates, counts, records, attributions, and "who did it first".
-2. Dispatch **2–3 parallel research subagents**, each with one group of claims (e.g. one per system or topic). Ask each one to use WebSearch/WebFetch on reputable outlets (wire services, major papers, think tanks like CSIS/RUSI/ISW, trade press like Janes, official statements attributed as such) and to report a table: claim | verdict (confirmed / partly / wrong / unverified) | real figure | source title | URL | date. Have them also rate the article's own cited sources and flag anonymous or unsourced sites.
+2. Dispatch **2–3 parallel research subagents**, each with one group of claims (e.g. one per system or topic). Ask each one to use WebSearch/WebFetch on reputable outlets (wire services, major papers, think tanks like CSIS/RUSI/ISW, trade press like Janes, official statements attributed as such) and to report a table: claim | verdict (confirmed / partly / wrong / unverified) | real figure | source title | URL | date. Have them also rate the article's own cited sources and flag anonymous or unsourced sites. When `config.yaml` has `youtube.search_youtube: true`, they may also use the **youtube** skill (search, transcript preview, full transcript) and must follow its rules for channels, logging and `use_video_as_citation`.
 3. Rewrite with the results:
    - Replace wrong figures with verified ones.
    - Cut anything unverifiable.
@@ -105,6 +105,8 @@ List the visuals `episode.json` needs and what each should show. Then dispatch *
 
 - **A. Clips and images** (always), split across 2–3 agents if there are more than ~8 shots.
 - **B. Sound effects and music** only when `check` reports a sound missing from `public/library/`, or the user asks for a new bed (with `music_gen.enabled: true` the bed is composed in step 3b instead of sourced). For a one-off effect the library lacks (a sonar ping, a heavier stamp, a radio blip), synthesizing it with `npm run sfx -- <slug> <name> --sound … | --recipe` is usually faster than sourcing it, and it needs no license check (`OWN WORK`).
+
+When `youtube.search_youtube` is on, Creative Commons YouTube clips are another source, pulled only with `npm run youtube -- <slug> clip` (the **youtube** skill); the kit tags them on screen. A federal agency channel's own footage is PD with a stated basis. Never as the thumbnail.
 
 The **find-media** skill (`.claude/skills/find-media/`) has the license gate, every source's tested API and the optional keys. The prompts point subagents to it, and you can use it directly for a single missing shot.
 

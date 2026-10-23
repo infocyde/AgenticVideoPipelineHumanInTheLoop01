@@ -165,7 +165,11 @@ $H "Tu-160 bomber" --license public     # public | share-commercially | modify-c
 - Known failure modes: relevance collapses on rare subjects (`"Tu-160 bomber" --federal` returned B-52s and B-1Bs; with `--license public` DDG matched "tu" to a valley and clip art); article pages reuse old file photos, so check the VIRIN date against the event; `crop_16_9` and `/2000/2000/` URLs are resized renditions, so take the full-size download from the photo page; a placeholder VIRIN such as `A-N1234` with "Credit: Army photo" has a PD basis but no named photographer.
 - ddgs 9.16 with primp 2.x fails with "malformed headers" on DDG images (it sends `Connection: keep-alive` over HTTP/2); the helper strips that header.
 
-## 14. Other sources checked
+## 14. YouTube (keyless, via yt-dlp) — Creative Commons videos and federal channels
+
+Do not call yt-dlp or download from YouTube by hand. Use `npm run youtube -- <slug> search "<query>" --cc`, then `clip` (see `.claude/skills/youtube/SKILL.md`). Only YouTube's Creative Commons Attribution license counts (`license: "CC BY"`, `licenseVersion: "3.0"`, channel as `author`, watch URL as `sourceUrl`), or a verified US federal agency channel's own footage as `PD` with the basis in `notes`. The kit draws the channel tag. Reject burned-in creator logos and text. A video Commons has mirrored and reviewed is a Commons file (section 1), not a YouTube one.
+
+## 15. Other sources checked
 
 - **Free Music Archive:** the old API `freemusicarchive.org/api/get/…` is gone (404). The website still has a license filter; use it only by hand in a browser, and confirm CC BY or CC0 on each track page (most FMA tracks are NC).
 - **NOAA / USGS:** no usable public media API (photolib.noaa.gov redirects; usgs.gov/media returned 504). Their PD media is on Commons: `<terms> insource:noaa.gov` (118k hits for "hurricane") and `<terms> insource:usgs.gov filetype:video`. Credit the agency, `license: "PD"`.
