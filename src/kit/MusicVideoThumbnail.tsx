@@ -1,6 +1,7 @@
 import React from "react";
 import { AbsoluteFill, Img, OffthreadVideo, staticFile } from "remotion";
 import { resolveVisual } from "./lib/resolve";
+import { thumbnailVisual } from "./lib/resolveMusicVideo";
 import { FPS } from "./lib/timing";
 import { useMusicVideo } from "./musicVideoContext";
 
@@ -8,7 +9,7 @@ import { useMusicVideo } from "./musicVideoContext";
 export const MusicVideoThumbnail: React.FC = () => {
   const { episode, assets, theme } = useMusicVideo();
   const { colors, fonts, effects } = theme;
-  const visual = resolveVisual(assets, episode.thumbnail?.visual ?? episode.shots[0].visual);
+  const visual = resolveVisual(assets, thumbnailVisual(episode));
   const media: React.CSSProperties = { width: "100%", height: "100%", objectFit: "cover", filter: "contrast(1.1) saturate(1.15)" };
   const title = episode.song.title;
   const titleSize = title.length <= 8 ? 170 : title.length <= 14 ? 130 : 96;

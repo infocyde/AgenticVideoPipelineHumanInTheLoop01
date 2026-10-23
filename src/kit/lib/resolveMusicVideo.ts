@@ -41,6 +41,9 @@ export const SHOT_LONG = 5;
 /** Shortest a credits page holds when a roll is squeezed into the song's tail (seconds). */
 export const CREDIT_PAGE_MIN = 4;
 
+/** The thumbnail's visual: `thumbnail.visual`, else the first shot's (what MusicVideoThumbnail renders and check vets). */
+export const thumbnailVisual = (ep: Pick<MusicVideo, "thumbnail" | "shots">): string => ep.thumbnail?.visual ?? ep.shots[0].visual;
+
 /**
  * How a clip fills its slot from its in-point: at full speed when it can, slowed (to half speed at most) when it is a
  * little short, and looped (`loopFrames`, the frames before it restarts at the in-point) only when even half speed is

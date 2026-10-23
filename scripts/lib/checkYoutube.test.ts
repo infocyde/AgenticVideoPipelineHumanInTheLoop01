@@ -60,3 +60,7 @@ test("a Commons credit whose originalUrl is YouTube is untouched", () => {
   const c = credit({ sourceUrl: "https://commons.wikimedia.org/wiki/File:A.webm", originalUrl: "https://www.youtube.com/watch?v=1" });
   assert.deepEqual(run(c, manifest()), []);
 });
+
+test("a credited clip with no assets.json entry (file deleted) is left to the coverage checks", () => {
+  assert.deepEqual(run(credit(), assetsSchema.parse({})), []);
+});

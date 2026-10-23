@@ -1,6 +1,7 @@
 // `npm run check` for music videos: song, lyrics timing, shots, subtitles and licensing. Returns issues, like runCheck.
 import { existsSync, readFileSync } from "node:fs";
 import { lyricWords, parseLyrics } from "../../src/kit/lib/lyrics.ts";
+import { thumbnailVisual } from "../../src/kit/lib/resolveMusicVideo.ts";
 import type { Issue } from "../../src/kit/lib/resolve.ts";
 import { assetsSchema, type Timing } from "../../src/kit/schema.ts";
 import { creditCoverageIssues, generatedStills, pressIssues, staleAssetIssues, youtubeIssues } from "./check.ts";
@@ -72,12 +73,13 @@ export const runMusicVideoCheck = (slug: string): Issue[] => {
     usesAi.push(s.visual);
     if (!s.note) err(`shots[${i}]`, `"${s.visual}" is AI-generated: add "note": "AI-GENERATED ILLUSTRATION" so viewers know`);
   });
-  if (ep.thumbnail?.visual && generated.has(ep.thumbnail.visual)) usesAi.push(ep.thumbnail.visual);
+  const thumb = thumbnailVisual(ep);
+  if (generated.has(thumb)) usesAi.push(thumb);
   if (usesAi.length) {
     warn("AI imagery", `uses AI-generated images (${[...new Set(usesAi)].join(", ")}). If any look realistic, tick YouTube's "altered or synthetic content" box when uploading.`);
   }
-  issues.push(...pressIssues(epCredits.entries, ep.thumbnail?.visual));
-  issues.push(...youtubeIssues(epCredits.entries, assets, ep.thumbnail?.visual, loadConfig().youtube.search_youtube));
+  issues.push(...pressIssues(epCredits.entries, thumb));
+  issues.push(...youtubeIssues(epCredits.entries, assets, thumb, loadConfig().youtube.search_youtube));
 
   if (!ep.summary) warn("summary", "no summary: write 1–2 sentences for the top of the YouTube description; npm run credits puts it there");
   return issues;

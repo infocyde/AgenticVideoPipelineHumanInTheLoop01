@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { type AssetManifest, assetsSchema, type MusicVideoInput, musicVideoSchema, type Timing } from "../schema.ts";
-import { clipPlayback, resolveMusicVideo, subtitleLines } from "./resolveMusicVideo.ts";
+import { clipPlayback, resolveMusicVideo, subtitleLines, thumbnailVisual } from "./resolveMusicVideo.ts";
 import { LEAD, toFrame } from "./timing.ts";
 
 // The chorus, sung at 10 s and again at 60 s: words every 0.5 s on three lines.
@@ -177,4 +177,9 @@ test("clipPlayback loops only when even half speed is too short", () => {
   const p = clipPlayback(3, 0, 240);
   assert.equal(p.rate, 0.5);
   assert.ok(p.loopFrames !== null && p.loopFrames < 240);
+});
+
+test("the thumbnail is thumbnail.visual, else the first shot's visual", () => {
+  assert.equal(thumbnailVisual(mv([{ visual: "a" }, { visual: "b", beat: 4 }])), "a");
+  assert.equal(thumbnailVisual(mv([{ visual: "a" }], { thumbnail: { visual: "c" } })), "c");
 });

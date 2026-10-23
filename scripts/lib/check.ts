@@ -163,7 +163,8 @@ export const youtubeIssues = (entries: Credit[], assets: AssetManifest, thumbnai
     }
     if (!c.author.trim() || c.author.trim().toLowerCase() === "youtube") err("credits.json", `${c.file}: name the channel as author (not "YouTube")`);
     const name = c.file.replace(/^.*\//, "").replace(/\.[^.]+$/, "");
-    if (assets.clips[name]?.attribution !== channels[c.file]) err("assets", `${c.file}: the on-screen channel tag is missing or stale: run \`npm run assets\``);
+    // No entry means the file is gone: staleAssetIssues and creditCoverageIssues already say so.
+    if (assets.clips[name] && assets.clips[name].attribution !== channels[c.file]) err("assets", `${c.file}: the on-screen channel tag is missing or stale: run \`npm run assets\``);
   });
   const ytNames = new Set(yt.map((c) => c.file.replace(/^.*\//, "").replace(/\.[^.]+$/, "")));
   if (thumbnailVisual && ytNames.has(thumbnailVisual)) err("thumbnail.visual", `"${thumbnailVisual}" is a YouTube clip: it can't be the thumbnail`);
