@@ -22,7 +22,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import type { Credit } from "../src/kit/schema.ts";
-import { IMAGE_EXT, listMedia, scanAssets, VIDEO_EXT } from "./lib/assets.ts";
+import { episodeVoiceover, IMAGE_EXT, listMedia, scanAssets, VIDEO_EXT } from "./lib/assets.ts";
 import { loadConfig } from "./lib/config.ts";
 import {
   classifyLicense,
@@ -153,7 +153,7 @@ async function transcript() {
   const caps = pickCaptions(v);
   const dir = join(ytDir, id);
   mkdirSync(dir, { recursive: true });
-  const kind = !caps ? "none" : caps.lang === "en" || caps.lang.startsWith("en-") ? caps.kind : "auto, translated";
+  const kind = !caps ? "none" : caps.from ? `auto, machine-translated from ${caps.from}` : caps.kind;
   const meta = {
     id: v.id,
     url: `https://www.youtube.com/watch?v=${v.id}`,
@@ -188,14 +188,15 @@ async function transcript() {
   } catch (e) {
     fail(`caption download failed: ${(e as Error).message}`);
   }
-  const text = formatTranscript(parseJson3(raw));
+  const text = formatTranscript(parseJson3(raw, caps!.kind));
   if (!text) fail(`the ${kind} captions for ${id} are empty`);
   const file = join(dir, "transcript.txt");
   writeFileSync(file, text + "\n");
   const total = firstWords(text, Number.MAX_SAFE_INTEGER).split(" ").length;
   console.log(`\n--- first ${Math.min(n, total)} of ${total} words ---\n${firstWords(text, n)}\n---\n`);
   ok(`${rel(file)} (full transcript with [mm:ss] timestamps; read it when the preview is useful)`);
-  if (kind !== "manual") warn("auto-generated captions: confirm any number, name or date from them before scripting it.");
+  if (caps!.from) warn(`machine-translated captions (from ${caps!.from}): confirm any number, name, date or quote from them before scripting it.`);
+  else if (kind !== "manual") warn("auto-generated captions: confirm any number, name or date from them before scripting it.");
 }
 
 async function clip() {
@@ -275,7 +276,7 @@ async function clip() {
   // --- credit (replaces an earlier entry for the same file) and assets.json ---
   const credits: Credit[] = existsSync(p.credits) ? JSON.parse(readFileSync(p.credits, "utf8")) : [];
   writeFileSync(p.credits, JSON.stringify([...credits.filter((c) => c.file !== credit.file), credit], null, 2) + "\n");
-  scanAssets(slug);
+  scanAssets(slug, episodeVoiceover(slug));
 
   ok(`public/episodes/${slug}/${credit.file} (${to - from}s; raw section: ${rel(section)})`);
   console.log(`credit: ${JSON.stringify(credit, null, 2)}`);

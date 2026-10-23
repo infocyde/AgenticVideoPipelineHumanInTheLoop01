@@ -4,8 +4,8 @@ import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, extname, join, relative } from "node:path";
 import { youtubeAttributions } from "../../src/kit/lib/attribution.ts";
 import { parseCredits } from "../../src/kit/lib/credits.ts";
-import type { AssetManifest, MediaFile } from "../../src/kit/schema.ts";
-import { paths, PUBLIC } from "./util.ts";
+import { type AssetManifest, type EpisodeInput, isMusicVideo, type MediaFile, type MusicVideoInput } from "../../src/kit/schema.ts";
+import { paths, PUBLIC, readJson } from "./util.ts";
 
 export const VIDEO_EXT = [".mp4", ".webm", ".mov"];
 export const IMAGE_EXT = [".jpg", ".jpeg", ".png", ".webp"];
@@ -35,6 +35,28 @@ const scanDir = (dir: string, exts: string[], probeIt: boolean): Record<string, 
     }),
   );
 
+/** The audio file in the manifest's voiceover slot: a music video's song (its only audio), else `audio.voiceover`. */
+export const voiceoverOf = (raw: unknown): string =>
+  isMusicVideo(raw) ? ((raw as MusicVideoInput).song?.file ?? "song.wav") : ((raw as EpisodeInput | null)?.audio?.voiceover ?? "voiceover.mp3");
+
+/** `voiceoverOf` the slug's episode.json; the default when it is missing or broken (check reports that). */
+export const episodeVoiceover = (slug: string): string => {
+  try {
+    return voiceoverOf(readJson<unknown>(paths(slug).episode));
+  } catch {
+    return voiceoverOf(null);
+  }
+};
+
+/** YouTube clip -> channel from credits.json text; none when it is missing or malformed (check reports bad JSON). */
+export const creditAttributions = (text: string | null): Record<string, string> => {
+  try {
+    return youtubeAttributions(parseCredits(text === null ? [] : JSON.parse(text)));
+  } catch {
+    return {};
+  }
+};
+
 export const scanAssets = (slug: string, voiceover = "voiceover.mp3"): AssetManifest => {
   const p = paths(slug);
   const vo = join(p.pub, voiceover);
@@ -47,7 +69,7 @@ export const scanAssets = (slug: string, voiceover = "voiceover.mp3"): AssetMani
     music: { ...scanDir(join(LIBRARY, "music"), AUDIO_EXT, true), ...scanDir(join(p.pub, "music"), AUDIO_EXT, true) },
   };
   // Clips from YouTube carry their channel (the credit author) so the kit can tag them on screen.
-  const attr = youtubeAttributions(parseCredits(existsSync(p.credits) ? JSON.parse(readFileSync(p.credits, "utf8")) : []));
+  const attr = creditAttributions(existsSync(p.credits) ? readFileSync(p.credits, "utf8") : null);
   for (const clip of Object.values(manifest.clips)) {
     const a = attr[`clips/${basename(clip.file)}`];
     if (a) clip.attribution = a;
