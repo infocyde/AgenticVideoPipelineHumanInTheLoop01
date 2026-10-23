@@ -9,6 +9,9 @@ import {
   parseTimestamp,
   validateRange,
   searchHits,
+  videoId,
+  isBlocked,
+  clipCredit,
   type VideoInfo,
 } from "./youtube";
 
@@ -123,4 +126,44 @@ test("searchHits maps flat-playlist entries", () => {
     { id: "def", title: "B", channel: "Up", duration: 0, url: "https://www.youtube.com/watch?v=def" },
   ]);
   assert.deepEqual(searchHits(undefined), []);
+});
+
+test("videoId accepts a bare id and the usual YouTube URL shapes", () => {
+  assert.equal(videoId("dQw4w9WgXcQ"), "dQw4w9WgXcQ");
+  assert.equal(videoId("https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=42s"), "dQw4w9WgXcQ");
+  assert.equal(videoId("https://m.youtube.com/watch?feature=share&v=a-b_c1234XY"), "a-b_c1234XY");
+  assert.equal(videoId("https://youtu.be/dQw4w9WgXcQ?si=x"), "dQw4w9WgXcQ");
+  assert.equal(videoId("https://www.youtube.com/shorts/dQw4w9WgXcQ"), "dQw4w9WgXcQ");
+  assert.equal(videoId("https://www.youtube.com/embed/dQw4w9WgXcQ"), "dQw4w9WgXcQ");
+  assert.equal(videoId("https://www.youtube.com/live/dQw4w9WgXcQ"), "dQw4w9WgXcQ");
+  assert.equal(videoId("short"), null);
+  assert.equal(videoId("https://vimeo.com/watch?v=dQw4w9WgXcQ"), null);
+  assert.equal(videoId("https://www.youtube.com/@nasa"), null);
+});
+
+test("isBlocked spots YouTube's bot check and rate limiting only", () => {
+  assert.ok(isBlocked("ERROR: [youtube] abc: Sign in to confirm you're not a bot. Use --cookies"));
+  assert.ok(isBlocked("ERROR: [youtube] abc: Sign in to confirm you’re not a bot"));
+  assert.ok(isBlocked("ERROR: unable to download video data: HTTP Error 429: Too Many Requests"));
+  assert.ok(!isBlocked("ERROR: [youtube] abc: Video unavailable"));
+  assert.ok(!isBlocked(""));
+});
+
+test("clipCredit builds the CC BY and PD credit shapes", () => {
+  const info = { id: "abc123def45", title: "Launch", channel: "NASA" } as VideoInfo;
+  assert.deepEqual(clipCredit(info, "launch", 83, 89.5, { license: "CC BY" }), {
+    file: "clips/launch.mp4",
+    title: "Launch",
+    author: "NASA",
+    license: "CC BY",
+    licenseVersion: "3.0",
+    sourceUrl: "https://www.youtube.com/watch?v=abc123def45",
+    notes: "YouTube 1:23–1:29.5; trimmed and scaled; channel watermark shown in the video",
+  });
+  const pd = clipCredit(info, "launch", 3725, 3730, { license: "PD", basis: "NASA, US federal work" });
+  assert.equal(pd.license, "PD");
+  assert.equal(pd.licenseVersion, undefined);
+  assert.equal(pd.notes, "YouTube 1:02:05–1:02:10; trimmed and scaled; channel watermark shown in the video; PD basis: NASA, US federal work");
+  assert.match(clipCredit(info, "x", 59.96, 65, { license: "CC BY" }).notes!, /^YouTube 1:00–1:05;/);
+  assert.equal(clipCredit({ ...info, channel: undefined, uploader: "Up" } as VideoInfo, "x", 0, 1, { license: "CC BY" }).author, "Up");
 });

@@ -32,6 +32,7 @@
     "infographic": "tsx scripts/infographic.ts",
     "explainer": "tsx scripts/explainer.ts",
     "sfx": "tsx scripts/sfx.ts",
+    "youtube": "tsx scripts/youtube.ts",
     "test": "tsx --test \"src/**/*.test.ts\" \"scripts/**/*.test.ts\""
   },
   "dependencies": {

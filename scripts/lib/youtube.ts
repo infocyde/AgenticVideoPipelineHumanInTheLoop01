@@ -1,6 +1,7 @@
 // YouTube research parsing (pure, no network or fs): yt-dlp json3 captions, search results,
-// license and clip-range checks. Used by scripts/youtube.ts. The render-side URL/tag helpers
-// live in src/kit/lib/youtube.ts.
+// license and clip-range checks, video ids, block detection and clip credits. Used by
+// scripts/youtube.ts. The render-side URL/tag helpers live in src/kit/lib/youtube.ts.
+import type { Credit } from "../../src/kit/schema.ts";
 
 export type TranscriptLine = { start: number; text: string };
 
@@ -11,6 +12,7 @@ export type VideoInfo = {
   id: string;
   title: string;
   channel?: string;
+  uploader?: string;
   channel_url?: string;
   upload_date?: string;
   duration?: number;
@@ -179,4 +181,53 @@ export function searchHits(raw: unknown): SearchHit[] {
     hits.push(hit);
   }
   return hits;
+}
+
+/** The 11-character video id from a bare id or a watch, youtu.be, shorts, embed or live URL; `null` otherwise. */
+export function videoId(idOrUrl: string): string | null {
+  const s = idOrUrl.trim();
+  const ID = /^[\w-]{11}$/;
+  if (ID.test(s)) return s;
+  let u: URL;
+  try {
+    u = new URL(s);
+  } catch {
+    return null;
+  }
+  const host = u.hostname.toLowerCase();
+  let id: string | null | undefined;
+  if (host === "youtu.be") id = u.pathname.split("/")[1];
+  else if (host === "youtube.com" || host.endsWith(".youtube.com")) {
+    id = u.searchParams.get("v") ?? /^\/(?:shorts|embed|live)\/([^/]+)/.exec(u.pathname)?.[1];
+  }
+  return id && ID.test(id) ? id : null;
+}
+
+/** True when yt-dlp's stderr shows YouTube refusing this machine (bot check or HTTP 429). */
+export function isBlocked(stderr: string): boolean {
+  return /confirm you.?re not a bot|HTTP Error 429/i.test(stderr);
+}
+
+const clock = (sec: number) => {
+  const t = Math.round(sec * 10) / 10;
+  const whole = Math.floor(t);
+  const frac = Math.round((t - whole) * 10) / 10;
+  const h = Math.floor(whole / 3600);
+  const m = Math.floor((whole % 3600) / 60);
+  const ss = String(whole % 60).padStart(2, "0") + (frac ? String(frac).slice(1) : "");
+  return h ? `${h}:${String(m).padStart(2, "0")}:${ss}` : `${m}:${ss}`;
+};
+
+/** The credits.json entry for a clip cut from `info` (CC BY 3.0, or PD with its basis in `notes`). */
+export function clipCredit(info: VideoInfo, name: string, from: number, to: number, lic: { license: "CC BY" } | { license: "PD"; basis: string }): Credit {
+  const notes = `YouTube ${clock(from)}–${clock(to)}; trimmed and scaled; channel watermark shown in the video`;
+  return {
+    file: `clips/${name}.mp4`,
+    title: info.title,
+    author: info.channel || info.uploader || "",
+    license: lic.license,
+    ...(lic.license === "CC BY" ? { licenseVersion: "3.0" } : {}),
+    sourceUrl: `https://www.youtube.com/watch?v=${info.id}`,
+    notes: lic.license === "PD" ? `${notes}; PD basis: ${lic.basis}` : notes,
+  };
 }
