@@ -79,6 +79,9 @@ function ytdlp(args: string[]): { status: number; stdout: string; stderr: string
   return { status: r.status ?? 1, stdout: r.stdout ?? "", stderr };
 }
 
+/** Pause between separate requests to YouTube (yt-dlp's --sleep-requests only spaces those inside one run). */
+const pause = (ms = 1000) => new Promise((r) => setTimeout(r, ms));
+
 const lastLines = (s: string) => s.trim().split(/\r?\n/).slice(-3).join("\n  ");
 
 /** Full metadata for one video (no download). */
@@ -98,7 +101,7 @@ const cmd = positional[1];
 
 if (cmd === "search") search();
 else if (cmd === "transcript") await transcript();
-else if (cmd === "clip") clip();
+else if (cmd === "clip") await clip();
 else fail(`Give a subcommand: search, transcript or clip.\n  usage: ${usage}`);
 
 function needId(arg: string | undefined): string {
@@ -176,6 +179,7 @@ async function transcript() {
   if (!caps) fail(`no English captions for ${id} (info saved to ${rel(join(dir, "info.json"))})`);
 
   let raw: unknown;
+  await pause();
   try {
     const res = await fetch(caps!.url);
     if (res.status === 429) fail(BLOCKED);
@@ -194,7 +198,7 @@ async function transcript() {
   if (kind !== "manual") warn("auto-generated captions: confirm any number, name or date from them before scripting it.");
 }
 
-function clip() {
+async function clip() {
   const id = needId(positional[2]);
   const name = positional[3];
   if (!name || !/^[a-z0-9_-]+$/.test(name)) fail(`Give the clip a name (lowercase letters, digits, _ or -), e.g. artemis_launch.\n  usage: ${usage}`);
@@ -239,6 +243,7 @@ function clip() {
   const s0 = Math.max(0, from - 1);
   const s1 = Math.min(duration, to + 1);
   info(`downloading ${fmtTime(s0)}–${fmtTime(s1)} of "${v.title}"…`);
+  await pause();
   const dl = ytdlp([
     "--download-sections", `*${s0}-${s1}`,
     "-f", "bv*[height<=1080][ext=mp4]/bv*[height<=1080]/bv*",
