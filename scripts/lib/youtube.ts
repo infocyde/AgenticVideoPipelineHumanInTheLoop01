@@ -19,6 +19,8 @@ export type VideoInfo = {
   description?: string;
   license?: string;
   view_count?: number;
+  /** The spoken language yt-dlp detected (from the audio track or the ASR captions); often null. */
+  language?: string | null;
   subtitles?: Record<string, CaptionTrack[]>;
   automatic_captions?: Record<string, CaptionTrack[]>;
 };
@@ -36,8 +38,18 @@ export type SearchHit = {
 const words = (s: string) => s.split(" ").filter(Boolean);
 const norm = (w: string) => w.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
 
-/** Parse yt-dlp json3 captions into timed lines: no empty events, no `[Music]` cues, no rolling duplicates. */
-export function parseJson3(raw: unknown): TranscriptLine[] {
+const SOUND_CUES = new Set(["applause", "laughter", "laughs", "music", "inaudible", "crosstalk", "cheering", "silence"]);
+/** A `(...)` that is a sound cue (`(applause)`, `(MUSIC PLAYING)`), not a spoken aside like `(about 15%)`. */
+const isSoundCue = (inner: string) => {
+  const t = inner.trim();
+  return SOUND_CUES.has(t.toLowerCase()) || (/\p{L}/u.test(t) && !/\d/.test(t) && t === t.toUpperCase());
+};
+
+/**
+ * Parse yt-dlp json3 captions into timed lines: no empty events, no `[Music]` or `(applause)` cues, and for auto
+ * captions no rolling duplicates (manual captions are kept line for line, repeats included).
+ */
+export function parseJson3(raw: unknown, kind: "manual" | "auto" = "auto"): TranscriptLine[] {
   const events = (raw as { events?: unknown })?.events;
   if (!Array.isArray(events)) return [];
   const out: TranscriptLine[] = [];
@@ -46,13 +58,14 @@ export function parseJson3(raw: unknown): TranscriptLine[] {
     const text = e.segs
       .map((s: { utf8?: string }) => s?.utf8 ?? "")
       .join("")
-      .replace(/\[[^\]]*\]|\([^)]*\)/g, " ")
+      .replace(/\[[^\]]*\]/g, " ")
+      .replace(/\(([^)]*)\)/g, (m: string, inner: string) => (isSoundCue(inner) ? " " : m))
       .replace(/\s+/g, " ")
       .trim();
     if (!text) continue;
     const start = Math.round(((Number(e.tStartMs) || 0) / 1000) * 1000) / 1000;
     const prev = out[out.length - 1];
-    if (!prev) {
+    if (!prev || kind === "manual") {
       out.push({ start, text });
       continue;
     }
@@ -116,8 +129,12 @@ function json3Url(tracks?: CaptionTrack[]): string | null {
   return tracks?.find((t) => t.ext === "json3" && t.url)?.url ?? null;
 }
 
-/** Best json3 caption track: manual English, then auto English, then an auto translation into English. */
-export function pickCaptions(info: VideoInfo): { lang: string; kind: "manual" | "auto"; url: string } | null {
+/**
+ * Best json3 caption track: manual English, then auto English. `from` is set when the auto English track is YouTube's
+ * machine translation: of the speech (plain `en` on a video whose ASR track, `<xx>-orig`, or `language` isn't English)
+ * or of manual subtitles (`en-<xx>`).
+ */
+export function pickCaptions(info: VideoInfo): { lang: string; kind: "manual" | "auto"; url: string; from?: string } | null {
   const isEn = (l: string) => l === "en" || l.startsWith("en-");
   const find = (src: Record<string, CaptionTrack[]> | undefined, ok: (l: string) => boolean, order: string[]) => {
     const langs = Object.keys(src ?? {}).filter(ok);
@@ -133,10 +150,13 @@ export function pickCaptions(info: VideoInfo): { lang: string; kind: "manual" | 
   };
   const m = find(info.subtitles, isEn, ["en"]);
   if (m) return { ...m, kind: "manual" };
-  const a = find(info.automatic_captions, isEn, ["en", "en-orig"]);
-  if (a) return { ...a, kind: "auto" };
-  const t = find(info.automatic_captions, (l) => l.endsWith("-en"), []);
-  return t ? { ...t, kind: "auto" } : null;
+  const auto = info.automatic_captions ?? {};
+  const spoken = Object.keys(auto).find((l) => l.endsWith("-orig"))?.slice(0, -"-orig".length) ?? info.language ?? undefined;
+  const from = (l: string) => (l === "en-orig" ? undefined : l.startsWith("en-") ? l.slice(3) : spoken && !isEn(spoken) ? spoken : undefined);
+  const a = find(auto, (l) => isEn(l) && !from(l), ["en", "en-orig"]) ?? find(auto, isEn, ["en"]);
+  if (!a) return null;
+  const src = from(a.lang);
+  return src ? { ...a, kind: "auto", from: src } : { ...a, kind: "auto" };
 }
 
 /** `cc-by` only when YouTube reports a Creative Commons license. */

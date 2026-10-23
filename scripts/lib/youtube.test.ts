@@ -47,6 +47,35 @@ test("parseJson3 joins segs, collapses whitespace, strips sound cues", () => {
   ]);
 });
 
+test("parseJson3 keeps spoken asides in parentheses, strips only sound cues", () => {
+  const lines = parseJson3(
+    {
+      events: [
+        ev(0, "costs rose (about 15%) last year"),
+        ev(3000, "we flew (the F-35) there"),
+        ev(6000, "(Laughter) (MUSIC PLAYING) (inaudible) right"),
+      ],
+    },
+    "manual",
+  );
+  assert.deepEqual(
+    lines.map((l) => l.text),
+    ["costs rose (about 15%) last year", "we flew (the F-35) there", "right"],
+  );
+});
+
+test("parseJson3 keeps a deliberately repeated line in manual captions", () => {
+  const events = [ev(0, "No."), ev(1000, "No."), ev(2000, "No. Not today.")];
+  assert.deepEqual(
+    parseJson3({ events }, "manual").map((l) => l.text),
+    ["No.", "No.", "No. Not today."],
+  );
+  assert.deepEqual(
+    parseJson3({ events }, "auto").map((l) => l.text),
+    ["No. Not today."],
+  );
+});
+
 test("parseJson3 tolerates junk", () => {
   assert.deepEqual(parseJson3(null), []);
   assert.deepEqual(parseJson3({}), []);
@@ -74,7 +103,7 @@ test("firstWords truncates to n words and drops timestamps", () => {
 const track = (url: string, ext = "json3") => ({ ext, url });
 const base: VideoInfo = { id: "x", title: "t", channel: "c" };
 
-test("pickCaptions prefers manual en-*, then auto en/en-orig, last resort translated", () => {
+test("pickCaptions prefers manual en-*, then auto en/en-orig", () => {
   const manual = pickCaptions({
     ...base,
     subtitles: { "en-GB": [track("m"), track("m-vtt", "vtt")] },
@@ -85,11 +114,45 @@ test("pickCaptions prefers manual en-*, then auto en/en-orig, last resort transl
   const auto = pickCaptions({ ...base, automatic_captions: { "en-orig": [track("o")], fr: [track("f")] } });
   assert.deepEqual(auto, { lang: "en-orig", kind: "auto", url: "o" });
 
-  const translated = pickCaptions({ ...base, automatic_captions: { "fr-en": [track("t")], de: [track("d")] } });
-  assert.deepEqual(translated, { lang: "fr-en", kind: "auto", url: "t" });
+  assert.equal(pickCaptions({ ...base, automatic_captions: { "fr-en": [track("t")], de: [track("d")] } }), null);
 
   assert.equal(pickCaptions({ ...base, subtitles: { fr: [track("f")] } }), null);
   assert.equal(pickCaptions({ ...base, subtitles: { en: [track("v", "vtt")] } }), null);
+});
+
+// Shaped on yt-dlp -J for a non-English video: the speech's ASR track appears as `<xx>-orig` and `<xx>`, and every
+// translation of it as a plain code (`en`, `de`, ...); translations of manual subtitles are `<code>-<src>`.
+test("pickCaptions marks auto English on a non-English video as machine-translated", () => {
+  const uk = pickCaptions({
+    ...base,
+    language: "uk",
+    automatic_captions: { "uk-orig": [track("uo")], uk: [track("u")], en: [track("e")], de: [track("d")] },
+  });
+  assert.deepEqual(uk, { lang: "en", kind: "auto", url: "e", from: "uk" });
+  // `language` alone (no -orig key), and the -orig key alone (language null), are each enough.
+  assert.deepEqual(pickCaptions({ ...base, language: "ru", automatic_captions: { en: [track("e")] } }), { lang: "en", kind: "auto", url: "e", from: "ru" });
+  assert.deepEqual(pickCaptions({ ...base, language: null, automatic_captions: { "ru-orig": [track("r")], en: [track("e")] } }), {
+    lang: "en",
+    kind: "auto",
+    url: "e",
+    from: "ru",
+  });
+  // A translation of manual Ukrainian subtitles.
+  assert.deepEqual(pickCaptions({ ...base, automatic_captions: { "en-uk": [track("t")] } }), { lang: "en-uk", kind: "auto", url: "t", from: "uk" });
+});
+
+test("pickCaptions keeps auto English on an English video unmarked", () => {
+  const en = { "en-orig": [track("o")], en: [track("e")], fr: [track("f")] };
+  assert.deepEqual(pickCaptions({ ...base, language: "en", automatic_captions: en }), { lang: "en", kind: "auto", url: "e" });
+  assert.deepEqual(pickCaptions({ ...base, language: "en-US", automatic_captions: { en: [track("e")] } }), { lang: "en", kind: "auto", url: "e" });
+  // An English ASR track beats a translation of manual subtitles.
+  assert.deepEqual(pickCaptions({ ...base, automatic_captions: { "en-uk": [track("t")], "en-orig": [track("o")] } }), { lang: "en-orig", kind: "auto", url: "o" });
+  // A manual English track still wins on a non-English video.
+  assert.deepEqual(pickCaptions({ ...base, language: "uk", subtitles: { en: [track("m")] }, automatic_captions: { "uk-orig": [track("u")], en: [track("e")] } }), {
+    lang: "en",
+    kind: "manual",
+    url: "m",
+  });
 });
 
 test("classifyLicense", () => {
