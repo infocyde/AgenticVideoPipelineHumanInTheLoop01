@@ -360,7 +360,8 @@ export const FrontierSegment: React.FC<{ s: ResolvedSegment; slam: boolean }> = 
 
       <Window box={win} enter={winIn} label={visualLabel(visuals, frame)} glow={isTop ? 0.6 : 0}>
         {visuals.length ? (
-          <MediaStack visuals={visuals} durationInFrames={dur} seed={s.num * 3} />
+          // With a map, the GeoCard covers the window's top-left: the source tag wraps to stay right of it.
+          <MediaStack visuals={visuals} durationInFrames={dur} seed={s.num * 3} tagMaxWidth={seg.map ? 460 : undefined} />
         ) : seg.map ? (
           <DotMap width={win.width - 4} height={win.height - 4} focus={seg.map} showLabels />
         ) : (

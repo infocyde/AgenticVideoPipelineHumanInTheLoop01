@@ -31,6 +31,8 @@ const PANEL_W = TEXT_W - 90; // clear of the Shorts buttons on the right
 const PANEL_PAD = 30;
 const SHORT_VIGNETTE = 0.3;
 const NOTE_SIZE = 26;
+/** YouTube source tag (SourceTag): right, below the player's icons and beside the brand bar, wrapping before it. */
+const TAG = { tagInset: X, tagTop: 150, tagSize: 20, tagMaxWidth: 560 };
 
 /** A tall frame shows a small bounding box as one blob of country; zoom out around it so the region reads in context. */
 const widen = (m: MapFocus, k = 2.2): MapFocus => {
@@ -152,7 +154,7 @@ const ShortColdOpen: React.FC = () => {
               </AbsoluteFill>
             ) : (
               <>
-                {asset && <Backdrop visuals={[{ name: beat.visual!, asset, note: beat.note, from: 0 }]} durationInFrames={dur} seed={i} gradients={false} noteInset={X} noteSize={NOTE_SIZE} />}
+                {asset && <Backdrop visuals={[{ name: beat.visual!, asset, note: beat.note, from: 0 }]} durationInFrames={dur} seed={i} gradients={false} noteInset={X} noteSize={NOTE_SIZE} {...TAG} />}
                 <Scrims strength={beat.fade ?? 0} />
                 <Sequence from={4} layout="none">
                   <VStamp text={beat.stamp} sub={beat.sub} at={beat.stampAt} />
@@ -229,7 +231,7 @@ const ShortSegment: React.FC<{ s: ResolvedSegment }> = ({ s }) => {
 
   return (
     <AbsoluteFill>
-      {visuals.length ? <Backdrop visuals={visuals} durationInFrames={dur} seed={s.num * 3} gradients={false} noteInset={X} noteSize={NOTE_SIZE} /> : <AbsoluteFill style={{ background: colors.bg }} />}
+      {visuals.length ? <Backdrop visuals={visuals} durationInFrames={dur} seed={s.num * 3} gradients={false} noteInset={X} noteSize={NOTE_SIZE} {...TAG} /> : <AbsoluteFill style={{ background: colors.bg }} />}
       {seg.map && (!visuals.length || frame < mapEnd) && (
         <AbsoluteFill style={{ background: colors.bg, opacity: visuals.length ? 1 : 0.6 }}>
           <WorldMap width={SHORT_WIDTH} height={SHORT_HEIGHT} focus={widen(seg.map)} showLabels={!!visuals.length} />
@@ -276,7 +278,7 @@ const ShortText: React.FC<{ t: ResolvedText }> = ({ t }) => {
   return (
     <AbsoluteFill>
       {visuals.length ? (
-        <Backdrop visuals={visuals} durationInFrames={t.to - t.from} seed={t.index * 5 + 1} gradients={false} noteInset={X} noteSize={NOTE_SIZE} />
+        <Backdrop visuals={visuals} durationInFrames={t.to - t.from} seed={t.index * 5 + 1} gradients={false} noteInset={X} noteSize={NOTE_SIZE} {...TAG} />
       ) : (
         <AbsoluteFill style={{ background: colors.bg, justifyContent: "center", alignItems: "center", opacity: 0.5 }}>
           <WorldMap width={SHORT_WIDTH} height={1300} allPins={allPins(episode)} pinDelay={0} zoomFrames={1} showLabels={false} />

@@ -1,4 +1,5 @@
 // YouTube helpers shared by the check and the render: pure, no Node imports.
+import type { Asset } from "./resolve";
 
 export const TAG_PREFIX = "VIDEO · ";
 export const TAG_SUFFIX = " / YouTube";
@@ -19,4 +20,9 @@ export function youtubeTagText(channel: string, max = 40): string {
   const chars = [...channel.trim()]; // code points, so an emoji is never split
   const name = chars.length > max ? chars.slice(0, max - 1).join("") + "…" : chars.join("");
   return `${TAG_PREFIX}${name}${TAG_SUFFIX}`;
+}
+
+/** The channel to tag a visual with: set only for a clip whose credit is a YouTube video (assets.json `attribution`). */
+export function tagChannel(asset?: Asset | null): string | undefined {
+  return asset?.kind === "clip" && asset.attribution?.trim() ? asset.attribution : undefined;
 }

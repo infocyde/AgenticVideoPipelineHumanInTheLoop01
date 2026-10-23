@@ -194,7 +194,7 @@ export const SplitSegment: React.FC<{ s: ResolvedSegment; slam: boolean }> = ({ 
         }}
       >
         {visuals.length ? (
-          <Backdrop visuals={visuals} durationInFrames={dur} seed={s.num * 3} gradients={false} noteInset={18} />
+          <Backdrop visuals={visuals} durationInFrames={dur} seed={s.num * 3} gradients={false} noteInset={18} tagInset={8} tagSize={14} />
         ) : (
           seg.map && (
             <AbsoluteFill style={{ opacity: 0.8 }}>

@@ -3,9 +3,11 @@
 import React from "react";
 import { AbsoluteFill, Img, interpolate, Loop, OffthreadVideo, Sequence, staticFile, useCurrentFrame } from "remotion";
 import type { BackdropVisual } from "../../components/Backdrop";
+import { SourceTag } from "../../components/SourceTag";
 import { useTheme } from "../../context";
 import type { Asset } from "../../lib/resolve";
 import { FPS } from "../../lib/timing";
+import { tagChannel } from "../../lib/youtube";
 import { F, pad2, prog, Sweep } from "./fx";
 
 /** Slow push-in (gentler than the shared Ken Burns: the window itself already moves). */
@@ -38,13 +40,20 @@ const Layer: React.FC<{ asset: Asset; frames: number; seed: number }> = ({ asset
   );
 };
 
-/** The visuals of a scene, each from its cue frame, swept in; notes as a glass pill. Fills its parent. */
-export const MediaStack: React.FC<{ visuals: BackdropVisual[]; durationInFrames: number; seed?: number; noteInset?: number; noteSize?: number; tint?: boolean }> = ({
+/**
+ * The visuals of a scene, each from its cue frame, swept in; notes as a glass pill; a YouTube clip's SourceTag top-right
+ * (`tagInset`, `tagTop`, `tagSize`, `tagMaxWidth` as on Backdrop). Fills its parent.
+ */
+export const MediaStack: React.FC<{ visuals: BackdropVisual[]; durationInFrames: number; seed?: number; noteInset?: number; noteSize?: number; tagInset?: number; tagTop?: number; tagSize?: number; tagMaxWidth?: number; tint?: boolean }> = ({
   visuals,
   durationInFrames,
   seed = 0,
   noteInset = 22,
   noteSize = 17,
+  tagInset = 22,
+  tagTop,
+  tagSize,
+  tagMaxWidth,
   tint = true,
 }) => {
   const { colors, backdrop, fonts } = useTheme();
@@ -53,6 +62,7 @@ export const MediaStack: React.FC<{ visuals: BackdropVisual[]; durationInFrames:
       {visuals.map((v, i) => {
         const from = i === 0 ? 0 : Math.max(0, v.from);
         const slot = Math.max(1, (visuals[i + 1]?.from ?? durationInFrames) - from);
+        const channel = tagChannel(v.asset);
         return (
           <Sequence key={i} from={from} durationInFrames={slot} layout="none">
             <AbsoluteFill>
@@ -84,6 +94,7 @@ export const MediaStack: React.FC<{ visuals: BackdropVisual[]; durationInFrames:
                 {v.note}
               </div>
             )}
+            {channel && <SourceTag channel={channel} inset={tagInset} top={tagTop} size={tagSize} maxWidth={tagMaxWidth} />}
             {i > 0 && <Sweep />}
           </Sequence>
         );

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { isYouTubeUrl, youtubeTagText } from "./youtube.ts";
+import { isYouTubeUrl, tagChannel, youtubeTagText } from "./youtube.ts";
 
 test("isYouTubeUrl accepts youtube.com hosts and youtu.be", () => {
   for (const u of [
@@ -29,4 +29,13 @@ test("youtubeTagText cuts by code points, not UTF-16 units", () => {
   const out = youtubeTagText("😀".repeat(60));
   assert.equal(out, "VIDEO · " + "😀".repeat(39) + "… / YouTube");
   assert.equal(youtubeTagText("日本語".repeat(20), 5), "VIDEO · 日本語日… / YouTube");
+});
+
+test("tagChannel returns the channel of an attributed clip only", () => {
+  assert.equal(tagChannel({ kind: "clip", file: "c.mp4", duration: 3, attribution: "NASA" }), "NASA");
+  assert.equal(tagChannel({ kind: "clip", file: "c.mp4", duration: 3 }), undefined);
+  assert.equal(tagChannel({ kind: "clip", file: "c.mp4", duration: 3, attribution: "  " }), undefined);
+  assert.equal(tagChannel({ kind: "image", file: "i.jpg" }), undefined);
+  assert.equal(tagChannel(null), undefined);
+  assert.equal(tagChannel(undefined), undefined);
 });

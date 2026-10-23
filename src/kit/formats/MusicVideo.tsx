@@ -4,10 +4,12 @@ import React, { useMemo } from "react";
 import { AbsoluteFill, Audio, Easing, getRemotionEnvironment, Img, interpolate, Loop, OffthreadVideo, Sequence, staticFile, useCurrentFrame } from "remotion";
 import { KenBurns } from "../components/Backdrop";
 import { GlitchCut } from "../components/Chrome";
+import { SourceTag } from "../components/SourceTag";
 import { clamp } from "../context";
 import { MUSIC_VIDEO_ROLL, pagedCreditColumns } from "../lib/credits";
 import { clipPlayback, type ResolvedShot } from "../lib/resolveMusicVideo";
 import { FPS, toFrame } from "../lib/timing";
+import { tagChannel } from "../lib/youtube";
 import { useMusicVideo } from "../musicVideoContext";
 import { CreditsRoll } from "../scenes/CreditsCard";
 
@@ -35,9 +37,11 @@ const ShotLayer: React.FC<{ s: ResolvedShot }> = ({ s }) => {
     picture = loopFrames ? <Loop durationInFrames={loopFrames}>{video}</Loop> : video;
   }
   const t = s.shot.transition;
+  const channel = tagChannel(s.asset);
   return (
     <AbsoluteFill style={{ background: theme.colors.bg }}>
       {picture}
+      {channel && <SourceTag channel={channel} />}
       {t === "glitch" && s.index > 0 && <GlitchCut seed={s.index * 7 + 3} />}
       {t === "flash" && s.index > 0 && <AbsoluteFill style={{ background: "#fff", opacity: interpolate(frame, [0, 4], [0.9, 0], clamp) }} />}
       {s.shot.note && (

@@ -97,7 +97,7 @@ export const FrontierShortColdOpen: React.FC = () => {
               <AllPins pins={firstPins(episode)} text={beat.stamp} accent={beat.accent} width={W} height={1300} top={330} textWidth={TEXT_W} maxSize={120} />
             ) : (
               <>
-                {asset ? <MediaStack visuals={[{ name: beat.visual!, asset, note: beat.note, from: 0 }]} durationInFrames={dur} seed={i} noteInset={X} noteSize={22} /> : <Field ripple={0} />}
+                {asset ? <MediaStack visuals={[{ name: beat.visual!, asset, note: beat.note, from: 0 }]} durationInFrames={dur} seed={i} noteInset={X} noteSize={22} tagInset={X} tagTop={150} tagSize={20} tagMaxWidth={560} /> : <Field ripple={0} />}
                 <Scrims />
                 <Sequence from={4} layout="none">
                   <VSignal text={beat.stamp} sub={beat.sub} index={i} count={beats.length} />
@@ -169,7 +169,7 @@ export const FrontierShortSegment: React.FC<{ s: ResolvedSegment }> = ({ s }) =>
         )}
       </div>
       <Window box={box} enter={windowEnter(frame, 2)} tilt={-4} label={showMap ? undefined : visualLabel(visuals, frame)} glow={isTop ? 0.6 : 0}>
-        {visuals.length && !showMap ? <MediaStack visuals={visuals} durationInFrames={dur} seed={s.num * 3} noteSize={20} /> : <Field ripple={frame - 6} />}
+        {visuals.length && !showMap ? <MediaStack visuals={visuals} durationInFrames={dur} seed={s.num * 3} noteSize={20} tagSize={18} tagMaxWidth={660} /> : <Field ripple={frame - 6} />}
         {showMap && (
           <AbsoluteFill style={{ background: F.ink }}>
             <DotMap width={box.width - 4} height={box.height - 4} focus={widen(seg.map!)} showLabels pitch={6} />
@@ -209,7 +209,7 @@ export const FrontierShortText: React.FC<{ t: ResolvedText }> = ({ t }) => {
       <div style={{ position: "absolute", left: X, top: 236 }}>{seg.label && <Chip text={seg.label} since={frame - 4} size={24} dot={F.lime} />}</div>
       <Window box={box} enter={windowEnter(frame, 2)} tilt={4} label={visualLabel(visuals, frame)}>
         {visuals.length ? (
-          <MediaStack visuals={visuals} durationInFrames={t.to - t.from} seed={t.index * 5 + 1} noteSize={18} />
+          <MediaStack visuals={visuals} durationInFrames={t.to - t.from} seed={t.index * 5 + 1} noteSize={18} tagSize={18} tagMaxWidth={520} />
         ) : pins.length ? (
           <DotMap width={box.width - 4} height={box.height - 4} allPins={pins} pinDelay={4} zoomFrames={1} showLabels={false} pitch={6} />
         ) : (

@@ -3,7 +3,9 @@ import { AbsoluteFill, Img, interpolate, Loop, OffthreadVideo, Sequence, staticF
 import { useTheme } from "../context";
 import type { Asset } from "../lib/resolve";
 import { FPS } from "../lib/timing";
+import { tagChannel } from "../lib/youtube";
 import { GlitchCut } from "./Chrome";
+import { SourceTag } from "./SourceTag";
 
 /** `grade: false` skips the theme filter and tint for this visual (an explainer or infographic already drawn in the theme). */
 export type BackdropVisual = { name: string; asset: Asset; note?: string; grade?: boolean; from: number };
@@ -42,8 +44,10 @@ const VisualLayer: React.FC<{ asset: Asset; frames: number; seed: number; grade:
  * `clear` (0–1) eases off the side gradient once the text no longer needs it (and fades in the theme's `clearedScrim`
  * behind what stays on screen, unless `scrim={false}`); `side` (0–1) scales the side gradient; `gradients={false}` drops the
  * side and bottom gradients entirely (for b-roll in a frame with no text over it); `mirror` flips the side gradient for text on the right.
+ * A clip credited to a YouTube channel gets the SourceTag (top-right, top-left with `mirror`; `tagInset`, `tagTop`, `tagSize` and
+ * `tagMaxWidth` place, size and wrap it).
  */
-export const Backdrop: React.FC<{ visuals: BackdropVisual[]; durationInFrames: number; seed?: number; clear?: number; side?: number; scrim?: boolean; gradients?: boolean; noteInset?: number; noteSize?: number; mirror?: boolean }> = ({
+export const Backdrop: React.FC<{ visuals: BackdropVisual[]; durationInFrames: number; seed?: number; clear?: number; side?: number; scrim?: boolean; gradients?: boolean; noteInset?: number; noteSize?: number; tagInset?: number; tagTop?: number; tagSize?: number; tagMaxWidth?: number; mirror?: boolean }> = ({
   visuals,
   durationInFrames,
   seed = 0,
@@ -53,6 +57,10 @@ export const Backdrop: React.FC<{ visuals: BackdropVisual[]; durationInFrames: n
   gradients = true,
   noteInset,
   noteSize = 18,
+  tagInset,
+  tagTop,
+  tagSize,
+  tagMaxWidth,
   mirror = false,
 }) => {
   const { colors, backdrop, fonts } = useTheme();
@@ -61,6 +69,7 @@ export const Backdrop: React.FC<{ visuals: BackdropVisual[]; durationInFrames: n
       {visuals.map((v, i) => {
         const from = i === 0 ? 0 : Math.max(0, v.from);
         const slot = Math.max(1, (visuals[i + 1]?.from ?? durationInFrames) - from);
+        const channel = tagChannel(v.asset);
         return (
           <Sequence key={i} from={from} durationInFrames={slot} layout="none">
             <AbsoluteFill>
@@ -85,6 +94,7 @@ export const Backdrop: React.FC<{ visuals: BackdropVisual[]; durationInFrames: n
                 {v.note}
               </div>
             )}
+            {channel && <SourceTag channel={channel} inset={tagInset} top={tagTop} size={tagSize} maxWidth={tagMaxWidth} side={mirror ? "left" : "right"} />}
             {i > 0 && <GlitchCut seed={seed * 7 + i} />}
           </Sequence>
         );

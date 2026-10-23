@@ -146,7 +146,7 @@ export const FrontierColdOpen: React.FC = () => {
               <AllPins pins={pins} text={beat.stamp} accent={beat.accent} width={1920} height={1000} top={110} textWidth={1640} maxSize={120} />
             ) : (
               <>
-                {asset ? <MediaStack visuals={[{ name: beat.visual!, asset, note: beat.note, from: 0 }]} durationInFrames={dur} seed={i} noteInset={64} noteSize={18} /> : <Field ripple={0} />}
+                {asset ? <MediaStack visuals={[{ name: beat.visual!, asset, note: beat.note, from: 0 }]} durationInFrames={dur} seed={i} noteInset={64} noteSize={18} tagInset={64} tagTop={100} /> : <Field ripple={0} />}
                 <AbsoluteFill style={{ background: theme.backdrop.sideGradient }} />
                 <AbsoluteFill style={{ background: theme.backdrop.bottomGradient }} />
                 <Sequence from={4} layout="none">
