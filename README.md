@@ -91,6 +91,7 @@ npm run setup:image      # sd-cli + Z-Image Turbo Q4_K + Qwen3-4B encoder + FLUX
 | `shorts:` | Shorts made with every episode (`count` 1–3, `maxSeconds`). | off (ask for Shorts per episode) |
 | `music_gen:` | Composed music beds with Stable Audio 3 (`model`, `steps`, `lufs`). A fresh random seed every run. | on (medium) |
 | `licensing:` | `press_images`: official manufacturer press images (newsroom / press kit) of a product being discussed, credited `PRESS`. An opt-in risk: they're editorial-use material, not CC. Never the thumbnail. | on |
+| `youtube:` | YouTube as a research source and clip source (`npm run youtube`, no API key). `search_youtube`: Claude searches YouTube and reads transcripts during the fact-check and asset steps (off: no YouTube unless you ask). `use_video_as_citation`: a video can be a cited source (off: videos are leads only, and a fact from one needs a non-YouTube source that confirms it). | both on |
 | `image_gen:` | Where AI stills come from: `local_render`, `cloud_render` or `mixed` (local, with FLUX 3 for `--detail high`). Local steps, CFG, size and negative prompt live under `local:`. | mixed |
 
 ### Using Stable Audio 3 legally
@@ -209,7 +210,7 @@ voice:
    npm run align -- <slug>       # ~3 min on CPU for 2:15 of audio
    ```
 
-   It prints how many script words matched the audio, plus the time of every segment marker. Under 90% means the recording differs from the script (for example, you edited lines in ElevenLabs). Whisper's transcript is saved to `episodes/<slug>/heard.txt`. Edit `voiceover.txt` to match what was actually said and align again. Captions use the script's own words, so they must match the audio.
+   It prints how many script words matched the audio, plus the time of every segment marker. Under 90% means the recording differs from the script (for example, you edited lines in ElevenLabs). Whisper's transcript is saved to `episodes/<slug>/heard.txt`. Edit `voiceover.txt` to match what was actually said and align again. Captions use the script's own words, so they must match the audio, and each caption chunk appears the moment it starts being spoken.
 
 ### 4. Fill in `episode.json`
 
@@ -241,6 +242,9 @@ Optional extras:
 
 - `"emphasis": "top"`: alarm treatment and a "TOP THREAT" badge (usually on #1).
 - `"note": "FILE FOOTAGE · LVIV, 2022"` on a visual: an on-screen tag for footage that isn't of the event described.
+- `"grade": false` on a visual: show it as it is, without the theme's filter and tint (for explainers and infographics already drawn in the theme). The gradients behind the text still apply.
+- `"side": "right"` on a segment (overlay layouts): the number, region, headline and stat block sits on the right instead of the left. It tucks into the top-right corner, the side gradient is mirrored and the map card moves to the left.
+- `"exitAt": "<cue>"` on a segment: at that spoken phrase the number, headline and stat block slides off screen and stays off, for when a full-frame explainer or infographic comes up. On a Short it fades the text panel instead.
 - **Every episode ends with a sources scene and a credits scene.** After the voiceover, a "SOURCES" card lists `sources` (title + site) for 7s (more than 8 sources are split evenly over several cards, 7s each). Then a "CREDITS" roll built from `credits.json` (footage, images, AI illustrations, music, sound, map data) runs for 8s, listing only what the episode actually uses, the same as `DESCRIPTION.md`. Change the lengths with `"outro": { "sourcesCard": { "seconds": 7 }, "creditsCard": { "seconds": 8 } }`, or turn one off with `false`. `check` fails an episode with no `sources` while its sources card is on.
 - `"outro": { "endScreen": { "seconds": 12 } }`: a branded hold frame after the voiceover (and after the sources card, if any), with empty slots for YouTube's end-screen elements.
 - `"thumbnail": { "big": "10", "title": "FLASH\nPOINTS", "visual": "gulf_navy" }`
@@ -257,6 +261,17 @@ Optional extras:
   ```
 
   Optional fields: `licenseVersion` ("4.0"), `originalUrl`, `notes`.
+- **Where files go.** Raw downloads (original clips, stills, logos, sounds) go in `episodes/<slug>/raw/<name>/`, one new folder each. Working files (contact sheets, test stills, sync clips, explainer drafts, storyboard review pages, logs) go in `episodes/<slug>/work/`. Finished media stays in `public/episodes/<slug>/`. `raw/` and `work/` are local-only (git-ignored).
+- **YouTube research and clips.** `npm run youtube` uses yt-dlp from the kit's `.venv` (installed by `npm run setup:align`), so it needs no API key. Whether Claude uses it, and whether a video can be cited, is set by `youtube:` in `config.yaml` (see above). Raw material lands in `episodes/<slug>/raw/youtube/`.
+
+  ```powershell
+  npm run youtube -- <slug> search "drone footage" --limit 10 --cc        # a table of hits; --cc keeps only Creative Commons videos
+  npm run youtube -- <slug> transcript <id|url> --words 300              # info.json + transcript.txt ([mm:ss] per paragraph); prints the first 300 words
+  npm run youtube -- <slug> clip <id|url> <name> --from 1:23 --to 1:31   # clips/<name>.mp4, credited, assets.json refreshed
+  npm run youtube -- --update                                            # upgrade yt-dlp when extraction breaks
+  ```
+
+  As research, a transcript is a lead like any other source: facts from it are judged by the channel, logged in `notes.md`, and figures from auto captions are confirmed a second way before they are scripted. As a clip source it is strict. The video must carry YouTube's Creative Commons (CC BY) license, which is checked before anything downloads, or come from a verified US federal agency's own channel (public domain, passed as `--license PD --basis "NASA, US federal work"`). Clips are at most 15 s, 1920×1080, 30 fps, no audio. The kit draws a small `VIDEO · <Channel> / YouTube` tag on the clip automatically, from the credit, so never burn one in. A YouTube clip can't be the thumbnail. `--ignore-off` runs a one-off while `search_youtube` is false. Rules and procedure: `.claude/skills/youtube/SKILL.md`.
 - **No good image anywhere, or only a poor stand-in?** Generate a still, locally with Z-Image Turbo or with FLUX 3 via Replicate (`config.yaml` `image_gen.mode`: `local_render`, `cloud_render`, or `mixed`, which renders locally and sends `--detail high` work such as thumbnail backgrounds to FLUX):
 
   ```powershell
@@ -371,6 +386,7 @@ Then `assets`, `check`, `preview`, `render`, `thumb` and `credits` as for any ep
 | `npm run shot -- <slug> <name> --url <url> [--selector "<css>"] [--license PD] [--highlight "..."]` | Screenshot part of a web page as a still, with credit |
 | `npm run infographic -- <slug> <name> [--seconds 12] [--still]` | Render `episodes/<slug>/infographics/<name>.html` as a themed clip or still, with credit |
 | `npm run explainer -- <styles\|new\|storyboard\|frames\|render> <name> [--episode <slug>]` | Illustrated explainers: scaffold in a style, storyboard, check frames, render with sound |
+| `npm run youtube -- <slug> search\|transcript\|clip …` / `-- --update` | Search YouTube, read a transcript, or cut a CC BY / federal-PD clip (config.yaml `youtube:`); `--update` upgrades yt-dlp |
 | `npm run sfx -- <slug> <name> --sound <kit sound> \| --recipe [file.js]` | Synthesize a sound effect into the episode's `sfx/` (or `--library`), credited OWN WORK |
 | `npm run setup:music [--cpu]` | One-time: create `.venv-music` and install Stable Audio 3 (CUDA PyTorch 2.7.1, Flash Attention 2) |
 | `npm run compose -- <slug> <name> --prompt "..." [--seconds N] [--seed N] [--force]` | Generate a music bed into the episode's `music/` (config.yaml `music_gen:`), new random seed each run |
@@ -392,6 +408,7 @@ Errors block rendering:
 - A marker, stat, visual, beat, outro or CTA cue that isn't spoken where it should be: missing, out of order, or outside its segment. Nothing falls back silently. In Studio, unresolved cues also show as a red panel over the video.
 - A visual named in `episode.json` that isn't in `clips/` or `images/`.
 - A media file with no credits entry, or a license other than PD, CC0, CC BY or CC BY-SA. `AI-GENERATED` is accepted only for `npm run generate` stills (with their provenance record and an on-screen note) and `npm run compose` music beds.
+- A YouTube clip that isn't CC BY or PD, is PD without its basis in `notes`, has no channel as author, isn't in `clips/`, has a missing or stale channel tag in `assets.json` (run `npm run assets`), or is the thumbnail. (A warning if the episode has YouTube clips while `youtube.search_youtube` is false.)
 - Estimated timing, a voiceover/timing duration mismatch, or a `voiceover.txt` edited since alignment.
 - A stale `assets.json`, a missing sound from the sfx preset, or a missing music file.
 - Text over its length limit (headline over 6 words, long stamps, stat values or outro lines).
@@ -415,7 +432,7 @@ It stops only processes whose executable lives in this repo, plus node processes
 - `threat-brief` (default): dark, red and amber, with Anton, JetBrains Mono and Inter.
 - `clean-light`: a light demo theme with a blue accent, Oswald, IBM Plex Mono and DM Sans.
 - `after-dark`: neon-noir, magenta and cyan on violet-black, with Bebas Neue, Space Mono and Sora.
-- `blackout`: dark tech dystopia, crimson alarm red and phosphor-green data on near-black, cold footage with a light red cast, scanlines and glitch, with Big Shoulders, IBM Plex Mono and Saira.
+- `blackout`: dark tech dystopia, crimson alarm red and phosphor-green data on near-black, footage played ungraded (no filter or tint, only the gradients behind text), scanlines and glitch, with Big Shoulders, IBM Plex Mono and Saira.
 - `military`: tactical briefing, sand text on olive-black with a signal-amber accent and phosphor-green readouts, with Big Shoulders Stencil, Share Tech Mono and Barlow Condensed.
 - `military-comparisons`: weapons-system spec briefing in the **split layout**. Footage plays in a bracketed frame on the left; the number, headline and stats sit on the right, and the stats build into a spec sheet that stays up (5 rows a panel, then panel 2, 3). The map card shows briefly over the footage and slides off to the left. Cool white on gunmetal, HUD-cyan readouts, signal-orange accent, with Teko, IBM Plex Mono and Saira Condensed.
 - `erotic`: a boudoir-editorial comparison sheet in the same **split layout** as `military-comparisons`. Blush cream on wine-black, lipstick-crimson accent, champagne-gold readouts, a warm low-key b-roll grade and soft grain with no scanlines. Fonts are Playfair Display, Josefin Sans and Jost. Default labels: AFTER HOURS ticker, TOP PICK, PROFILE panels. The mood comes from color and type only. The theme has no imagery of its own, and b-roll still has to pass YouTube's rules and the license gate.
@@ -435,6 +452,8 @@ Formats: `countdown` (10 → 1, with a number slam per segment) and `list` (1 �
 ```
 episodes/<slug>/                 episode source data (episode.json, voiceover.txt, article.md, notes.md, heard.txt)
 episodes/episode.schema.json     generated JSON Schema for editor autocomplete
+episodes/<slug>/raw/               raw downloads, one folder each (raw/youtube/ for npm run youtube); local-only
+episodes/<slug>/work/              working files: contact sheets, test stills, drafts, logs; local-only
 public/episodes/<slug>/          episode media + generated timing.json / assets.json + credits.json
 public/library/                  shared sfx/ and music/ + credits.json
 src/kit/schema.ts                episode.json schema (zod): the single source of truth
@@ -445,7 +464,7 @@ src/kit/formats/                 Countdown, List, Short (vertical 9:16)
 src/kit/themes/                  threat-brief, clean-light, after-dark, military, military-comparisons, erotic, frontier, blackout
 src/kit/skins/                   themes with scenes of their own (frontier)
 scripts/                         the npm commands (TypeScript, run with tsx) + align.py and voice.py
-scripts/lib/config.ts            reads and validates config.yaml (voice:, shorts:, music_gen:, image_gen:)
+scripts/lib/config.ts            reads and validates config.yaml (voice:, shorts:, music_gen:, image_gen:, youtube:)
 scripts/lib/browser.ts           headless Chrome for shot and infographic (Remotion's chrome-headless-shell via playwright-core)
 episodes/<slug>/infographics/    HTML sources for npm run infographic (and episode explainers)
 episodes/<slug>-short<N>/        a Short made from an episode (npm run short); its own small episode
@@ -455,7 +474,7 @@ requirements-tts.txt             Python packages for .venv-tts (npm run voice: P
 requirements-qwen.txt            Python packages for .venv-qwen (npm run voice with engine: qwen)
 requirements-music.txt           Python packages for .venv-music (npm run compose: Stable Audio 3, Flash Attention)
 models/image/                    sd-cli + Z-Image Turbo GGUF, encoder and VAE for local stills (git-ignored; npm run setup:image)
-config.yaml                      kit settings: voice, shorts, music_gen (composed beds) and image_gen (local / cloud / mixed stills)
+config.yaml                      kit settings: voice, shorts, music_gen (composed beds) and image_gen (local / cloud / mixed stills) and youtube
 voices/                          reference clips for voice cloning (git-ignored except README.md)
-.claude/skills/                  new-episode, find-media, generate-image, infographic, explainer, compose-music
+.claude/skills/                  new-episode, find-media, generate-image, infographic, explainer, compose-music, youtube
 ```
