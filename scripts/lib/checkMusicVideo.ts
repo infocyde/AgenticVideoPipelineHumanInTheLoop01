@@ -4,7 +4,7 @@ import { lyricWords, parseLyrics } from "../../src/kit/lib/lyrics.ts";
 import { thumbnailVisual } from "../../src/kit/lib/resolveMusicVideo.ts";
 import type { Issue } from "../../src/kit/lib/resolve.ts";
 import { assetsSchema, type Timing } from "../../src/kit/schema.ts";
-import { creditCoverageIssues, generatedStills, pressIssues, staleAssetIssues, youtubeIssues } from "./check.ts";
+import { aiStock, creditCoverageIssues, generatedStills, pressIssues, staleAssetIssues, stockIssues, youtubeIssues } from "./check.ts";
 import { loadConfig } from "./config.ts";
 import { loadMusicVideoFromDisk } from "./musicVideo.ts";
 
@@ -73,12 +73,19 @@ export const runMusicVideoCheck = (slug: string): Issue[] => {
     usesAi.push(s.visual);
     if (!s.note) err(`shots[${i}]`, `"${s.visual}" is AI-generated: add "note": "AI-GENERATED ILLUSTRATION" so viewers know`);
   });
+  const aiClips = aiStock(epCredits.entries);
+  ep.shots.forEach((s, i) => {
+    if (!aiClips.has(s.visual)) return;
+    usesAi.push(s.visual);
+    if (!/AI-GENERATED/i.test(s.note ?? "")) err(`shots[${i}]`, `"${s.visual}" is AI-generated stock: add "note": "AI-GENERATED FOOTAGE" so viewers know`);
+  });
   const thumb = thumbnailVisual(ep);
   if (generated.has(thumb)) usesAi.push(thumb);
   if (usesAi.length) {
     warn("AI imagery", `uses AI-generated images (${[...new Set(usesAi)].join(", ")}). If any look realistic, tick YouTube's "altered or synthetic content" box when uploading.`);
   }
   issues.push(...pressIssues(epCredits.entries, thumb));
+  issues.push(...stockIssues(epCredits.entries, ep.format, thumb));
   issues.push(...youtubeIssues(epCredits.entries, assets, thumb, loadConfig().youtube.search_youtube));
 
   if (!ep.summary) warn("summary", "no summary: write 1–2 sentences for the top of the YouTube description; npm run credits puts it there");

@@ -8,7 +8,7 @@ import { youtubeAttributions } from "../../src/kit/lib/attribution.ts";
 import { sfxCues } from "../../src/kit/lib/sfx.ts";
 import { norm } from "../../src/kit/lib/timing.ts";
 import { isYouTubeUrl } from "../../src/kit/lib/youtube.ts";
-import { AI_LICENSE, type AssetManifest, assetsSchema, type Credit, creditSchema, isTextSection, LICENSES, OWN_LICENSE, PRESS_LICENSE } from "../../src/kit/schema.ts";
+import { AI_LICENSE, type AssetManifest, assetsSchema, type Credit, creditSchema, isTextSection, LICENSES, OWN_LICENSE, PRESS_LICENSE, STOCK_LICENSE } from "../../src/kit/schema.ts";
 import { layoutOf } from "../../src/kit/themes/ids.ts";
 import { AUDIO_EXT, IMAGE_EXT, LIBRARY, listMedia, VIDEO_EXT } from "./assets.ts";
 import { loadFromDisk, scriptWords, zodIssues } from "./episode.ts";
@@ -74,8 +74,8 @@ export const loadCredits = (file: string, where: string): Credits => {
       const file = (r as { file?: string })?.file ?? `entry ${i}`;
       const lic = (r as { license?: string })?.license;
       const licMsg =
-        lic !== undefined && lic !== AI_LICENSE && lic !== OWN_LICENSE && lic !== PRESS_LICENSE && !(LICENSES as readonly string[]).includes(lic)
-          ? ` License "${lic}" is not allowed (only ${LICENSES.join(", ")}, ${OWN_LICENSE} for your own material, ${AI_LICENSE} via \`npm run generate\` / \`npm run compose\`, or ${PRESS_LICENSE} for official press images when config.yaml allows them).`
+        lic !== undefined && lic !== AI_LICENSE && lic !== OWN_LICENSE && lic !== PRESS_LICENSE && lic !== STOCK_LICENSE && !(LICENSES as readonly string[]).includes(lic)
+          ? ` License "${lic}" is not allowed (only ${LICENSES.join(", ")}, ${OWN_LICENSE} for your own material, ${AI_LICENSE} via \`npm run generate\` / \`npm run compose\`, ${PRESS_LICENSE} for official press images when config.yaml allows them, or ${STOCK_LICENSE} via \`npm run stock\` in music videos).`
           : "";
       issues.push({ level: "error", where: `${where} ${file}`, msg: `${zodIssues(c.error).join("; ")}.${licMsg}` });
     }
@@ -142,6 +142,32 @@ export const pressIssues = (entries: Credit[], thumbnailVisual?: string): Issue[
     .forEach((c) => err("library/credits.json", `${c.file}: press images stay per episode, not in the shared library`));
   const pressNames = new Set(press.map((c) => c.file.replace(/^.*\//, "").replace(/\.[^.]+$/, "")));
   if (thumbnailVisual && pressNames.has(thumbnailVisual)) err("thumbnail.visual", `"${thumbnailVisual}" is a press image: press images can't be the thumbnail (it promotes the video, not the product)`);
+  return issues;
+};
+
+/** Basenames of the episode's STOCK files that the site marks as AI-generated, which must carry an on-screen note. */
+export const aiStock = (entries: Credit[]) =>
+  new Set(entries.filter((c) => c.license === STOCK_LICENSE && c.stock?.ai).map((c) => c.file.replace(/^.*\//, "").replace(/\.[^.]+$/, "")));
+
+/**
+ * Stock-site media (npm run stock): only in music videos, only when config.yaml licensing.stock_media allows it,
+ * only images/ and clips/, never in the library, never the thumbnail.
+ */
+export const stockIssues = (entries: Credit[], format: string, thumbnailVisual?: string): Issue[] => {
+  const issues: Issue[] = [];
+  const err = (where: string, msg: string) => issues.push({ level: "error", where, msg });
+  const mode = loadConfig().licensing.stock_media;
+  const stock = entries.filter((c) => c.license === STOCK_LICENSE);
+  stock.forEach((c) => {
+    if (format !== "music-video") err("credits.json", `${c.file}: stock-site media is only enabled for music videos; replace it with PD/CC media`);
+    else if (mode === "off") err("credits.json", `${c.file}: stock media is off (config.yaml licensing.stock_media: off); replace it with licensed media`);
+    if (!/^(images|clips)\//.test(c.file)) err("credits.json", `${c.file}: ${STOCK_LICENSE} is only for images/ and clips/`);
+  });
+  loadCredits(join(LIBRARY, "credits.json"), "library/credits.json")
+    .entries.filter((c) => c.license === STOCK_LICENSE)
+    .forEach((c) => err("library/credits.json", `${c.file}: stock media stays per episode, not in the shared library`));
+  const names = new Set(stock.map((c) => c.file.replace(/^.*\//, "").replace(/\.[^.]+$/, "")));
+  if (thumbnailVisual && names.has(thumbnailVisual)) err("thumbnail.visual", `"${thumbnailVisual}" is stock-site media: it can't be the thumbnail`);
   return issues;
 };
 
@@ -374,6 +400,7 @@ export const runCheck = (slug: string): Issue[] => {
 
   // --- press images (config.yaml licensing.press_images): official manufacturer images of a product being discussed ---
   issues.push(...pressIssues(epCredits.entries, ep.thumbnail?.visual));
+  issues.push(...stockIssues(epCredits.entries, ep.format, ep.thumbnail?.visual));
   issues.push(...youtubeIssues(epCredits.entries, assets, ep.thumbnail?.visual, loadConfig().youtube.search_youtube));
 
   // --- source material ---

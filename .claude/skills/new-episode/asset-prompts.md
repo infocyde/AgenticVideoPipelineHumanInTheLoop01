@@ -12,6 +12,7 @@ These prompts sourced all 15 shots for the first episode in about 50 minutes and
 >
 > LICENSING IS STRICT: only public domain (incl. US federal government works: US Navy, DoD/DVIDS, NASA, NOAA, USGS), CC0, or CC BY / CC BY-SA. No NC, no ND, no "editorial only", no unknown license. Record attribution for every file.
 > PRESS-IMAGE OPT-IN (only if config.yaml has licensing.press_images: true; the main session tells you): for a product the segment discusses, when no PD/CC media of it exists, an official image or b-roll clip from the manufacturer's own newsroom or press kit is allowed. Record it as license "PRESS", author = the company, sourceUrl = the press page, originalUrl = the file. Never retailer listing photos, photographers' or outlets' photos, or embargoed / "do not use" material.
+> STOCK SITES (music videos only, and only if config.yaml has licensing.stock_media: music-video; the main session tells you): search Pixabay, Pexels and Coverr FIRST, only with `npm run stock -- <slug> search|get|import` and the rules in `.claude/skills/stock-media/SKILL.md`. It writes the STOCK credit itself; never hand-download from these sites or credit them as CC/PD. List Coverr (and Pexels, while it has no API key) page URLs for the user to download in their browser instead of scripting the sites.
 >
 > Read `.claude/skills/find-media/SKILL.md` (license gate, workflow, which source fits which shot) and `.claude/skills/find-media/sources.md` (every source's tested endpoints, license fields and gotchas) before you search.
 >

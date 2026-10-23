@@ -120,6 +120,17 @@ licensing:
   #   false: PD / CC0 / CC BY / CC BY-SA, own work and AI stills only (check errors on PRESS credits)
   press_images: true
 
+  # Free stock sites with their own licenses (not CC): Pixabay (API, free key: PIXABAY_API_KEY), Pexels (API key
+  # PEXELS_API_KEY; new keys paused as of 2026-10-23, so import browser downloads) and Coverr (browser downloads
+  # only). Fetched with `npm run stock` (the stock-media skill), credited "STOCK" with the site, id, license and date.
+  # Risks you accept: YouTube Content ID claims (contributors can register clips; dispute with the raw/stock/ record),
+  # uploaders who don't own what they post, and AI uploads the APIs don't flag. check enforces: images/ and clips/
+  # only, never the thumbnail, never the shared library, an on-screen note on clips marked AI. Vecteezy and
+  # Imagine.Art are excluded (attribution and budget caps; no clear commercial grant).
+  #   music-video: music videos search these sites first, before archive footage and AI stills
+  #   off:         not used anywhere (check errors on STOCK credits). News episodes never use them.
+  stock_media: music-video
+
 youtube:
   # YouTube as a research source and, for Creative Commons videos, a clip source (the youtube skill;
   # npm run youtube). No API key: search, transcripts and clips go through yt-dlp. YouTube's Terms of Service

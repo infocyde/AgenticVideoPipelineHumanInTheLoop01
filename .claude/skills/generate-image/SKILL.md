@@ -5,7 +5,7 @@ description: Generate a Brief Kit still or thumbnail background, locally with Z-
 
 # Generate an image (fallback)
 
-Real, licensed footage comes first. Generate when:
+Real, licensed footage comes first. In a music video with `licensing.stock_media: music-video`, that includes the stock sites (the **stock-media** skill), so search them before generating. Generate when:
 
 - the sourcing subagents found nothing usable for a shot (missing, watermarked, wrong subject or unclear license),
 - the only licensed footage is a poor stand-in (a different system, country or era) and a generated image of the right subject would serve the viewer better, or

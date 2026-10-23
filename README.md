@@ -90,7 +90,7 @@ npm run setup:image      # sd-cli + Z-Image Turbo Q4_K + Qwen3-4B encoder + FLUX
 | `voice:` | Text-to-speech. `true`: Claude voices each approved script (`npm run voice`). `false`: you bring `voiceover.mp3`. | on (Qwen3-TTS cloning `collin_ro`, on Replicate: `qwen-cloud`) |
 | `shorts:` | Shorts made with every episode (`count` 1–3, `maxSeconds`). | off (ask for Shorts per episode) |
 | `music_gen:` | Composed music beds with Stable Audio 3 (`model`, `steps`, `lufs`). A fresh random seed every run. | on (medium) |
-| `licensing:` | `press_images`: official manufacturer press images (newsroom / press kit) of a product being discussed, credited `PRESS`. An opt-in risk: they're editorial-use material, not CC. Never the thumbnail. | on |
+| `licensing:` | `press_images`: official manufacturer press images (newsroom / press kit) of a product being discussed, credited `PRESS`. An opt-in risk: they're editorial-use material, not CC. Never the thumbnail. `stock_media`: Pixabay, Pexels and Coverr (own free licenses, not CC) for **music videos only**, searched first with `npm run stock` and credited `STOCK`. Risk: YouTube Content ID claims by contributors. | press on; stock: music-video |
 | `youtube:` | YouTube as a research source and clip source (`npm run youtube`, no API key). `search_youtube`: Claude searches YouTube and reads transcripts during the fact-check and asset steps (off: no YouTube unless you ask). `use_video_as_citation`: a video can be a cited source (off: videos are leads only, and a fact from one needs a non-YouTube source that confirms it). | both on |
 | `image_gen:` | Where AI stills come from: `local_render`, `cloud_render` or `mixed` (local, with FLUX 3 for `--detail high`). Local steps, CFG, size and negative prompt live under `local:`. | mixed |
 
@@ -383,6 +383,7 @@ Then `assets`, `check`, `preview`, `render`, `thumb` and `credits` as for any ep
 | `npm run assets -- <slug>` | Write `assets.json` |
 | `npm run setup:image [--from <folder>]` | One-time: stable-diffusion.cpp + Z-Image Turbo GGUF into `models/image/` |
 | `npm run generate -- <slug> <name> --prompt "..." [--detail high] [--engine local\|cloud] [--seed N] [--force]` | Last-resort AI still (local Z-Image Turbo or FLUX 3, per `image_gen.mode`), with credit and provenance |
+| `npm run stock -- <slug> search "<q>" \| get <site>:<id> <name> \| import <file> <name> --site … --page <url> --author "…"` | Music videos only: Pixabay/Pexels search and download, or import a Coverr/Pexels browser download; STOCK credit (stock-media skill) |
 | `npm run shot -- <slug> <name> --url <url> [--selector "<css>"] [--license PD] [--highlight "..."]` | Screenshot part of a web page as a still, with credit |
 | `npm run infographic -- <slug> <name> [--seconds 12] [--still]` | Render `episodes/<slug>/infographics/<name>.html` as a themed clip or still, with credit |
 | `npm run explainer -- <styles\|new\|storyboard\|frames\|render> <name> [--episode <slug>]` | Illustrated explainers: scaffold in a style, storyboard, check frames, render with sound |

@@ -355,6 +355,20 @@ export const OWN_LICENSE = "OWN WORK";
  * Only accepted when config.yaml has licensing.press_images: true; author = the company, sourceUrl = the press page.
  */
 export const PRESS_LICENSE = "PRESS";
+/**
+ * Free stock sites with their own licenses (Pexels, Pixabay, Coverr), fetched by `npm run stock`.
+ * Only accepted in music videos, and only when config.yaml has licensing.stock_media: music-video; needs a `stock` record.
+ */
+export const STOCK_LICENSE = "STOCK";
+
+export const stockSchema = z.object({
+  site: z.string(), // "Pexels", "Pixabay", "Coverr"
+  id: z.string(), // the site's id for the clip or photo
+  license: z.string(), // the site's license name, e.g. "Pexels License"
+  licenseUrl: z.string().url(),
+  ai: z.boolean().default(false), // the site marks it as AI-generated
+  checked: z.string(), // ISO date the license and page were read
+});
 
 export const generatorSchema = z.object({
   provider: z.string(), // "replicate" (npm run generate) or "local" (npm run compose)
@@ -371,13 +385,15 @@ export const creditSchema = z
     file: z.string().describe("Path relative to the folder holding this credits.json, e.g. 'clips/drone.mp4' (episode) or 'sfx/impact.mp3' (library)"),
     title: z.string().min(1),
     author: z.string().min(1),
-    license: z.enum([...LICENSES, AI_LICENSE, OWN_LICENSE, PRESS_LICENSE]),
+    license: z.enum([...LICENSES, AI_LICENSE, OWN_LICENSE, PRESS_LICENSE, STOCK_LICENSE]),
     licenseVersion: z.string().optional(),
     sourceUrl: z.string().url().optional().describe("Landing page of the source; required for every license except OWN WORK"),
     originalUrl: z.string().url().optional(),
     notes: z.string().optional(),
     generator: generatorSchema.optional().describe("Provenance for AI-GENERATED media (written by `npm run generate` and `npm run compose`)"),
+    stock: stockSchema.optional().describe("Provenance for STOCK media (written by `npm run stock`)"),
   })
   .refine((c) => c.license !== AI_LICENSE || !!c.generator, { message: "AI-GENERATED entries need a `generator` record", path: ["generator"] })
+  .refine((c) => c.license !== STOCK_LICENSE || !!c.stock, { message: "STOCK entries need a `stock` record (written by `npm run stock`)", path: ["stock"] })
   .refine((c) => c.license === OWN_LICENSE || !!c.sourceUrl, { message: "needs a sourceUrl (only OWN WORK entries may omit it)", path: ["sourceUrl"] });
 export type Credit = z.output<typeof creditSchema>;

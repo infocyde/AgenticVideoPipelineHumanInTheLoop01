@@ -75,9 +75,12 @@ Read the lyrics and the song map, then write the plan as a table:
 
 ## 4. Sourcing
 
-Use the find-media subagents with the prompts in `.claude/skills/new-episode/asset-prompts.md` and the **find-media** skill, driven by the plan, with the usual license gate (CLAUDE.md rule 3) and a `credits.json` entry for every file. Two differences from news episodes:
+**Stock sites first.** When `config.yaml` has `licensing.stock_media: music-video`, search Pixabay, Pexels and Coverr before anything else for each shot, with `npm run stock` and the **stock-media** skill. That works best for generic and atmospheric shots (weather, cities, crowds, money, machines, abstract motion). Coverr, and Pexels while it issues no API keys, need the user's browser downloads: collect their page URLs in one list for the user. Then fill the rest:
+
+Use the find-media subagents with the prompts in `.claude/skills/new-episode/asset-prompts.md` and the **find-media** skill, driven by the plan, with the usual license gate (CLAUDE.md rule 3) and a `credits.json` entry for every file. Then explainers, and AI stills last. Differences from news episodes:
 - **YouTube.** The **youtube** skill can supply facts for an explainer and CC BY clips (`npm run youtube -- <slug> clip`). The channel tag shows on those clips.
 - **No FILE FOOTAGE notes.** A music video doesn't claim a clip shows a specific event; the credits roll and the description carry the sourcing.
+- **Stock clips** the site marks as AI need `"note": "AI-GENERATED FOOTAGE"`. A stock file can't be the thumbnail.
 - **AI stills** (`npm run generate`, last resort) still need `"note": "AI-GENERATED ILLUSTRATION"`. Never make an AI image of a real, identifiable person, and never arrange footage to look like a real record of something that didn't happen. Juxtaposition is fine; putting words in someone's mouth is not.
 
 ## 5. Explainers

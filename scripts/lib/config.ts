@@ -49,6 +49,7 @@ export const configSchema = z.object({
   licensing: z
     .object({
       press_images: z.boolean().default(false), // allow official manufacturer press images (license "PRESS")
+      stock_media: z.enum(["off", "music-video"]).default("off"), // free stock sites (license "STOCK"), music videos only
     })
     .prefault({}),
   youtube: z

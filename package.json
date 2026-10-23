@@ -33,6 +33,7 @@
     "explainer": "tsx scripts/explainer.ts",
     "sfx": "tsx scripts/sfx.ts",
     "youtube": "tsx scripts/youtube.ts",
+    "stock": "tsx scripts/stock.ts",
     "test": "tsx --test \"src/**/*.test.ts\" \"scripts/**/*.test.ts\""
   },
   "dependencies": {
