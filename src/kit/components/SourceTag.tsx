@@ -17,12 +17,13 @@ import React from "react";
 import { useTheme } from "../context";
 import { TAG_PREFIX, TAG_SUFFIX, youtubeTagText } from "../lib/youtube";
 
-/** Non-breaking spaces, so a wrapped tag only breaks inside the channel name ("VIDEO ·" and "/ YouTube" stay whole). */
+/** Non-breaking spaces, so a wrapped tag keeps "VIDEO ·" and "/ YouTube" whole and breaks before, after or inside the name. */
 const keep = (s: string) => s.replace(/ /g, "\u00a0");
 
 /**
  * Small channel tag, absolutely positioned top-right (`side="left"`: top-left). `inset` is the offset from the side
- * (and from the top, unless `top` is given); `maxWidth` lets a long tag wrap instead of running into other overlays.
+ * (and from the top, unless `top` is given); `maxWidth` lets a long tag wrap instead of running into other overlays
+ * (inside a spaceless channel name too, so it is never wider than `maxWidth`).
  */
 export const SourceTag: React.FC<{ channel: string; inset?: number; top?: number; size?: number; maxWidth?: number; side?: "left" | "right" }> = ({
   channel,
@@ -47,6 +48,7 @@ export const SourceTag: React.FC<{ channel: string; inset?: number; top?: number
         lineHeight: 1.3,
         letterSpacing: 2,
         whiteSpace: maxWidth ? "normal" : "nowrap",
+        overflowWrap: maxWidth ? "anywhere" : undefined, // a long name with no spaces still breaks, never overflows
         textAlign: side,
         color: colors.dim,
         background: colors.noteBg,
@@ -55,7 +57,7 @@ export const SourceTag: React.FC<{ channel: string; inset?: number; top?: number
         textShadow: `0 1px 3px ${colors.noteBg}`, // a halo in the plate colour: dark on dark themes, light on clean-light
       }}
     >
-      {maxWidth ? keep(TAG_PREFIX.trimEnd()) + " " + text.slice(TAG_PREFIX.length, -TAG_SUFFIX.length) + keep(TAG_SUFFIX) : text}
+      {maxWidth ? keep(TAG_PREFIX.trimEnd()) + " " + text.slice(TAG_PREFIX.length, -TAG_SUFFIX.length) + " " + keep(TAG_SUFFIX.trimStart()) : text}
     </div>
   );
 };
