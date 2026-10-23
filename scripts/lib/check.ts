@@ -4,8 +4,10 @@ import { createRequire } from "node:module";
 import { join } from "node:path";
 import { feature } from "topojson-client";
 import type { Issue } from "../../src/kit/lib/resolve.ts";
+import { youtubeAttributions } from "../../src/kit/lib/attribution.ts";
 import { sfxCues } from "../../src/kit/lib/sfx.ts";
 import { norm } from "../../src/kit/lib/timing.ts";
+import { isYouTubeUrl } from "../../src/kit/lib/youtube.ts";
 import { AI_LICENSE, type AssetManifest, assetsSchema, type Credit, creditSchema, isTextSection, LICENSES, OWN_LICENSE, PRESS_LICENSE } from "../../src/kit/schema.ts";
 import { layoutOf } from "../../src/kit/themes/ids.ts";
 import { AUDIO_EXT, IMAGE_EXT, LIBRARY, listMedia, VIDEO_EXT } from "./assets.ts";
@@ -140,6 +142,31 @@ export const pressIssues = (entries: Credit[], thumbnailVisual?: string): Issue[
     .forEach((c) => err("library/credits.json", `${c.file}: press images stay per episode, not in the shared library`));
   const pressNames = new Set(press.map((c) => c.file.replace(/^.*\//, "").replace(/\.[^.]+$/, "")));
   if (thumbnailVisual && pressNames.has(thumbnailVisual)) err("thumbnail.visual", `"${thumbnailVisual}" is a press image: press images can't be the thumbnail (it promotes the video, not the product)`);
+  return issues;
+};
+
+/** YouTube clips: CC BY or PD (with a stated basis), clips/ only, a named channel, fresh tag in assets.json, never the thumbnail. */
+export const youtubeIssues = (entries: Credit[], assets: AssetManifest, thumbnailVisual: string | undefined, searchOn: boolean): Issue[] => {
+  const issues: Issue[] = [];
+  const err = (where: string, msg: string) => issues.push({ level: "error", where, msg });
+  const yt = entries.filter((c) => isYouTubeUrl(c.sourceUrl));
+  if (yt.length && !searchOn) {
+    issues.push({ level: "warning", where: "credits.json", msg: "has YouTube clips but config.yaml youtube.search_youtube is false; the credits are still enforced" });
+  }
+  const channels = youtubeAttributions(yt);
+  yt.forEach((c) => {
+    if (c.license !== "CC BY" && c.license !== "PD") err("credits.json", `${c.file}: a YouTube source must be CC BY or PD (got ${c.license})`);
+    if (c.license === "PD" && !c.notes?.trim()) err("credits.json", `${c.file}: a PD YouTube clip needs "notes" stating the basis (e.g. "NASA, US federal work")`);
+    if (!c.file.startsWith("clips/")) {
+      err("credits.json", `${c.file}: YouTube media is for clips/ only`);
+      return;
+    }
+    if (!c.author.trim() || c.author.trim().toLowerCase() === "youtube") err("credits.json", `${c.file}: name the channel as author (not "YouTube")`);
+    const name = c.file.replace(/^.*\//, "").replace(/\.[^.]+$/, "");
+    if (assets.clips[name]?.attribution !== channels[c.file]) err("assets", `${c.file}: the on-screen channel tag is missing or stale: run \`npm run assets\``);
+  });
+  const ytNames = new Set(yt.map((c) => c.file.replace(/^.*\//, "").replace(/\.[^.]+$/, "")));
+  if (thumbnailVisual && ytNames.has(thumbnailVisual)) err("thumbnail.visual", `"${thumbnailVisual}" is a YouTube clip: it can't be the thumbnail`);
   return issues;
 };
 
@@ -346,6 +373,7 @@ export const runCheck = (slug: string): Issue[] => {
 
   // --- press images (config.yaml licensing.press_images): official manufacturer images of a product being discussed ---
   issues.push(...pressIssues(epCredits.entries, ep.thumbnail?.visual));
+  issues.push(...youtubeIssues(epCredits.entries, assets, ep.thumbnail?.visual, loadConfig().youtube.search_youtube));
 
   // --- source material ---
   if (!existsSync(p.article) || readFileSync(p.article, "utf8").replace(/<!--[\s\S]*?-->/g, "").trim().length < 200) {

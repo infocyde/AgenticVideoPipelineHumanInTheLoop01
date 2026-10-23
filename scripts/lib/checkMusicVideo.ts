@@ -3,7 +3,8 @@ import { existsSync, readFileSync } from "node:fs";
 import { lyricWords, parseLyrics } from "../../src/kit/lib/lyrics.ts";
 import type { Issue } from "../../src/kit/lib/resolve.ts";
 import { assetsSchema, type Timing } from "../../src/kit/schema.ts";
-import { creditCoverageIssues, generatedStills, pressIssues, staleAssetIssues } from "./check.ts";
+import { creditCoverageIssues, generatedStills, pressIssues, staleAssetIssues, youtubeIssues } from "./check.ts";
+import { loadConfig } from "./config.ts";
 import { loadMusicVideoFromDisk } from "./musicVideo.ts";
 
 /** Under this share of sheet words heard by Whisper, the sheet probably differs from the recording. */
@@ -76,6 +77,7 @@ export const runMusicVideoCheck = (slug: string): Issue[] => {
     warn("AI imagery", `uses AI-generated images (${[...new Set(usesAi)].join(", ")}). If any look realistic, tick YouTube's "altered or synthetic content" box when uploading.`);
   }
   issues.push(...pressIssues(epCredits.entries, ep.thumbnail?.visual));
+  issues.push(...youtubeIssues(epCredits.entries, assets, ep.thumbnail?.visual, loadConfig().youtube.search_youtube));
 
   if (!ep.summary) warn("summary", "no summary: write 1–2 sentences for the top of the YouTube description; npm run credits puts it there");
   return issues;
