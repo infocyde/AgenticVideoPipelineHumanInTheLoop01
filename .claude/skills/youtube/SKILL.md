@@ -16,7 +16,7 @@ Read `config.yaml` `youtube:` first.
 - **`use_video_as_citation: true`** (default). A video can be a cited source like an article. It is listed in `sources` and shows on the sources card.
 - **`use_video_as_citation: false`.** Videos are leads only. A fact from one is used only when a non-YouTube source confirms it, and that source is cited. The video never appears in `sources`; log it in `notes.md` as a lead.
 
-This setting is about facts. Whether a clip can be used depends only on its license.
+This setting is about facts. Whether a clip can be used depends on its license (CC BY), or for `PD`, on the channel being a verified US federal agency and the basis stated (see Clips).
 
 ## Commands
 
@@ -29,12 +29,12 @@ npm run youtube -- <slug> clip <id|url> <name> --from <t> --to <t> [--license PD
 npm run youtube -- --update
 ```
 
-`search` prints a table and saves `raw/youtube/search-<n>.json` (`--cc` keeps only Creative Commons videos; upload dates aren't in the table). `transcript` saves `raw/youtube/<videoId>/info.json` and `transcript.txt` (`[mm:ss]` per paragraph) and prints a header with the upload date plus the first 300 words. `clip` is covered below. `--update` upgrades yt-dlp; try it first when extraction breaks.
+`search` prints a table and saves `raw/youtube/search-<n>.json` (`--cc` keeps only Creative Commons videos; upload dates aren't in the table). `transcript` saves `raw/youtube/<videoId>/info.json` and `transcript.txt` (`[mm:ss]` per paragraph) and prints a header with the upload date plus the first 300 words. `clip` is covered below. `--update` upgrades yt-dlp; try it first when extraction breaks. It installs past the version pinned in `requirements.txt`, and a later `npm run setup:align` returns to the pinned one.
 
 ## Procedure
 
 1. **Search** with two or three specific queries. Prefer official channels in the results.
-2. **Preview** the promising ones with `transcript`. The header shows channel, date and whether the captions are manual or auto.
+2. **Preview** the promising ones with `transcript`. The header shows channel, date and whether the captions are manual, auto or machine-translated (auto English on a non-English video); treat machine-translated captions like auto ones.
 3. **Decide** from the preview. If it doesn't bear on a claim, drop it and move on.
 4. **Read** the whole `transcript.txt` of the useful ones with Read, then extract only the facts you need.
 

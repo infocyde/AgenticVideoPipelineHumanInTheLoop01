@@ -161,7 +161,7 @@ $H "Tu-160 bomber" --license public     # public | share-commercially | modify-c
   - `reject-domain`: stock, agency, wallpaper, social and news hosts. Hidden unless `--show-rejected`.
 - **Verify, then download from the origin.** Trace the hit to the page that actually publishes the photo (for DoD sites the `igphoto/<id>` page, with its VIRIN), confirm the license there, and record that page as `sourceUrl` and the origin file (e.g. `media.defense.gov/…`) as `originalUrl`. Never record a DDG or Bing URL.
 - **Rate limits:** one search request per call (DDG's also fetches a token first). DDG often answers `202 {"response_type":"botnet_challenge"}` (4 of 6 test calls); with `--engine auto` the helper then makes one request to Bing, which is the same index and license filter. If both refuse, it exits 2. Wait several minutes; never loop it.
-- **No video.** DDG video results are YouTube, and downloading from YouTube breaks its terms even for CC BY uploads.
+- **No video.** DDG video results are YouTube; never download them by hand. CC BY or federal YouTube clips go only through `npm run youtube` (section 14).
 - Known failure modes: relevance collapses on rare subjects (`"Tu-160 bomber" --federal` returned B-52s and B-1Bs; with `--license public` DDG matched "tu" to a valley and clip art); article pages reuse old file photos, so check the VIRIN date against the event; `crop_16_9` and `/2000/2000/` URLs are resized renditions, so take the full-size download from the photo page; a placeholder VIRIN such as `A-N1234` with "Credit: Army photo" has a PD basis but no named photographer.
 - ddgs 9.16 with primp 2.x fails with "malformed headers" on DDG images (it sends `Connection: keep-alive` over HTTP/2); the helper strips that header.
 

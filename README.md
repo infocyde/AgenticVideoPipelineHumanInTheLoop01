@@ -244,7 +244,7 @@ Optional extras:
 - `"note": "FILE FOOTAGE · LVIV, 2022"` on a visual: an on-screen tag for footage that isn't of the event described.
 - `"grade": false` on a visual: show it as it is, without the theme's filter and tint (for explainers and infographics already drawn in the theme). The gradients behind the text still apply.
 - `"side": "right"` on a segment (overlay layouts): the number, region, headline and stat block sits on the right instead of the left. It tucks into the top-right corner, the side gradient is mirrored and the map card moves to the left.
-- `"exitAt": "<cue>"` on a segment: at that spoken phrase the number, headline and stat block slides off screen and stays off, for when a full-frame explainer or infographic comes up. On a Short it fades the text panel instead.
+- `"exitAt": "<cue>"` on a segment (overlay layouts and Shorts): at that spoken phrase the number, headline and stat block slides off screen and stays off, for when a full-frame explainer or infographic comes up. On a Short it fades the text panel instead.
 - **Every episode ends with a sources scene and a credits scene.** After the voiceover, a "SOURCES" card lists `sources` (title + site) for 7s (more than 8 sources are split evenly over several cards, 7s each). Then a "CREDITS" roll built from `credits.json` (footage, images, AI illustrations, music, sound, map data) runs for 8s, listing only what the episode actually uses, the same as `DESCRIPTION.md`. Change the lengths with `"outro": { "sourcesCard": { "seconds": 7 }, "creditsCard": { "seconds": 8 } }`, or turn one off with `false`. `check` fails an episode with no `sources` while its sources card is on.
 - `"outro": { "endScreen": { "seconds": 12 } }`: a branded hold frame after the voiceover (and after the sources card, if any), with empty slots for YouTube's end-screen elements.
 - `"thumbnail": { "big": "10", "title": "FLASH\nPOINTS", "visual": "gulf_navy" }`
@@ -474,7 +474,7 @@ requirements-tts.txt             Python packages for .venv-tts (npm run voice: P
 requirements-qwen.txt            Python packages for .venv-qwen (npm run voice with engine: qwen)
 requirements-music.txt           Python packages for .venv-music (npm run compose: Stable Audio 3, Flash Attention)
 models/image/                    sd-cli + Z-Image Turbo GGUF, encoder and VAE for local stills (git-ignored; npm run setup:image)
-config.yaml                      kit settings: voice, shorts, music_gen (composed beds) and image_gen (local / cloud / mixed stills) and youtube
+config.yaml                      kit settings: voice, shorts, music_gen (composed beds), image_gen (local / cloud / mixed stills) and youtube
 voices/                          reference clips for voice cloning (git-ignored except README.md)
 .claude/skills/                  new-episode, find-media, generate-image, infographic, explainer, compose-music, youtube
 ```

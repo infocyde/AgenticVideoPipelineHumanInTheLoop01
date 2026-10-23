@@ -122,7 +122,9 @@ licensing:
 
 youtube:
   # YouTube as a research source and, for Creative Commons videos, a clip source (the youtube skill;
-  # npm run youtube). No API key: search, transcripts and clips go through yt-dlp.
+  # npm run youtube). No API key: search, transcripts and clips go through yt-dlp. YouTube's Terms of Service
+  # restrict downloading even for CC BY videos: clips go only through `npm run youtube clip`, CC BY or federal PD,
+  # credited and tagged on screen. This is a risk you accept by using it.
   #   search_youtube true:  the producer searches YouTube during the fact-check and asset steps, previews each
   #                         transcript's first ~300 words, and reads the full transcript of the useful ones.
   #   search_youtube false: no YouTube (no search, transcripts or clips) unless you ask for it.
