@@ -2,10 +2,12 @@
 import React, { useMemo } from "react";
 import { AbsoluteFill } from "remotion";
 import { z } from "zod";
+import { SaveProps } from "./components/SaveProps";
 import { EpisodeProvider, type EpisodeCtx } from "./context";
 import { Countdown } from "./formats/Countdown";
 import { List } from "./formats/List";
 import { Short } from "./formats/Short";
+import { PunchThumbnail } from "./PunchThumbnail";
 import { parseCredits, usedCredits } from "./lib/credits";
 import { resolveEpisode } from "./lib/resolve";
 import { assetsSchema, type Episode, episodeSchema, type Timing, timingSchema } from "./schema";
@@ -70,14 +72,18 @@ export const makeEpisodeComponents = (entry: RegistryEntry) => {
   const useLoaded = (episode: unknown) =>
     useMemo(() => loadEpisode(entry, episode), [episode]);
 
+  // Studio-only: saves props-panel edits to episode.json (Studio's own Save can't, see SaveProps).
+  const save = (episode: unknown) => <SaveProps slug={entry.slug} episode={episode} original={entry.episode} schema={episodeSchema} />;
+
   const Video: React.FC<CompositionProps> = ({ episode }) => {
     const loaded = useLoaded(episode);
-    if (!loaded.ok) return <ErrorCard slug={loaded.slug} errors={loaded.errors} />;
+    if (!loaded.ok) return <>{<ErrorCard slug={loaded.slug} errors={loaded.errors} />}{save(episode)}</>;
     const { format } = loaded.ctx.episode;
     const Format = format === "short" ? Short : format === "list" ? List : Countdown;
     return (
       <EpisodeProvider value={loaded.ctx}>
         <Format />
+        {save(episode)}
       </EpisodeProvider>
     );
   };
@@ -85,10 +91,11 @@ export const makeEpisodeComponents = (entry: RegistryEntry) => {
   const Thumb: React.FC<CompositionProps> = ({ episode }) => {
     const loaded = useLoaded(episode);
     if (!loaded.ok) return <ErrorCard slug={loaded.slug} errors={loaded.errors} />;
-    const Thumbnail_ = getSkin(loaded.ctx.theme.id).Thumbnail ?? Thumbnail;
+    const Thumbnail_ = loaded.ctx.episode.thumbnail?.layout === "punch" ? PunchThumbnail : (getSkin(loaded.ctx.theme.id).Thumbnail ?? Thumbnail);
     return (
       <EpisodeProvider value={loaded.ctx}>
         <Thumbnail_ />
+        {save(episode)}
       </EpisodeProvider>
     );
   };

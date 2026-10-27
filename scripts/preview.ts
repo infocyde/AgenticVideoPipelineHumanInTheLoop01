@@ -1,11 +1,13 @@
 // Open Remotion Studio in the browser on one episode, so the user can watch it before rendering.
 // Runs check first (problems are listed here and shown as a red panel over the video; they don't block preview).
 // Usage: npm run preview -- <slug> [--port 3000] [--no-open]
-// Keeps running until stopped (Ctrl+C, or `npm run kill`).
+// Keeps running until stopped (Ctrl+C, or `npm run kill`). Also starts the props server, so the Studio-only
+// "Save to episode.json" button can write props-panel edits back to episode.json (see scripts/props-server.ts).
 import { spawn } from "node:child_process";
 import { join } from "node:path";
 import { printIssues } from "./check.ts";
 import { runCheck } from "./lib/check.ts";
+import { startPropsServer } from "./props-server.ts";
 import { fail, info, ok, parseArgs, requireSlug, ROOT } from "./lib/util.ts";
 import { sync } from "./sync.ts";
 
@@ -23,6 +25,7 @@ const openBrowser = (url: string) => {
 const args = [join(ROOT, "node_modules", "@remotion", "cli", "remotion-cli.js"), "studio", "src/index.ts", "--no-open"];
 if (typeof flags.port === "string") args.push(`--port=${flags.port}`);
 
+startPropsServer();
 info("starting Remotion Studio…");
 const studio = spawn(process.execPath, args, { cwd: ROOT, stdio: ["inherit", "pipe", "inherit"] });
 let opened = false;
@@ -42,4 +45,7 @@ studio.on("exit", (code) => {
   if (!opened) fail(`Remotion Studio exited before it was ready (code ${code})`);
   process.exit(code ?? 0);
 });
-process.on("SIGINT", () => studio.kill());
+process.on("SIGINT", () => {
+  studio.kill();
+  process.exit(0);
+});

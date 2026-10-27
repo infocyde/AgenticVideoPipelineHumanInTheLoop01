@@ -48,6 +48,14 @@ def trim(wav, sr, thresh=0.003):
     idx = np.where(np.abs(wav) > thresh)[0]
     if not len(idx):
         return wav
+    # Some engines (qwen-cloud) return audio that stops right at the last sound, leaving no tail for the fade-out, which
+    # then lands on the final syllable. Pad with silence (after a 5 ms micro-fade so the edge doesn't click).
+    short = idx[-1] + int(0.25 * sr) - len(wav)
+    if short > 0:
+        wav = wav.astype(np.float32).copy()
+        mf = min(len(wav), int(0.005 * sr))
+        wav[len(wav) - mf :] *= np.linspace(1.0, 0.0, mf, dtype=np.float32)
+        wav = np.concatenate([wav, np.zeros(short, dtype=np.float32)])
     out = wav[max(0, idx[0] - int(0.04 * sr)) : min(len(wav), idx[-1] + int(0.25 * sr))].astype(np.float32).copy()
     fi, fo = min(len(out), int(0.01 * sr)), min(len(out), int(0.09 * sr))
     out[:fi] *= np.linspace(0.0, 1.0, fi, dtype=np.float32)
@@ -86,7 +94,9 @@ def cloud_takes(a, chunks):
         return np.frombuffer(raw, dtype=np.float32).copy()
 
     def one(i, s):
-        body = {"input": {"mode": "voice_clone", "text": s, "language": a["language"], "reference_audio": ref_url, "reference_text": a["ref_text"]}}
+        # A trailing ellipsis lets the model finish the last word into silence; without it, about half the takes stop
+        # mid-decay (tested 2026-10-25: 6/6 clean endings with " ...", 3/6 with plain text).
+        body = {"input": {"mode": "voice_clone", "text": s + " ...", "language": a["language"], "reference_audio": ref_url, "reference_text": a["ref_text"]}}
         last = ""
         for attempt in range(4):
             try:

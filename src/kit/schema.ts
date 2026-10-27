@@ -140,6 +140,20 @@ const closingCard = (min: number, defaultSeconds: number) =>
     .union([z.object({ seconds: z.number().min(min).max(20).default(defaultSeconds) }), z.literal(false)])
     .default({ seconds: defaultSeconds });
 
+/** One thumbnail design; `thumbnail` holds the defaults and each of its `variants` overrides them. */
+const thumbnailFields = {
+  layout: z
+    .enum(["classic", "punch"])
+    .optional()
+    .describe("'classic' (default): the theme's own design. 'punch': bright photo with the subject filling the right half and 2–4 huge words on a solid accent slab, made to stand out in YouTube's dark mode"),
+  big: z.string().optional().describe("Defaults to coldOpen.title.big; \"\" for none (punch)"),
+  title: z.string().optional().describe("Defaults to coldOpen.title.small"),
+  visual: visualName.optional().describe("Background image or clip frame"),
+  frame: z.number().optional().describe("Seconds into the clip to grab when `visual` is a clip"),
+  position: z.string().optional().describe("CSS object-position of the visual, where the subject sits, e.g. '75% 60%' (punch defaults to '70% center')"),
+  zoom: z.number().min(1).max(3).optional().describe("Scale the visual up around `position` so the subject fills about half the frame (punch)"),
+};
+
 export const episodeSchema = z.object({
   $schema: z.string().optional(),
   slug: z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/),
@@ -228,10 +242,12 @@ export const episodeSchema = z.object({
     .optional(),
   thumbnail: z
     .object({
-      big: z.string().optional().describe("Defaults to coldOpen.title.big"),
-      title: z.string().optional().describe("Defaults to coldOpen.title.small"),
-      visual: visualName.optional().describe("Background image or clip frame"),
-      frame: z.number().optional().describe("Seconds into the clip to grab when `visual` is a clip"),
+      ...thumbnailFields,
+      variants: z
+        .array(z.object(thumbnailFields))
+        .max(3)
+        .optional()
+        .describe("Up to 3 alternatives for YouTube's Test & Compare; each overrides the fields above. npm run thumb writes thumbnail-1.png … and copies the first to thumbnail.png"),
     })
     .optional(),
   sources: z.array(z.object({ title: z.string(), url: z.string().url() })).default([]),

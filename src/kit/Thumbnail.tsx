@@ -1,9 +1,8 @@
 import React from "react";
-import { AbsoluteFill, Img, OffthreadVideo, staticFile } from "remotion";
+import { AbsoluteFill, Img, OffthreadVideo, staticFile, useVideoConfig } from "remotion";
 import { WorldMap } from "./components/WorldMap";
 import { useEpisode } from "./context";
 import { allPins, resolveVisual } from "./lib/resolve";
-import { FPS } from "./lib/timing";
 
 export const THUMB_WIDTH = 1280;
 export const THUMB_HEIGHT = 720;
@@ -11,6 +10,8 @@ export const THUMB_HEIGHT = 720;
 /** 1280×720 YouTube thumbnail built from the theme and episode: crisp text without an image model. */
 export const Thumbnail: React.FC = () => {
   const { episode, assets, theme } = useEpisode();
+  // A Still runs at 1 fps, so the clip offset is in seconds here, not the video's FPS.
+  const { fps } = useVideoConfig();
   const { colors, fonts, effects, backdrop } = theme;
   const big = episode.thumbnail?.big ?? episode.coldOpen.title.big;
   const title = episode.thumbnail?.title ?? episode.coldOpen.title.small;
@@ -18,7 +19,7 @@ export const Thumbnail: React.FC = () => {
   const visual = name ? resolveVisual(assets, name) : null;
   // Thumbnails are seen small and need punch: keep the image bright (no in-video darkening) and anchor it to the
   // right, where layouts put the subject; the side gradient still darkens the left for the text.
-  const media: React.CSSProperties = { width: "100%", height: "100%", objectFit: "cover", objectPosition: "right center", filter: "contrast(1.1) saturate(1.15)" };
+  const media: React.CSSProperties = { width: "100%", height: "100%", objectFit: "cover", objectPosition: episode.thumbnail?.position ?? "right center", filter: "contrast(1.1) saturate(1.15)" };
   const bigSize = big.length <= 2 ? 250 : big.length <= 4 ? 190 : 130;
 
   return (
@@ -31,7 +32,7 @@ export const Thumbnail: React.FC = () => {
           {visual.kind === "image" ? (
             <Img src={staticFile(visual.file)} style={media} />
           ) : (
-            <OffthreadVideo src={staticFile(visual.file)} muted startFrom={Math.round((episode.thumbnail?.frame ?? 1) * FPS)} style={media} />
+            <OffthreadVideo src={staticFile(visual.file)} muted trimBefore={(episode.thumbnail?.frame ?? 1) * fps} style={media} />
           )}
           <AbsoluteFill style={{ background: colors.accentDeep, mixBlendMode: backdrop.tintBlend, opacity: backdrop.tintOpacity * 0.4 }} />
         </AbsoluteFill>

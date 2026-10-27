@@ -47,7 +47,7 @@ Shape (the scaffolded file shows it):
 - About **360 words for ~2:15**. Scale for other lengths at ~2.6 words a second.
 - Write for the ear (TTS): spell out numbers and dates ("October twenty-fifth", "ninety percent", "two thousand"). Avoid symbols, abbreviations it may misread, parentheses and stage directions.
 - **No colons and no abrupt fragment sentences** in any narration (episodes, Shorts, explainers). A bare fragment such as *"First, the test."* followed by a new sentence reads choppily, and the voice engine voices it as its own tiny sentence and can chop it off mid-word (it did on 2026-10-21). Fold such openings into a full, flowing sentence: *"In the first test, Anthropic's red team gave it…"*, *"For comparison, …"*, *"Released on October seventh, it costs…"*. The kit's `Number one.` segment markers are the one exception, because the number slam needs them.
-- After voicing, check sentence ends for hard cuts (audio that stops dead instead of fading): read the waveform around any join that sounds clipped. A cut inside a word can't be fixed with a fade, so reword the line and voice it again.
+- After voicing, run the voice check (step 3c). A cut inside a word can't be fixed with a fade, so reword the line and voice it again.
 - **Every claim must be in the article or in the step 1b fact-check log.** List anything else you added (context, definitions) and ask the user to approve or cut it.
 - Write with cues in mind: each stat you plan to show should be spoken with a distinctive word ("kiwifruit", "ninety", "halted"), and each b-roll cut should land on a distinctive phrase.
 
@@ -70,6 +70,20 @@ npm run align -- <slug>
 - **Local TTS:** most mismatches are Whisper writing numbers as digits ("ten" becomes "10"), and those are fine. Look for real misreads in the report and `heard.txt` (a name said wrong, a dropped word). Respell the word in `voiceover.txt` for the ear and re-voice with `npm run voice -- <slug> --force`. Try `--seed <n>` for a different read of a flat or garbled line. Log respellings in `notes.md`.
 - **Under 90% matched** usually means the recording differs from the script (lines changed in ElevenLabs, ad-libs). Read `episodes/<slug>/heard.txt` (Whisper's raw transcript), edit `voiceover.txt` to match **what was actually said** (keeping the script's spelling for names), and run align again. Captions must show what was said.
 - If a marker is missing, the speaker probably said it differently ("Number 10" read as "Number ten" is fine; "At number ten" changes the marker). Fix `voiceover.txt` to match the audio, or change the `marker` in `episode.json`.
+
+### 3c. Voice check (every project, every voicing)
+
+Once the voiceover is laid out and aligned (TTS or a recording, episodes and Shorts alike), scan it for harsh stops:
+
+```
+npm run voice-check -- <slug>
+```
+
+It follows the level over the last 130 ms before every pause. A natural ending dips toward silence there; a **HARSH** stop stays near speaking level right up to the cut (the word was chopped while still sounding; the 50 ms fade `npm run voice` adds hides the click, not the cut). **CHECK** is borderline. Each flagged stop gets a listening snippet and a waveform in `episodes/<slug>/work/voice-check/`, with `report.txt` listing every pause.
+
+- Look at every HARSH and CHECK item. A real cut-off needs a new take: re-voice (`npm run voice -- <slug> --force`; the cloud engine gives a fresh take each run), or reword or respell the line so it ends on a softer word, then run `voice-check` again. Keep the take with the fewest harsh stops (save takes in `work/voice-takes/`), and never trade a clean take for one with new misreads (check `heard.txt` too).
+- Aim for **0 HARSH** before the preview. If one can't be cleared after a few takes, tell the user where it is.
+- Log the result in `notes.md` under "Voice" (takes tried, harsh stops before and after).
 
 ### 3b. Music bed (when `config.yaml` has `music_gen.enabled: true`)
 
@@ -95,7 +109,8 @@ Replace every placeholder. The schema with docs is in `src/kit/schema.ts`; timin
 - **Split-layout themes** (`military-comparisons`, `erotic`): b-roll sits framed on the left and the stats build into a spec sheet on the right and stay up, so use more of them: one per spec the article gives (range, warhead, guidance, cost, production…). Five fit a panel; a sixth starts panel 2 (up to 3 panels). Keep `value` short ("1,500 KM", "GPS/INS", "$6–10K") and put the spec name in `label` ("RANGE", "UNIT COST"). The map card shows briefly over the footage and exits left.
 - `outro.lines`: the first line has no cue ("ANY ONE COULD" + accent "BOIL OVER"); the next gets `cue: "That's the week"`. `cta.cue` = "Subscribe".
 - `sources`: title and URL of each source the script relies on (required). Every video ends with a sources scene and a credits roll, both on by default (`outro.sourcesCard`, `outro.creditsCard`; only set `false` if the user asks). `npm run credits` also writes the sources to `out/<slug>/REFERENCES.md`.
-- Optional: `outro.endScreen: { "seconds": 12 }` if the user wants YouTube end-screen slots. Use `thumbnail` to override the thumbnail text or background.
+- Optional: `outro.endScreen: { "seconds": 12 }` if the user wants YouTube end-screen slots.
+- **Thumbnails: 3 variants** for YouTube's Test & Compare, in `thumbnail` with `"layout": "punch"` and `variants` (Shorts get none). Each variant tests a different hook (the count, the headline figure, the stakes) on a different subject. Rules: one dominant subject filling about the right half (frame it with `position` and `zoom`, and for a clip pick the moment with `frame`, in seconds); 2–4 words in all (`big` + `title`, `check` warns above 4); figures only from the script and fact-check; never a press, stock or YouTube visual. Look at all three PNGs after `npm run thumb` and reframe any where the subject is cut, small or hidden.
 
 Run `npm run check -- <slug>`. Asset and license errors are expected at this point; fix everything else.
 
@@ -144,7 +159,7 @@ If the user wants a painted thumbnail instead, use the image-model prompt in [th
 
 Tell the user:
 
-- Paths: `out/<slug>/youtube.mp4` (upload this), `thumbnail.png`, `DESCRIPTION.md`, `REFERENCES.md`.
+- Paths: `out/<slug>/youtube.mp4` (upload this), `thumbnail-1…3.png` (upload all three to Test & Compare; `thumbnail.png` is variant 1), `DESCRIPTION.md`, `REFERENCES.md`.
 - Final loudness and true peak (printed by render).
 - What to check by ear: names and numbers the TTS might mispronounce, and any sfx landing awkwardly.
 - Every file-footage substitution and every approved claim beyond the article (from `notes.md`).
@@ -167,7 +182,7 @@ YouTube Shorts are vertical (9:16, 1080×1920) and each one is its own small epi
 
 **episode.json**: `summary` (1–2 sentences: the Short's one idea and its key fact; the description adds a link line to the full video and `#Shorts`), `coldOpen.beats` (1 hook beat: stamp ≤ 16 chars over a strong visual), `coldOpen.title` (kicker = brand, `big` ≤ 4 chars such as "#1" or "VS", `small` ≤ 2 short lines), `segments` (1–3 items or text sections, each with stats and 1–3 visuals; a `map` shows full-height first, then the b-roll), `outro` (1–2 lines + `cta`). `sourcesCard` and `creditsCard` stay `false`: on Shorts the sources and credits go in the description. File-footage `note`s and AI-image notes apply as usual.
 
-**Then**, per Short: voice it (`npm run voice -- <short>` when local TTS is on, otherwise the user records `voiceover.mp3` alongside the main one), `npm run align`, `npm run assets`, `npm run check` (0 errors), and preview it with the main episode (`npm run preview -- <short>`; the user can approve them together). After approval and the AC-power question, `npm run render -- <short>` writes `out/<short>/youtube.mp4` and copies it to `out/<parent>/short<N>.mp4`. `npm run credits -- <short>` writes its description (link to the full video + `#Shorts`, sources, credits); no thumbnail (YouTube uses a frame).
+**Then**, per Short: voice it (`npm run voice -- <short>` when local TTS is on, otherwise the user records `voiceover.mp3` alongside the main one), `npm run align`, `npm run voice-check -- <short>` (step 3c), `npm run assets`, `npm run check` (0 errors), and preview it with the main episode (`npm run preview -- <short>`; the user can approve them together). After approval and the AC-power question, `npm run render -- <short>` writes `out/<short>/youtube.mp4` and copies it to `out/<parent>/short<N>.mp4`. `npm run credits -- <short>` writes its description (link to the full video + `#Shorts`, sources, credits); no thumbnail (YouTube uses a frame).
 
 **Hand off** each Short's path, length and description with the main episode, and log the picks and scripts in the parent's `notes.md`.
 

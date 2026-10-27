@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { join } from "node:path";
 import { feature } from "topojson-client";
-import type { Issue } from "../../src/kit/lib/resolve.ts";
+import { type Issue, resolveVisual } from "../../src/kit/lib/resolve.ts";
 import { youtubeAttributions } from "../../src/kit/lib/attribution.ts";
 import { sfxCues } from "../../src/kit/lib/sfx.ts";
 import { norm } from "../../src/kit/lib/timing.ts";
@@ -41,6 +41,7 @@ export const LIMITS = {
   note: 48,
   titleBig: 4,
   titleSmallLine: 12,
+  thumbWords: 4, // punch thumbnail: big + title
   // text sections (kind: "text")
   sectionLabel: 28,
   sectionHeadingWords: 8,
@@ -127,8 +128,12 @@ export const creditCoverageIssues = (slug: string, usedLib: Set<string>, extraFi
 export const generatedStills = (entries: Credit[]) =>
   new Set(entries.filter((c) => c.license === AI_LICENSE && c.file.startsWith("images/")).map((c) => c.file.replace(/^images\//, "").replace(/\.[^.]+$/, "")));
 
+/** The thumbnail's visual, or every visual when it has variants. */
+type Thumbs = string | string[];
+const thumbList = (t?: Thumbs) => (t === undefined ? [] : typeof t === "string" ? [t] : t);
+
 /** Press images: only when config.yaml allows them, only images/ and clips/, never in the library, never the thumbnail. */
-export const pressIssues = (entries: Credit[], thumbnailVisual?: string): Issue[] => {
+export const pressIssues = (entries: Credit[], thumbnailVisual?: Thumbs): Issue[] => {
   const issues: Issue[] = [];
   const err = (where: string, msg: string) => issues.push({ level: "error", where, msg });
   const pressOn = loadConfig().licensing.press_images;
@@ -141,7 +146,7 @@ export const pressIssues = (entries: Credit[], thumbnailVisual?: string): Issue[
     .entries.filter((c) => c.license === PRESS_LICENSE)
     .forEach((c) => err("library/credits.json", `${c.file}: press images stay per episode, not in the shared library`));
   const pressNames = new Set(press.map((c) => c.file.replace(/^.*\//, "").replace(/\.[^.]+$/, "")));
-  if (thumbnailVisual && pressNames.has(thumbnailVisual)) err("thumbnail.visual", `"${thumbnailVisual}" is a press image: press images can't be the thumbnail (it promotes the video, not the product)`);
+  for (const v of thumbList(thumbnailVisual)) if (pressNames.has(v)) err("thumbnail.visual", `"${v}" is a press image: press images can't be the thumbnail (it promotes the video, not the product)`);
   return issues;
 };
 
@@ -153,7 +158,7 @@ export const aiStock = (entries: Credit[]) =>
  * Stock-site media (npm run stock): only in music videos, only when config.yaml licensing.stock_media allows it,
  * only images/ and clips/, never in the library, never the thumbnail.
  */
-export const stockIssues = (entries: Credit[], format: string, thumbnailVisual?: string): Issue[] => {
+export const stockIssues = (entries: Credit[], format: string, thumbnailVisual?: Thumbs): Issue[] => {
   const issues: Issue[] = [];
   const err = (where: string, msg: string) => issues.push({ level: "error", where, msg });
   const mode = loadConfig().licensing.stock_media;
@@ -167,12 +172,12 @@ export const stockIssues = (entries: Credit[], format: string, thumbnailVisual?:
     .entries.filter((c) => c.license === STOCK_LICENSE)
     .forEach((c) => err("library/credits.json", `${c.file}: stock media stays per episode, not in the shared library`));
   const names = new Set(stock.map((c) => c.file.replace(/^.*\//, "").replace(/\.[^.]+$/, "")));
-  if (thumbnailVisual && names.has(thumbnailVisual)) err("thumbnail.visual", `"${thumbnailVisual}" is stock-site media: it can't be the thumbnail`);
+  for (const v of thumbList(thumbnailVisual)) if (names.has(v)) err("thumbnail.visual", `"${v}" is stock-site media: it can't be the thumbnail`);
   return issues;
 };
 
 /** YouTube clips: CC BY or PD (with a stated basis), clips/ only, a named channel, fresh tag in assets.json, never the thumbnail. */
-export const youtubeIssues = (entries: Credit[], assets: AssetManifest, thumbnailVisual: string | undefined, searchOn: boolean): Issue[] => {
+export const youtubeIssues = (entries: Credit[], assets: AssetManifest, thumbnailVisual: Thumbs | undefined, searchOn: boolean): Issue[] => {
   const issues: Issue[] = [];
   const err = (where: string, msg: string) => issues.push({ level: "error", where, msg });
   const yt = entries.filter((c) => isYouTubeUrl(c.sourceUrl));
@@ -193,7 +198,7 @@ export const youtubeIssues = (entries: Credit[], assets: AssetManifest, thumbnai
     if (assets.clips[name] && assets.clips[name].attribution !== channels[c.file]) err("assets", `${c.file}: the on-screen channel tag is missing or stale: run \`npm run assets\``);
   });
   const ytNames = new Set(yt.map((c) => c.file.replace(/^.*\//, "").replace(/\.[^.]+$/, "")));
-  if (thumbnailVisual && ytNames.has(thumbnailVisual)) err("thumbnail.visual", `"${thumbnailVisual}" is a YouTube clip: it can't be the thumbnail`);
+  for (const v of thumbList(thumbnailVisual)) if (ytNames.has(v)) err("thumbnail.visual", `"${v}" is a YouTube clip: it can't be the thumbnail`);
   return issues;
 };
 
@@ -326,6 +331,16 @@ export const runCheck = (slug: string): Issue[] => {
   });
   long("coldOpen.title.big", ep.coldOpen.title.big, LIMITS.titleBig);
   ep.coldOpen.title.small.split("\n").forEach((l) => long("coldOpen.title.small", l, LIMITS.titleSmallLine, "characters on one line (use \\n)"));
+  if (ep.thumbnail) {
+    const { variants = [], ...base } = ep.thumbnail;
+    (variants.length ? variants.map((v) => ({ ...base, ...v })) : [base]).forEach((t, i) => {
+      const w = variants.length ? `thumbnail.variants[${i}]` : "thumbnail";
+      if (t.visual && !resolveVisual(assets, t.visual)) err(`${w}.visual`, `"${t.visual}" is not in assets.json`);
+      if (t.layout !== "punch") return;
+      const words = `${t.big ?? ep.coldOpen.title.big} ${t.title ?? ep.coldOpen.title.small}`.split(/\s+/).filter(Boolean).length;
+      if (words > LIMITS.thumbWords) warn(w, `${words} words; a thumbnail reads at phone size with ${LIMITS.thumbWords} or fewer`);
+    });
+  }
   ep.outro.lines.forEach((l, i) => {
     const text = `${l.text} ${l.accent ?? ""}`.trim();
     long(`outro.lines[${i}]`, text, i === ep.outro.lines.length - 1 && ep.outro.lines.length > 1 ? LIMITS.outroLast : LIMITS.outroLine);
@@ -393,15 +408,16 @@ export const runCheck = (slug: string): Issue[] => {
     usesAi.push(b.visual);
     if (!b.note) err(`coldOpen.beats[${i}]`, `"${b.visual}" is AI-generated: add "note": "AI-GENERATED ILLUSTRATION" so viewers know`);
   });
-  if (ep.thumbnail?.visual && generated.has(ep.thumbnail.visual)) usesAi.push(ep.thumbnail.visual);
+  const thumbs = [ep.thumbnail?.visual, ...(ep.thumbnail?.variants ?? []).map((v) => v.visual)].filter((v): v is string => !!v);
+  thumbs.forEach((v) => generated.has(v) && usesAi.push(v));
   if (usesAi.length) {
     warn("AI imagery", `uses AI-generated images (${[...new Set(usesAi)].join(", ")}). If any look realistic, tick YouTube's "altered or synthetic content" box when uploading.`);
   }
 
   // --- press images (config.yaml licensing.press_images): official manufacturer images of a product being discussed ---
-  issues.push(...pressIssues(epCredits.entries, ep.thumbnail?.visual));
-  issues.push(...stockIssues(epCredits.entries, ep.format, ep.thumbnail?.visual));
-  issues.push(...youtubeIssues(epCredits.entries, assets, ep.thumbnail?.visual, loadConfig().youtube.search_youtube));
+  issues.push(...pressIssues(epCredits.entries, thumbs));
+  issues.push(...stockIssues(epCredits.entries, ep.format, thumbs));
+  issues.push(...youtubeIssues(epCredits.entries, assets, thumbs, loadConfig().youtube.search_youtube));
 
   // --- source material ---
   if (!existsSync(p.article) || readFileSync(p.article, "utf8").replace(/<!--[\s\S]*?-->/g, "").trim().length < 200) {

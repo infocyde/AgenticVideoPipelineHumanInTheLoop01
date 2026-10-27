@@ -1,10 +1,9 @@
 // Frontier thumbnail (1280×720): the visual in a turned glass window on the right, the iridescent numeral and the
 // title on the left over the lattice. Built to read at phone size.
 import React from "react";
-import { AbsoluteFill, Img, OffthreadVideo, staticFile } from "remotion";
+import { AbsoluteFill, Img, OffthreadVideo, staticFile, useVideoConfig } from "remotion";
 import { useEpisode } from "../../context";
 import { allPins, resolveVisual } from "../../lib/resolve";
-import { FPS } from "../../lib/timing";
 import { DotMap } from "./DotMap";
 import { EqMark } from "./Chrome";
 import { F, Field, GradientText } from "./fx";
@@ -12,6 +11,8 @@ import { Window } from "./Media";
 
 export const FrontierThumbnail: React.FC = () => {
   const { episode, assets, theme } = useEpisode();
+  // A Still runs at 1 fps, so the clip offset is in seconds here, not the video's FPS.
+  const { fps } = useVideoConfig();
   const { fonts, colors } = theme;
   const big = episode.thumbnail?.big ?? episode.coldOpen.title.big;
   const title = episode.thumbnail?.title ?? episode.coldOpen.title.small;
@@ -27,7 +28,7 @@ export const FrontierThumbnail: React.FC = () => {
           visual.kind === "image" ? (
             <Img src={staticFile(visual.file)} style={media} />
           ) : (
-            <OffthreadVideo src={staticFile(visual.file)} muted startFrom={Math.round((episode.thumbnail?.frame ?? 1) * FPS)} style={media} />
+            <OffthreadVideo src={staticFile(visual.file)} muted trimBefore={(episode.thumbnail?.frame ?? 1) * fps} style={media} />
           )
         ) : (
           <DotMap width={676} height={496} allPins={allPins(episode)} pinDelay={0} zoomFrames={1} showLabels={false} pitch={7} settled />

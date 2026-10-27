@@ -1,13 +1,14 @@
 import React from "react";
-import { AbsoluteFill, Img, OffthreadVideo, staticFile } from "remotion";
+import { AbsoluteFill, Img, OffthreadVideo, staticFile, useVideoConfig } from "remotion";
 import { resolveVisual } from "./lib/resolve";
 import { thumbnailVisual } from "./lib/resolveMusicVideo";
-import { FPS } from "./lib/timing";
 import { useMusicVideo } from "./musicVideoContext";
 
 /** 1280×720 YouTube thumbnail for a music video: a still or clip frame (default: the first shot), artist and title. */
 export const MusicVideoThumbnail: React.FC = () => {
   const { episode, assets, theme } = useMusicVideo();
+  // A Still runs at 1 fps, so the clip offset is in seconds here, not the video's FPS.
+  const { fps } = useVideoConfig();
   const { colors, fonts, effects } = theme;
   const visual = resolveVisual(assets, thumbnailVisual(episode));
   const media: React.CSSProperties = { width: "100%", height: "100%", objectFit: "cover", filter: "contrast(1.1) saturate(1.15)" };
@@ -19,7 +20,7 @@ export const MusicVideoThumbnail: React.FC = () => {
         (visual.kind === "image" ? (
           <Img src={staticFile(visual.file)} style={media} />
         ) : (
-          <OffthreadVideo src={staticFile(visual.file)} muted trimBefore={Math.round((episode.thumbnail?.frame ?? 1) * FPS)} style={media} />
+          <OffthreadVideo src={staticFile(visual.file)} muted trimBefore={(episode.thumbnail?.frame ?? 1) * fps} style={media} />
         ))}
       <AbsoluteFill style={{ background: "linear-gradient(to top, rgba(0,0,0,0.85), rgba(0,0,0,0) 60%), linear-gradient(to right, rgba(0,0,0,0.6), rgba(0,0,0,0) 55%)" }} />
       <div style={{ position: "absolute", left: 60, right: 60, bottom: 54 }}>

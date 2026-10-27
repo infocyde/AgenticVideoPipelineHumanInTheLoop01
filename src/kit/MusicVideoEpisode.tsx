@@ -2,6 +2,7 @@
 // and thumbnail, the music-video counterpart of Episode.tsx.
 import React, { useMemo } from "react";
 import { z } from "zod";
+import { SaveProps } from "./components/SaveProps";
 import { ErrorCard, type RegistryEntry } from "./Episode";
 import { MusicVideo } from "./formats/MusicVideo";
 import { MUSIC_VIDEO_ROLL, musicVideoCredits, pagedCreditColumns, parseCredits } from "./lib/credits";
@@ -35,12 +36,16 @@ export const loadMusicVideo = (entry: RegistryEntry, raw: unknown = entry.episod
 export const makeMusicVideoComponents = (entry: RegistryEntry) => {
   const useLoaded = (episode: unknown) => useMemo(() => loadMusicVideo(entry, episode), [episode]);
 
+  // Studio-only: saves props-panel edits to episode.json (Studio's own Save can't, see SaveProps).
+  const save = (episode: unknown) => <SaveProps slug={entry.slug} episode={episode} original={entry.episode} schema={musicVideoSchema} />;
+
   const Video: React.FC<MvCompositionProps> = ({ episode }) => {
     const loaded = useLoaded(episode);
-    if (!loaded.ok) return <ErrorCard slug={loaded.slug} errors={loaded.errors} />;
+    if (!loaded.ok) return <>{<ErrorCard slug={loaded.slug} errors={loaded.errors} />}{save(episode)}</>;
     return (
       <MusicVideoProvider value={loaded.ctx}>
         <MusicVideo />
+        {save(episode)}
       </MusicVideoProvider>
     );
   };
@@ -51,6 +56,7 @@ export const makeMusicVideoComponents = (entry: RegistryEntry) => {
     return (
       <MusicVideoProvider value={loaded.ctx}>
         <MusicVideoThumbnail />
+        {save(episode)}
       </MusicVideoProvider>
     );
   };

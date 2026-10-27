@@ -756,8 +756,16 @@
         "thumbnail": {
           "type": "object",
           "properties": {
+            "layout": {
+              "description": "'classic' (default): the theme's own design. 'punch': bright photo with the subject filling the right half and 2–4 huge words on a solid accent slab, made to stand out in YouTube's dark mode",
+              "type": "string",
+              "enum": [
+                "classic",
+                "punch"
+              ]
+            },
             "big": {
-              "description": "Defaults to coldOpen.title.big",
+              "description": "Defaults to coldOpen.title.big; \"\" for none (punch)",
               "type": "string"
             },
             "title": {
@@ -772,6 +780,61 @@
             "frame": {
               "description": "Seconds into the clip to grab when `visual` is a clip",
               "type": "number"
+            },
+            "position": {
+              "description": "CSS object-position of the visual, where the subject sits, e.g. '75% 60%' (punch defaults to '70% center')",
+              "type": "string"
+            },
+            "zoom": {
+              "description": "Scale the visual up around `position` so the subject fills about half the frame (punch)",
+              "type": "number",
+              "minimum": 1,
+              "maximum": 3
+            },
+            "variants": {
+              "description": "Up to 3 alternatives for YouTube's Test & Compare; each overrides the fields above. npm run thumb writes thumbnail-1.png … and copies the first to thumbnail.png",
+              "maxItems": 3,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "layout": {
+                    "description": "'classic' (default): the theme's own design. 'punch': bright photo with the subject filling the right half and 2–4 huge words on a solid accent slab, made to stand out in YouTube's dark mode",
+                    "type": "string",
+                    "enum": [
+                      "classic",
+                      "punch"
+                    ]
+                  },
+                  "big": {
+                    "description": "Defaults to coldOpen.title.big; \"\" for none (punch)",
+                    "type": "string"
+                  },
+                  "title": {
+                    "description": "Defaults to coldOpen.title.small",
+                    "type": "string"
+                  },
+                  "visual": {
+                    "description": "Background image or clip frame",
+                    "type": "string",
+                    "pattern": "^[a-z0-9_-]+$"
+                  },
+                  "frame": {
+                    "description": "Seconds into the clip to grab when `visual` is a clip",
+                    "type": "number"
+                  },
+                  "position": {
+                    "description": "CSS object-position of the visual, where the subject sits, e.g. '75% 60%' (punch defaults to '70% center')",
+                    "type": "string"
+                  },
+                  "zoom": {
+                    "description": "Scale the visual up around `position` so the subject fills about half the frame (punch)",
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 3
+                  }
+                }
+              }
             }
           }
         },
