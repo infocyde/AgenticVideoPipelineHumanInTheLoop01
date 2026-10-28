@@ -24,6 +24,8 @@ out/
 episodes/*/
 # Each episode's media, timing, assets and credits
 public/episodes/
+# Scratch files dropped into public/ (local only)
+public/temp/
 # Standalone illustrated explainers (npm run explainer)
 explainers/
 # Voice reference clips for npm run voice (personal recordings)
