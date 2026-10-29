@@ -36,6 +36,7 @@
     "sfx": "tsx scripts/sfx.ts",
     "youtube": "tsx scripts/youtube.ts",
     "stock": "tsx scripts/stock.ts",
+    "xpost": "tsx scripts/xpost.ts",
     "test": "tsx --test \"src/**/*.test.ts\" \"scripts/**/*.test.ts\""
   },
   "dependencies": {

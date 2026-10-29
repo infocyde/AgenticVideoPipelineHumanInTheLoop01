@@ -4,7 +4,7 @@ import { lyricWords, parseLyrics } from "../../src/kit/lib/lyrics.ts";
 import { thumbnailVisual } from "../../src/kit/lib/resolveMusicVideo.ts";
 import type { Issue } from "../../src/kit/lib/resolve.ts";
 import { assetsSchema, type Timing } from "../../src/kit/schema.ts";
-import { aiStock, creditCoverageIssues, generatedStills, pressIssues, staleAssetIssues, stockIssues, youtubeIssues } from "./check.ts";
+import { aiStock, creditCoverageIssues, generatedStills, pressIssues, staleAssetIssues, stockIssues, xpostIssues, youtubeIssues } from "./check.ts";
 import { loadConfig } from "./config.ts";
 import { loadMusicVideoFromDisk } from "./musicVideo.ts";
 
@@ -87,6 +87,7 @@ export const runMusicVideoCheck = (slug: string): Issue[] => {
   issues.push(...pressIssues(epCredits.entries, thumb));
   issues.push(...stockIssues(epCredits.entries, ep.format, thumb));
   issues.push(...youtubeIssues(epCredits.entries, assets, thumb, loadConfig().youtube.search_youtube));
+  issues.push(...xpostIssues(epCredits.entries, ep.sources, [p.src], loadConfig().x_posts.enabled, thumb));
 
   if (!ep.summary) warn("summary", "no summary: write 1–2 sentences for the top of the YouTube description; npm run credits puts it there");
   return issues;

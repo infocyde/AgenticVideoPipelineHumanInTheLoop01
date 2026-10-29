@@ -101,6 +101,33 @@ export const venvPython = () =>
 export const musicPython = () =>
   process.platform === "win32" ? join(ROOT, ".venv-music", "Scripts", "python.exe") : join(ROOT, ".venv-music", "bin", "python");
 
+// Articles, conjunctions and short prepositions stay lowercase inside a title (AP style).
+const MINOR = new Set(["a", "an", "the", "and", "but", "or", "nor", "as", "at", "by", "for", "in", "of", "off", "on", "per", "to", "via", "vs"]);
+
+/** Title case for a YouTube title: "Poland's military buildup (Short 2)" -> "Poland's Military Buildup (Short 2)".
+ *  Words that already have a capital (GPT-6.1, ChatGPT, FORTRESS) or start with a digit are left as written. */
+export const titleCase = (title: string) => {
+  const words = title.split(" ");
+  return words
+    .map((word, i) => {
+      // Always capitalized: the first and last word, and the first word after a colon or inside parentheses.
+      const edge = i === 0 || i === words.length - 1 || /[:(]$/.test(words[i - 1] ?? "") || word.startsWith("(");
+      const parts = word.split("-");
+      return parts
+        .map((part, j) => {
+          const m = part.match(/^([^\p{L}\p{N}]*)(.*)$/su)!;
+          const [, lead, core] = m;
+          if (!core || /\p{Lu}/u.test(core) || /^\p{N}/u.test(core)) return part;
+          // The last part of a hyphenated word is capitalized too ("Break-In").
+          const capital = (edge && j === 0) || (j > 0 && j === parts.length - 1);
+          if (MINOR.has(core.replace(/[^\p{L}]+$/u, "")) && !capital) return part;
+          return lead + core[0].toUpperCase() + core.slice(1);
+        })
+        .join("-");
+    })
+    .join(" ");
+};
+
 export const fmtTime = (sec: number) => {
   const s = Math.max(0, Math.floor(sec));
   const h = Math.floor(s / 3600);

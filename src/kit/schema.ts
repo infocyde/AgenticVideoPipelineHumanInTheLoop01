@@ -376,6 +376,23 @@ export const PRESS_LICENSE = "PRESS";
  * Only accepted in music videos, and only when config.yaml has licensing.stock_media: music-video; needs a `stock` record.
  */
 export const STOCK_LICENSE = "STOCK";
+/**
+ * A screenshot of a post on X by an account that speaks for the subject or is well known in its field, shown on screen
+ * as the source of what it says (`npm run xpost --still`). Only accepted when config.yaml has x_posts.enabled: true;
+ * needs an `xpost` record.
+ */
+export const XPOST_LICENSE = "X POST";
+
+export const xpostSchema = z.object({
+  id: z.string(), // the post's id
+  handle: z.string(), // without the @
+  name: z.string(), // display name
+  created: z.string(), // ISO time the post was published
+  text: z.string(), // the post's text as published
+  badge: z.string().optional(), // "verified (Business)", "affiliated with Square"...
+  basis: z.string().min(1), // why this account counts as a source: official for the subject, or well known in the field
+  captured: z.string(), // ISO date the post was fetched and screenshotted
+});
 
 export const stockSchema = z.object({
   site: z.string(), // "Pexels", "Pixabay", "Coverr"
@@ -401,15 +418,17 @@ export const creditSchema = z
     file: z.string().describe("Path relative to the folder holding this credits.json, e.g. 'clips/drone.mp4' (episode) or 'sfx/impact.mp3' (library)"),
     title: z.string().min(1),
     author: z.string().min(1),
-    license: z.enum([...LICENSES, AI_LICENSE, OWN_LICENSE, PRESS_LICENSE, STOCK_LICENSE]),
+    license: z.enum([...LICENSES, AI_LICENSE, OWN_LICENSE, PRESS_LICENSE, STOCK_LICENSE, XPOST_LICENSE]),
     licenseVersion: z.string().optional(),
     sourceUrl: z.string().url().optional().describe("Landing page of the source; required for every license except OWN WORK"),
     originalUrl: z.string().url().optional(),
     notes: z.string().optional(),
     generator: generatorSchema.optional().describe("Provenance for AI-GENERATED media (written by `npm run generate` and `npm run compose`)"),
     stock: stockSchema.optional().describe("Provenance for STOCK media (written by `npm run stock`)"),
+    xpost: xpostSchema.optional().describe("Provenance for X POST screenshots (written by `npm run xpost`)"),
   })
   .refine((c) => c.license !== AI_LICENSE || !!c.generator, { message: "AI-GENERATED entries need a `generator` record", path: ["generator"] })
   .refine((c) => c.license !== STOCK_LICENSE || !!c.stock, { message: "STOCK entries need a `stock` record (written by `npm run stock`)", path: ["stock"] })
+  .refine((c) => c.license !== XPOST_LICENSE || !!c.xpost, { message: "X POST entries need an `xpost` record (written by `npm run xpost`)", path: ["xpost"] })
   .refine((c) => c.license === OWN_LICENSE || !!c.sourceUrl, { message: "needs a sourceUrl (only OWN WORK entries may omit it)", path: ["sourceUrl"] });
 export type Credit = z.output<typeof creditSchema>;

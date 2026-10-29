@@ -1,5 +1,5 @@
 // Which credits an episode actually uses, grouped for the on-screen roll and DESCRIPTION.md. Pure.
-import { AI_LICENSE, type AssetManifest, type Credit, creditSchema, type Episode, type MusicVideo, PRESS_LICENSE, STOCK_LICENSE } from "../schema";
+import { AI_LICENSE, type AssetManifest, type Credit, creditSchema, type Episode, type MusicVideo, PRESS_LICENSE, STOCK_LICENSE, XPOST_LICENSE } from "../schema";
 import type { Timeline } from "./resolve";
 import { sfxCues } from "./sfx";
 
@@ -50,6 +50,8 @@ export const licenseLabel = (c: Credit) =>
         ? "Press image"
       : c.license === STOCK_LICENSE
         ? `${c.stock?.license ?? "Stock license"}${c.stock?.ai ? " · AI-generated" : ""}`
+      : c.license === XPOST_LICENSE
+        ? "Post on X"
       : isStableAudio(c)
         ? "AI-generated · Powered by Stability AI"
         : `${c.license}${c.licenseVersion ? ` ${c.licenseVersion}` : ""}`;

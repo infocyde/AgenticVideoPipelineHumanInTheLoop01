@@ -28,6 +28,8 @@ public/episodes/
 public/temp/
 # Standalone illustrated explainers (npm run explainer)
 explainers/
+# Recon reports (the recon skill: video ideas from X)
+recon/
 # Voice reference clips for npm run voice (personal recordings)
 voices/*
 !voices/README.md

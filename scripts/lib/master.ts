@@ -8,7 +8,11 @@ const TARGET = `I=${TARGET_LUFS}:TP=-1.5:LRA=11`;
 
 /** Integrated loudness and true peak of a file's audio (ebur128). */
 export const measure = (file: string) => {
-  const r = spawnSync("ffmpeg", ["-hide_banner", "-nostats", "-i", file, "-vn", "-af", "ebur128=peak=true", "-f", "null", "-"], { encoding: "utf8" });
+  // ebur128 logs a line every 100 ms, so a 10-minute file overflows spawnSync's default 1 MB buffer and loses the summary.
+  const r = spawnSync("ffmpeg", ["-hide_banner", "-nostats", "-i", file, "-vn", "-af", "ebur128=peak=true", "-f", "null", "-"], {
+    encoding: "utf8",
+    maxBuffer: 64 * 1024 * 1024,
+  });
   const summary = r.stderr.slice(r.stderr.lastIndexOf("Summary:"));
   const i = summary.match(/I:\s+(-?[\d.]+) LUFS/);
   const tp = summary.match(/Peak:\s+(-?[\d.]+|-inf) dBFS/);

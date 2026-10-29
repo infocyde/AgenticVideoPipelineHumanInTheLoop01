@@ -37,6 +37,7 @@ Then paste the article and say *"let's start a new episode"*.
 
 You don't need the commands, slugs or file paths in the rest of this README. Claude picks the slug, runs the `npm` commands, and finds the right episode from context. Say what you want:
 
+- *"Recon"* (experimental: Claude reads your X lists and what's trending on X in your own Brave, read-only, and brings back a ranked list of video ideas, each with a blurb on why. Run it from the Claude Code CLI; setup is under [Recon (experimental)](#recon-experimental-claude-in-your-browser))
 - *"Let's start a new episode"* (then paste the article)
 - *"Make it the top 5, about 5 minutes, same look as the last one"*
 - *"Verify those facts on the web and update the sources"*
@@ -44,6 +45,7 @@ You don't need the commands, slugs or file paths in the rest of this README. Cla
 - *"Favor Russian footage, cap the search at 45 minutes, and use FLUX for anything you can't find"*
 - *"Make an infographic comparing the ranges for the Geran segment"*
 - *"Screenshot the Wikipedia infobox for the Shahed as b-roll"*
+- *"Use NVIDIA's post on X as a source and show it on screen"* (only with `x_posts.enabled: true`)
 - *"The artillery shot in the Lancet segment runs too long, use a Lancet clip"*
 - *"Open the preview"* / *"Render it"*
 - *"Re-render last week's episode with a new thumbnail"*
@@ -83,6 +85,33 @@ Optional, for local AI stills (Z-Image Turbo through stable-diffusion.cpp; no Py
 npm run setup:image      # sd-cli + Z-Image Turbo Q4_K + Qwen3-4B encoder + FLUX.1 VAE into models/image/ (~6.7 GB); --from <folder> hard-links files you already have
 ```
 
+### Recon (experimental): Claude in your browser
+
+Recon has Claude read your X lists and X's trending pages in **your own browser**, signed in as you, through the Claude browser extension ("Claude in Chrome"). It's experimental. It hasn't had a full run yet. It depends on X's page layout, which changes without notice, and on Brave, which Anthropic supports but tests less than Chrome and Edge. Expect to tune it after the first runs.
+
+**Run recon from the Claude Code CLI in a terminal, not the VS Code chat panel.** `/chrome` is a CLI command, and the browser tools only load into a session that starts after the integration is on.
+
+1. **In Brave:** install the Claude extension from the Chrome Web Store (version 1.0.36 or later) and sign it in to the same claude.ai account as Claude Code.
+2. **In a terminal**, in this folder, start the CLI and turn the integration on:
+
+   ```powershell
+   cd brief-kit
+   claude
+   ```
+
+   At the Claude prompt type `/chrome` (in Claude Code, not in Brave) and pick **Enabled by default**. If Chrome also has the extension, use **Select browser…** and pick Brave.
+3. **Restart Brave** completely (quit and reopen). It reads the connection settings only at startup.
+4. **Start a fresh CLI session** (exit, then `claude`, or `claude --chrome`) and say *"recon"*.
+
+If it doesn't connect:
+
+- **Sign-in method.** Claude Code must be signed in with `/login`. An API key or a `claude setup-token` token keeps the browser tools off.
+- **Account.** The extension and Claude Code must use the same claude.ai account and organization; otherwise the tools report "Browser extension is not connected".
+- **Registration.** If Brave still isn't detected, check that the registry key `HKCU\Software\BraveSoftware\Brave-Browser\NativeMessagingHosts\` exists. If it's missing, Claude Code hasn't registered itself with Brave yet: run `/chrome` again and restart Brave.
+- **Update.** Old Claude Code builds didn't detect Brave; run `claude --version` and update if you're behind.
+
+When it runs, Claude only reads. It never likes, posts, follows or replies, and it stops and asks you whenever X shows a login page or a CAPTCHA. Settings are in `config.yaml` `recon:`, the procedure is in `.claude/skills/recon/SKILL.md`, and each run's report is saved in `recon/<date>.md`.
+
 ### config.yaml at a glance
 
 | Section | What it switches | Now |
@@ -92,6 +121,8 @@ npm run setup:image      # sd-cli + Z-Image Turbo Q4_K + Qwen3-4B encoder + FLUX
 | `music_gen:` | Composed music beds with Stable Audio 3 (`model`, `steps`, `lufs`). A fresh random seed every run. | on (medium) |
 | `licensing:` | `press_images`: official manufacturer press images (newsroom / press kit) of a product being discussed, credited `PRESS`. An opt-in risk: they're editorial-use material, not CC. Never the thumbnail. `stock_media`: Pixabay, Pexels and Coverr (own free licenses, not CC) for **music videos only**, searched first with `npm run stock` and credited `STOCK`. Risk: YouTube Content ID claims by contributors. | press on; stock: music-video |
 | `youtube:` | YouTube as a research source and clip source (`npm run youtube`, no API key). `search_youtube`: Claude searches YouTube and reads transcripts during the fact-check and asset steps (off: no YouTube unless you ask). `use_video_as_citation`: a video can be a cited source (off: videos are leads only, and a fact from one needs a non-YouTube source that confirms it). | both on |
+| `x_posts:` | Posts on X as sources (`npm run xpost`): official or well-known accounts only, archived with a screenshot, optionally shown on screen (credited `X POST`). Off: posts are leads only. | off |
+| `recon:` | Video ideas from X (the recon skill): the `lists` and `trending` pages Claude reads in your browser, how far back (`hours_back`), and how many ideas to report. | your two lists, 48 h, 8 ideas |
 | `image_gen:` | Where AI stills come from: `local_render`, `cloud_render` or `mixed` (local, with FLUX 3 for `--detail high`). Local steps, CFG, size and negative prompt live under `local:`. | mixed |
 
 ### Using Stable Audio 3 legally
@@ -289,6 +320,13 @@ Optional extras:
   ```
 
   It writes `images/<name>.png` (1920×1080) and a credits entry with the page as the source. By default the capture sits centered on a blurred copy of itself; `--fit cover` and `--fit raw` are the alternatives. The page has to meet the same license rules as any media: PD, CC0, CC BY or CC BY-SA. Wikipedia text is filled in as CC BY-SA 4.0 automatically. Every other site needs `--license`, plus `--author` for CC BY and CC BY-SA. Commercial news sites are not allowed. Photos and logos on a page carry their own licenses, so crop them out or check them. Other options: `--clip x,y,w,h`, `--full`, `--hide "<css>"` (cookie banners are hidden by default), `--width`/`--height` (a narrower viewport gives bigger text) and `--dark`. Give the visual a `note` naming the site, e.g. `"SOURCE · EN.WIKIPEDIA.ORG"`.
+- **A post on X as a source**, only when `config.yaml` has `x_posts.enabled: true` (off by default: posts are leads). The account must speak officially for the company, agency or military involved, or be someone widely recognized in that field, and the post counts for what they said, attributed in the script.
+
+  ```powershell
+  npm run xpost -- <slug> https://x.com/nvidia/status/<id> --basis "NVIDIA's official account" --still nvidia_post
+  ```
+
+  No login needed: it reads X's public embed data and screenshots X's own embed of the post. Every run archives the proof in `episodes/<slug>/raw/xpost/<id>/` (`post.json` with the exact text, author, date, badge and basis, plus `post.png`) and prints the line for `sources` and one for `notes.md`. `--still <name>` also writes `images/<name>.png` (1920×1080 card), credited `X POST`; it's never the thumbnail. `--no-media` hides the post's photo or video when it isn't the poster's own, and `--light` uses X's light theme. `check` errors on any X link in `sources` while the option is off, and warns when a cited post has no saved proof.
 - **An infographic** (bar comparison, big number, timeline, versus card): write a small HTML page in `episodes/<slug>/infographics/<name>.html`, starting from `.claude/skills/infographic/template.html`, and render it in the episode's theme:
 
   ```powershell
@@ -389,6 +427,7 @@ Then `assets`, `check`, `preview`, `render`, `thumb` and `credits` as for any ep
 | `npm run generate -- <slug> <name> --prompt "..." [--detail high] [--engine local\|cloud] [--seed N] [--force]` | Last-resort AI still (local Z-Image Turbo or FLUX 3, per `image_gen.mode`), with credit and provenance |
 | `npm run stock -- <slug> search "<q>" \| get <site>:<id> <name> \| import <file> <name> --site … --page <url> --author "…"` | Music videos only: Pixabay/Pexels search and download, or import a Coverr/Pexels browser download; STOCK credit (stock-media skill) |
 | `npm run shot -- <slug> <name> --url <url> [--selector "<css>"] [--license PD] [--highlight "..."]` | Screenshot part of a web page as a still, with credit |
+| `npm run xpost -- <slug> <post url> --basis "<why>" [--still <name>] [--no-media] [--light]` | A post on X as a source: archive it, optionally an on-screen still credited X POST (`x_posts.enabled` only) |
 | `npm run infographic -- <slug> <name> [--seconds 12] [--still]` | Render `episodes/<slug>/infographics/<name>.html` as a themed clip or still, with credit |
 | `npm run explainer -- <styles\|new\|storyboard\|frames\|render> <name> [--episode <slug>]` | Illustrated explainers: scaffold in a style, storyboard, check frames, render with sound |
 | `npm run youtube -- <slug> search\|transcript\|clip …` / `-- --update` | Search YouTube, read a transcript, or cut a CC BY / federal-PD clip (config.yaml `youtube:`); `--update` upgrades yt-dlp |
@@ -480,7 +519,8 @@ requirements-tts.txt             Python packages for .venv-tts (npm run voice: P
 requirements-qwen.txt            Python packages for .venv-qwen (npm run voice with engine: qwen)
 requirements-music.txt           Python packages for .venv-music (npm run compose: Stable Audio 3, Flash Attention)
 models/image/                    sd-cli + Z-Image Turbo GGUF, encoder and VAE for local stills (git-ignored; npm run setup:image)
-config.yaml                      kit settings: voice, shorts, music_gen (composed beds), image_gen (local / cloud / mixed stills) and youtube
+config.yaml                      kit settings: voice, shorts, music_gen (composed beds), image_gen (local / cloud / mixed stills), youtube and recon
+recon/                           recon reports, one per run (git-ignored)
 voices/                          reference clips for voice cloning (git-ignored except README.md)
-.claude/skills/                  new-episode, find-media, generate-image, infographic, explainer, compose-music, youtube
+.claude/skills/                  new-episode, find-media, generate-image, infographic, explainer, compose-music, youtube, recon
 ```

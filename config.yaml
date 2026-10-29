@@ -144,3 +144,32 @@ youtube:
   #   use_video_as_citation false: videos are leads only; a fact from one is used only when a non-YouTube source
   #                                confirms it, and that source is cited instead.
   use_video_as_citation: true
+
+x_posts:
+  # Posts on X as sources (npm run xpost; CLAUDE.md rules 2 and 3). Only posts by an account that speaks officially
+  # for the company, agency or military involved, or by someone widely recognized in that field, with the reason
+  # stated (--basis). They count for what that person or organization said, attributed in the script.
+  #   true:  such a post can be cited in sources. npm run xpost archives it with the episode (the post's text, author,
+  #          date and a screenshot in episodes/<slug>/raw/xpost/<id>/), and with --still makes an on-screen image of
+  #          it, credited "X POST" (images/ only, never the thumbnail). Risk you accept: screenshots of posts are
+  #          shown as commentary, not under a CC license.
+  #   false: posts on X are leads only; check errors on an X link in sources or an X POST credit.
+  enabled: false
+
+recon:
+  # Video ideas from X (the recon skill; say "recon"). Claude reads these pages in your own browser (Brave, through
+  # the Claude browser extension, signed in to X), read-only: it never likes, posts, follows or replies. It groups
+  # the posts by story, ranks the stories by how many different accounts are posting about them, and reports a list
+  # with a blurb on each. A copy lands in recon/<date>.md (local only) so later runs skip ideas you've seen.
+  # Setup: the Claude extension in Brave, signed in to the same claude.ai account; /chrome -> Enabled by default.
+  lists:
+    - https://x.com/i/lists/1672634236292169729
+    - https://x.com/i/lists/1614065972239040514
+  trending:
+    - https://x.com/explore/tabs/trending
+    - https://x.com/explore/tabs/news
+  hours_back: 48    # how far back to read each list
+  max_posts: 120    # about this many posts per list, then stop even inside the window
+  trend_dives: 5    # at most this many trends opened to see what they're about
+  ideas: 8          # at most this many ideas in the report
+  min_accounts: 3   # a story needs posts from at least this many different accounts

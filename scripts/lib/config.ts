@@ -58,6 +58,11 @@ export const configSchema = z.object({
       use_video_as_citation: z.boolean().default(true), // a video may be a cited source (else leads only)
     })
     .prefault({}),
+  x_posts: z
+    .object({
+      enabled: z.boolean().default(false), // posts by official / well-known accounts may be cited and shown (npm run xpost)
+    })
+    .prefault({}),
   image_gen: z
     .object({
       mode: z.enum(["local_render", "cloud_render", "mixed"]).default("mixed"),

@@ -30,6 +30,7 @@ import type { Page } from "playwright-core";
 import { type Credit, LICENSES, OWN_LICENSE } from "../src/kit/schema.ts";
 import { IMAGE_EXT, listMedia, scanAssets, VIDEO_EXT } from "./lib/assets.ts";
 import { launchBrowser, newContext } from "./lib/browser.ts";
+import { CARD_H, CARD_W, cardFilter, imageSize } from "./lib/still.ts";
 import { fail, info, ok, parseArgs, paths, requireSlug, warn } from "./lib/util.ts";
 
 const usage = 'npm run shot -- <slug> <name> --url <url> --license "CC BY-SA" --author "..." [--selector "<css>"] [--highlight "phrase"] [--fit card]';
@@ -212,12 +213,9 @@ const stamp = new Date().toISOString().replace(/[:.]/g, "-");
 const rawFile = join(rawDir, `${name}-${stamp}.png`);
 writeFileSync(rawFile, raw!);
 
-const probe = execFileSync("ffprobe", ["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "csv=p=0", rawFile], { encoding: "utf8" });
-const [rw, rh] = probe.trim().split(",").map(Number);
-const FW = 1650; // card: the shot fits inside 86% of the frame
-const FH = 930;
+const [rw, rh] = imageSize(rawFile);
 if (fit === "card") {
-  const up = Math.min(FW / rw, FH / rh);
+  const up = Math.min(CARD_W / rw, CARD_H / rh);
   if (up > 1.6) warn(`the capture (${rw}×${rh}) is small and gets enlarged ${up.toFixed(1)}×; try --scale 3 or a narrower --width for sharper text.`);
   if (rh / rw > 1.4) warn(`the capture is tall (${rw}×${rh}) and will be small on screen; capture a smaller part with --selector or --clip.`);
 }
@@ -226,8 +224,7 @@ mkdirSync(join(p.pub, "images"), { recursive: true });
 const out = join(p.pub, "images", `${name}.png`);
 const vf =
   fit === "card"
-    ? `[0:v]split[a][b];[a]scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,boxblur=28:2,eq=brightness=-0.22:saturation=0.75[bg];` +
-      `[b]scale=${FW}:${FH}:force_original_aspect_ratio=decrease:flags=lanczos,pad=iw+6:ih+6:3:3:color=0x101010[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2`
+    ? cardFilter()
     : fit === "cover"
       ? "scale=1920:1080:force_original_aspect_ratio=increase:flags=lanczos,crop=1920:1080:(iw-1920)/2:0"
       : "null";

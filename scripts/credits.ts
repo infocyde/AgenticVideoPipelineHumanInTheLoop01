@@ -10,7 +10,7 @@ import { LIBRARY } from "./lib/assets.ts";
 import { loadFromDisk } from "./lib/episode.ts";
 import { isMusicVideoSlug, loadMusicVideoFromDisk } from "./lib/musicVideo.ts";
 import { musicVideoDescription, musicVideoFullCredits } from "./lib/musicVideoDescription.ts";
-import { fail, fmtTime, ok, requireSlug, warn } from "./lib/util.ts";
+import { fail, fmtTime, ok, requireSlug, titleCase, warn } from "./lib/util.ts";
 
 const slug = requireSlug("npm run credits -- <slug>");
 
@@ -36,6 +36,8 @@ if (isMusicVideoSlug(slug)) {
 const d = loadFromDisk(slug);
 if (!d.episode || !d.timeline) fail(`episode or timing doesn't load; run: npm run check -- ${slug}`);
 const ep = d.episode!;
+// The YouTube title in title case; music video titles above stay as the artist wrote them.
+const title = titleCase(ep.title);
 const tl = d.timeline!;
 const assets = d.assets;
 if (!assets) fail(`assets.json missing; run: npm run assets -- ${slug}`);
@@ -78,13 +80,13 @@ const soundLines = used.audio.map(line);
 // Stability AI Community License: credit generated music with "Powered by Stability AI".
 if (used.audio.some(isStableAudio)) soundLines.push("- Music generated locally with Stable Audio 3 (Stability AI Community License). Powered by Stability AI.");
 
-const md = `# ${ep.title}: YouTube description
+const md = `# ${title}: YouTube description
 
 Paste everything below the line.${ep.summary ? "" : ' Fill in the summary first (better: set "summary" in episode.json and run npm run credits again, so it survives).'}
 
 ---
 
-${ep.title}
+${title}
 
 ${ep.summary ?? "<1–2 sentence summary: what this episode covers. Only claims from the source article.>"}
 
@@ -109,7 +111,7 @@ Public-domain and CC0 items are listed for transparency.
 `;
 
 // A standalone reference list, plain text so it pastes cleanly into a YouTube description.
-const refs = `REFERENCES: ${ep.title}
+const refs = `REFERENCES: ${title}
 
 ${ep.sources.length ? ep.sources.map((s, i) => `${i + 1}. ${s.title}\n   ${s.url}`).join("\n") : "(no sources in episode.json)"}
 `;

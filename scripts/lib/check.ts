@@ -8,7 +8,7 @@ import { youtubeAttributions } from "../../src/kit/lib/attribution.ts";
 import { sfxCues } from "../../src/kit/lib/sfx.ts";
 import { norm } from "../../src/kit/lib/timing.ts";
 import { isYouTubeUrl } from "../../src/kit/lib/youtube.ts";
-import { AI_LICENSE, type AssetManifest, assetsSchema, type Credit, creditSchema, isTextSection, LICENSES, OWN_LICENSE, PRESS_LICENSE, STOCK_LICENSE } from "../../src/kit/schema.ts";
+import { AI_LICENSE, type AssetManifest, assetsSchema, type Credit, creditSchema, isTextSection, LICENSES, OWN_LICENSE, PRESS_LICENSE, STOCK_LICENSE, XPOST_LICENSE } from "../../src/kit/schema.ts";
 import { layoutOf } from "../../src/kit/themes/ids.ts";
 import { AUDIO_EXT, IMAGE_EXT, LIBRARY, listMedia, VIDEO_EXT } from "./assets.ts";
 import { loadFromDisk, scriptWords, zodIssues } from "./episode.ts";
@@ -16,6 +16,7 @@ import { loadConfig } from "./config.ts";
 import { runMusicVideoCheck } from "./checkMusicVideo.ts";
 import { isMusicVideoSlug } from "./musicVideo.ts";
 import { paths, PUBLIC } from "./util.ts";
+import { isXUrl, postId } from "./xpost.ts";
 
 const require = createRequire(import.meta.url);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -75,8 +76,8 @@ export const loadCredits = (file: string, where: string): Credits => {
       const file = (r as { file?: string })?.file ?? `entry ${i}`;
       const lic = (r as { license?: string })?.license;
       const licMsg =
-        lic !== undefined && lic !== AI_LICENSE && lic !== OWN_LICENSE && lic !== PRESS_LICENSE && lic !== STOCK_LICENSE && !(LICENSES as readonly string[]).includes(lic)
-          ? ` License "${lic}" is not allowed (only ${LICENSES.join(", ")}, ${OWN_LICENSE} for your own material, ${AI_LICENSE} via \`npm run generate\` / \`npm run compose\`, ${PRESS_LICENSE} for official press images when config.yaml allows them, or ${STOCK_LICENSE} via \`npm run stock\` in music videos).`
+        lic !== undefined && lic !== AI_LICENSE && lic !== OWN_LICENSE && lic !== PRESS_LICENSE && lic !== STOCK_LICENSE && lic !== XPOST_LICENSE && !(LICENSES as readonly string[]).includes(lic)
+          ? ` License "${lic}" is not allowed (only ${LICENSES.join(", ")}, ${OWN_LICENSE} for your own material, ${AI_LICENSE} via \`npm run generate\` / \`npm run compose\`, ${PRESS_LICENSE} for official press images when config.yaml allows them, ${STOCK_LICENSE} via \`npm run stock\` in music videos, or ${XPOST_LICENSE} via \`npm run xpost\` when config.yaml allows posts on X).`
           : "";
       issues.push({ level: "error", where: `${where} ${file}`, msg: `${zodIssues(c.error).join("; ")}.${licMsg}` });
     }
@@ -173,6 +174,36 @@ export const stockIssues = (entries: Credit[], format: string, thumbnailVisual?:
     .forEach((c) => err("library/credits.json", `${c.file}: stock media stays per episode, not in the shared library`));
   const names = new Set(stock.map((c) => c.file.replace(/^.*\//, "").replace(/\.[^.]+$/, "")));
   for (const v of thumbList(thumbnailVisual)) if (names.has(v)) err("thumbnail.visual", `"${v}" is stock-site media: it can't be the thumbnail`);
+  return issues;
+};
+
+/**
+ * Posts on X (config.yaml x_posts.enabled): off, an X link in `sources` or an X POST credit is an error (posts are leads).
+ * On, every cited post needs its proof (raw/xpost/<id>/post.png, from npm run xpost) in one of `proofDirs`, a profile or
+ * list is never a source, and X POST screenshots are images/ only, never the thumbnail, never in the library.
+ */
+export const xpostIssues = (entries: Credit[], sources: { url: string }[], proofDirs: string[], enabled: boolean, thumbnailVisual?: Thumbs): Issue[] => {
+  const issues: Issue[] = [];
+  const err = (where: string, msg: string) => issues.push({ level: "error", where, msg });
+  sources.forEach((s, i) => {
+    if (!isXUrl(s.url)) return;
+    const id = postId(s.url);
+    if (!enabled) err(`sources[${i}]`, `${s.url}: posts on X are leads only (config.yaml x_posts.enabled: false); cite an article instead`);
+    else if (!id) err(`sources[${i}]`, `${s.url}: cite the post itself (an x.com/<handle>/status/<id> link), not a profile or list`);
+    else if (!proofDirs.some((d) => existsSync(join(d, "raw", "xpost", id, "post.png")))) {
+      issues.push({ level: "warning", where: `sources[${i}]`, msg: `${s.url}: no saved proof; run npm run xpost so the post is archived with the episode` });
+    }
+  });
+  const posts = entries.filter((c) => c.license === XPOST_LICENSE);
+  posts.forEach((c) => {
+    if (!enabled) err("credits.json", `${c.file}: posts on X are off (config.yaml x_posts.enabled: false); remove the screenshot`);
+    if (!c.file.startsWith("images/")) err("credits.json", `${c.file}: ${XPOST_LICENSE} is only for images/`);
+  });
+  loadCredits(join(LIBRARY, "credits.json"), "library/credits.json")
+    .entries.filter((c) => c.license === XPOST_LICENSE)
+    .forEach((c) => err("library/credits.json", `${c.file}: X post screenshots stay per episode, not in the shared library`));
+  const names = new Set(posts.map((c) => c.file.replace(/^.*\//, "").replace(/\.[^.]+$/, "")));
+  for (const v of thumbList(thumbnailVisual)) if (names.has(v)) err("thumbnail.visual", `"${v}" is a post on X: it can't be the thumbnail`);
   return issues;
 };
 
@@ -418,6 +449,9 @@ export const runCheck = (slug: string): Issue[] => {
   issues.push(...pressIssues(epCredits.entries, thumbs));
   issues.push(...stockIssues(epCredits.entries, ep.format, thumbs));
   issues.push(...youtubeIssues(epCredits.entries, assets, thumbs, loadConfig().youtube.search_youtube));
+  // A Short's posts were usually archived with its parent episode.
+  const proofDirs = [p.src, ...(ep.format === "short" && ep.parent ? [paths(ep.parent).src] : [])];
+  issues.push(...xpostIssues(epCredits.entries, ep.sources, proofDirs, loadConfig().x_posts.enabled, thumbs));
 
   // --- source material ---
   if (!existsSync(p.article) || readFileSync(p.article, "utf8").replace(/<!--[\s\S]*?-->/g, "").trim().length < 200) {
