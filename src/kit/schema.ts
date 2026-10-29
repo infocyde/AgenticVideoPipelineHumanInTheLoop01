@@ -50,6 +50,12 @@ export const visualSchema = z.object({
     .boolean()
     .optional()
     .describe("false shows this visual as it is, without the theme's filter and tint (for explainers and infographics already drawn in the theme). The side and bottom gradients still apply"),
+  panel: z
+    .boolean()
+    .optional()
+    .describe(
+      "Overlay layouts: true shows this visual ungraded in a framed panel beside the text instead of full-bleed; false forces full-bleed. Default: infographics and explainers (npm run infographic) get a panel, everything else is full-bleed",
+    ),
 });
 
 export const segmentSchema = z.object({
@@ -111,6 +117,11 @@ export const textSectionSchema = z.object({
   tuckAt: cue
     .optional()
     .describe("Overlay layouts: at this spoken phrase the label and heading shrink into the top-left corner, like a numbered segment's text once its map card leaves"),
+  exitAt: cue
+    .optional()
+    .describe(
+      "Overlay layouts: at this spoken phrase the label, heading and body fade out up and to the right, leaving the visuals the whole frame. Themes with textSectionExit do this on their own at the second visual's cue",
+    ),
 });
 
 /** One entry of `segments`: a numbered item, or a text section (`kind: "text"`). */
@@ -349,6 +360,7 @@ const media = z.object({
   width: z.number().optional(),
   height: z.number().optional(),
   attribution: z.string().optional().describe("Channel shown in the kit's YouTube source tag; written by npm run assets from credits.json"),
+  infographic: z.boolean().optional().describe("Made by npm run infographic (infographics and explainers); overlay layouts show it in a panel. Written by npm run assets from credits.json"),
 });
 export const assetsSchema = z.object({
   voiceover: media.nullable().default(null),

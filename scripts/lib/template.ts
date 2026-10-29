@@ -6,6 +6,8 @@ type Preset = NonNullable<EpisodeInput["audio"]>["sfxPreset"];
 /** The frontier theme has its own sound preset; it replaces the default "intense" (a deliberate calm/none is kept). */
 const presetFor = (theme: string, carried?: Preset): Preset => (theme === "frontier" && (!carried || carried === "intense") ? "tech" : carried ?? "intense");
 
+// Music bed level for every new episode and Short (the user's standing setting; carried episodes are raised to it too).
+const MUSIC_LEVEL = 0.4;
 const ONES = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty"];
 export const numberWord = (n: number) => ONES[n] ?? String(n);
 const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
@@ -56,8 +58,8 @@ export const templateEpisode = ({ slug, format, count, theme, carry }: TemplateO
     aspect: "16:9",
     brand: { ...(carry?.brand ?? { name: "YOUR BRAND", tagline: "// WEEKLY" }), dateLabel: dateLabelFromSlug(slug) },
     audio: carry?.audio
-      ? { ...carry.audio, sfxPreset: presetFor(carry?.theme ?? theme, carry.audio.sfxPreset) }
-      : { voiceover: "voiceover.mp3", music: { file: "bed", level: 0.22, duck: true }, sfxPreset: presetFor(theme) },
+      ? { ...carry.audio, music: { ...(carry.audio.music ?? { file: "bed", duck: true }), level: MUSIC_LEVEL }, sfxPreset: presetFor(carry?.theme ?? theme, carry.audio.sfxPreset) }
+      : { voiceover: "voiceover.mp3", music: { file: "bed", level: MUSIC_LEVEL, duck: true }, sfxPreset: presetFor(theme) },
     coldOpen: {
       beats: [
         { cue: "Placeholder hook line one", stamp: "HOOK ONE", sub: "REPLACE WITH A STAMP" },
@@ -139,7 +141,7 @@ export const templateShort = ({ slug, theme, scenes = 1, parent, title, carry, v
     brand: { ...(carry?.brand ?? { name: "YOUR BRAND", tagline: "// SHORTS" }), dateLabel: carry?.brand?.dateLabel ?? dateLabelFromSlug(slug) },
     audio: {
       voiceover: "voiceover.mp3",
-      ...(carry?.audio?.music ? { music: carry.audio.music } : {}),
+      ...(carry?.audio?.music ? { music: { ...carry.audio.music, level: MUSIC_LEVEL } } : {}),
       sfxPreset: presetFor(carry?.theme ?? theme, carry?.audio?.sfxPreset),
       sfxOff: [],
       sfxExtra: [],

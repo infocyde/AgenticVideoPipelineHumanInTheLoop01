@@ -2,7 +2,7 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, extname, join, relative } from "node:path";
-import { youtubeAttributions } from "../../src/kit/lib/attribution.ts";
+import { infographicFiles, youtubeAttributions } from "../../src/kit/lib/attribution.ts";
 import { parseCredits } from "../../src/kit/lib/credits.ts";
 import { type AssetManifest, type EpisodeInput, isMusicVideo, type MediaFile, type MusicVideoInput } from "../../src/kit/schema.ts";
 import { paths, PUBLIC, readJson } from "./util.ts";
@@ -57,6 +57,15 @@ export const creditAttributions = (text: string | null): Record<string, string> 
   }
 };
 
+/** Files made by npm run infographic, from credits.json text; none when it is missing or malformed. */
+export const creditInfographics = (text: string | null): Set<string> => {
+  try {
+    return infographicFiles(parseCredits(text === null ? [] : JSON.parse(text)));
+  } catch {
+    return new Set();
+  }
+};
+
 export const scanAssets = (slug: string, voiceover = "voiceover.mp3"): AssetManifest => {
   const p = paths(slug);
   const vo = join(p.pub, voiceover);
@@ -69,11 +78,16 @@ export const scanAssets = (slug: string, voiceover = "voiceover.mp3"): AssetMani
     music: { ...scanDir(join(LIBRARY, "music"), AUDIO_EXT, true), ...scanDir(join(p.pub, "music"), AUDIO_EXT, true) },
   };
   // Clips from YouTube carry their channel (the credit author) so the kit can tag them on screen.
-  const attr = creditAttributions(existsSync(p.credits) ? readFileSync(p.credits, "utf8") : null);
+  const creditsText = existsSync(p.credits) ? readFileSync(p.credits, "utf8") : null;
+  const attr = creditAttributions(creditsText);
   for (const clip of Object.values(manifest.clips)) {
     const a = attr[`clips/${basename(clip.file)}`];
     if (a) clip.attribution = a;
   }
+  // Infographics and explainers are marked so overlay layouts can show them in a panel.
+  const graphics = creditInfographics(creditsText);
+  for (const [dir, list] of [["clips", manifest.clips], ["images", manifest.images]] as const)
+    for (const m of Object.values(list)) if (graphics.has(`${dir}/${basename(m.file)}`)) m.infographic = true;
   writeFileSync(p.assets, JSON.stringify(manifest, null, 1) + "\n");
   return manifest;
 };

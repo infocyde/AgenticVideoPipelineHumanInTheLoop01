@@ -51,14 +51,14 @@ export const Segment: React.FC<{ s: ResolvedSegment; slam: boolean }> = ({ s, sl
   const alarmPulse = isTop ? (Math.sin(frame / 4) + 1) / 2 : 0;
 
   const visuals: BackdropVisual[] = s.visuals.flatMap((v, i) =>
-    v.asset ? [{ name: v.name, asset: v.asset, note: v.note, grade: v.grade, from: i === 0 ? 0 : toFrame(v.at) - s.from }] : [],
+    v.asset ? [{ name: v.name, asset: v.asset, note: v.note, grade: v.grade, panel: v.panel, from: i === 0 ? 0 : toFrame(v.at) - s.from }] : [],
   );
   const pad = (n: number) => String(n).padStart(2, "0");
 
   return (
     <AbsoluteFill style={{ transform: `translate(${sx}px, ${sy}px)` }}>
       {visuals.length ? (
-        <Backdrop visuals={visuals} durationInFrames={dur} seed={s.num * 3} clear={tuck} scrim={seg.card !== "exit" && seg.card !== "none"} mirror={right} />
+        <Backdrop visuals={visuals} durationInFrames={dur} seed={s.num * 3} clear={tuck} scrim={seg.card !== "exit" && seg.card !== "none"} mirror={right} panels />
       ) : (
         <AbsoluteFill style={{ background: colors.bg }}>
           {seg.map && (

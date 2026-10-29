@@ -27,17 +27,21 @@ export const TextSection: React.FC<{ t: ResolvedText }> = ({ t }) => {
   // tuckAt: the block shrinks into the top-left corner, as a numbered segment's text does once its map card leaves.
   const tuckFrom = t.tuckAt !== undefined ? toFrame(t.tuckAt) - t.from : null;
   const tuck = tuckFrom === null ? 0 : interpolate(frame, [tuckFrom, tuckFrom + MAP_SLIDE + 4], [0, 1], { ...clamp, easing: Easing.inOut(Easing.cubic) });
-  const blockTransform = `translate(${-1400 * (1 - slideIn) - 56 * tuck}px, ${-130 * tuck}px) scale(${1 - (1 - TEXT_SHRINK) * tuck})`;
-  const clear = Math.max(1 - slideIn, tuck);
-
   const visuals: BackdropVisual[] = t.visuals.flatMap((v, i) =>
-    v.asset ? [{ name: v.name, asset: v.asset, note: v.note, grade: v.grade, from: i === 0 ? 0 : toFrame(v.at) - t.from }] : [],
+    v.asset ? [{ name: v.name, asset: v.asset, note: v.note, grade: v.grade, panel: v.panel, from: i === 0 ? 0 : toFrame(v.at) - t.from }] : [],
   );
+
+  // exitAt (or, in themes with textSectionAutoExit, the second visual's cue): the block fades out up and to the right.
+  const autoExit = theme.textSectionAutoExit && t.tuckAt === undefined && visuals.length > 1 ? visuals[1].from : null;
+  const exitFrom = t.exitAt !== undefined ? toFrame(t.exitAt) - t.from : autoExit;
+  const out = exitFrom === null ? 0 : interpolate(frame, [exitFrom, exitFrom + 16], [0, 1], { ...clamp, easing: Easing.in(Easing.cubic) });
+  const blockTransform = `translate(${-1400 * (1 - slideIn) - 56 * tuck + 320 * out}px, ${-130 * tuck - 200 * out}px) scale(${1 - (1 - TEXT_SHRINK) * tuck})`;
+  const clear = Math.max(1 - slideIn, tuck, out);
 
   return (
     <AbsoluteFill>
       {visuals.length ? (
-        <Backdrop visuals={visuals} durationInFrames={dur} seed={t.index * 5 + 1} clear={clear} />
+        <Backdrop visuals={visuals} durationInFrames={dur} seed={t.index * 5 + 1} clear={clear} scrim={out === 0} panels panelFocus={out} />
       ) : (
         <AbsoluteFill style={{ background: colors.bg }}>
           <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: 0.4 }}>
@@ -47,11 +51,11 @@ export const TextSection: React.FC<{ t: ResolvedText }> = ({ t }) => {
         </AbsoluteFill>
       )}
 
-      <div style={{ position: "absolute", left: 120, top: 230, width: 1120, transformOrigin: "top left", transform: blockTransform }}>
+      <div style={{ position: "absolute", left: 120, top: 230, width: 1120, transformOrigin: "top left", transform: blockTransform, opacity: 1 - out }}>
         <div style={{ display: "flex", alignItems: "center", gap: 18, height: 34 }}>
           <div style={{ width: 90 * barIn, height: 6, background: colors.accent, boxShadow: effects.accentGlow(16) }} />
           {label && (
-            <span style={{ fontFamily: fonts.mono, fontWeight: 700, fontSize: 26, letterSpacing: 6, color: colors.accent, textTransform: "uppercase" }}>
+            <span style={{ fontFamily: fonts.mono, fontWeight: 700, fontSize: 26, letterSpacing: 6, color: colors.accent, textTransform: "uppercase", textShadow: effects.textShadow }}>
               {label.slice(0, labelChars)}
             </span>
           )}

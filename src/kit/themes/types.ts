@@ -45,6 +45,11 @@ export type Theme = {
     /** Side-gradient strength behind cold-open stamp beats, 0–1 (default 1). */
     coldOpenSide?: number;
   };
+  /**
+   * Overlay layouts: a text section's label, heading and body fade out up and to the right at its second visual's cue
+   * (unless the section sets `tuckAt` or `exitAt`), so the rest of the section's visuals get the whole frame.
+   */
+  textSectionAutoExit?: boolean;
   /** Text shadows and glows, as CSS values. */
   effects: {
     /** text-shadow glow in the accent color; `size` is the blur radius in px. */

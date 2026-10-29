@@ -58,7 +58,7 @@ You write one self-contained HTML page per graphic, and `npm run infographic` re
    ```
    Re-render with `--force`. The credit (`OWN WORK`, with the data sources in the notes) and `assets.json` are written for you.
 4. **Look at it.** For a still, Read the PNG. For a clip, pull frames: `ffmpeg -v error -ss 1 -i public/episodes/<slug>/clips/<name>.mp4 -frames:v 1 episodes/<slug>/work/stills/<name>-1s.png`, plus one near the end. Check the numbers against the script, clipping at the safe area, wrapping, and contrast.
-5. Use it: `{ "name": "<name>", "cue": "<spoken phrase>" }` in the segment's `visuals`. It needs no `note`.
+5. Use it: `{ "name": "<name>", "cue": "<spoken phrase>" }` in the segment's `visuals`. It needs no `note`. In overlay layouts (numbered segments and text sections) the kit shows infographics and explainers ungraded in a framed panel beside the text, not full-bleed (`npm run assets` marks them from their credit); `"panel": false` on the visual forces full-bleed. In a text section, put footage first and the infographic second: in themes with `textSectionAutoExit` (threat-brief) the heading fades out up and to the right on the second visual and the panel moves to the centre.
 6. Log it in `notes.md` (which beat, which figures, which sources).
 
 ## Patterns

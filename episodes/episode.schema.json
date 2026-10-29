@@ -387,6 +387,10 @@
                         "grade": {
                           "description": "false shows this visual as it is, without the theme's filter and tint (for explainers and infographics already drawn in the theme). The side and bottom gradients still apply",
                           "type": "boolean"
+                        },
+                        "panel": {
+                          "description": "Overlay layouts: true shows this visual ungraded in a framed panel beside the text instead of full-bleed; false forces full-bleed. Default: infographics and explainers (npm run infographic) get a panel, everything else is full-bleed",
+                          "type": "boolean"
                         }
                       },
                       "required": [
@@ -582,6 +586,10 @@
                         "grade": {
                           "description": "false shows this visual as it is, without the theme's filter and tint (for explainers and infographics already drawn in the theme). The side and bottom gradients still apply",
                           "type": "boolean"
+                        },
+                        "panel": {
+                          "description": "Overlay layouts: true shows this visual ungraded in a framed panel beside the text instead of full-bleed; false forces full-bleed. Default: infographics and explainers (npm run infographic) get a panel, everything else is full-bleed",
+                          "type": "boolean"
                         }
                       },
                       "required": [
@@ -608,6 +616,11 @@
                   },
                   "tuckAt": {
                     "description": "Overlay layouts: at this spoken phrase the label and heading shrink into the top-left corner, like a numbered segment's text once its map card leaves",
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "exitAt": {
+                    "description": "Overlay layouts: at this spoken phrase the label, heading and body fade out up and to the right, leaving the visuals the whole frame. Themes with textSectionExit do this on their own at the second visual's cue",
                     "type": "string",
                     "minLength": 1
                   }
