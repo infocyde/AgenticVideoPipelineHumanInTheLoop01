@@ -7,7 +7,7 @@ type Preset = NonNullable<EpisodeInput["audio"]>["sfxPreset"];
 const presetFor = (theme: string, carried?: Preset): Preset => (theme === "frontier" && (!carried || carried === "intense") ? "tech" : carried ?? "intense");
 
 // Music bed level for every new episode and Short (the user's standing setting; carried episodes are raised to it too).
-const MUSIC_LEVEL = 0.4;
+const MUSIC_LEVEL = 0.45;
 const ONES = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty"];
 export const numberWord = (n: number) => ONES[n] ?? String(n);
 const cap = (s: string) => s[0].toUpperCase() + s.slice(1);

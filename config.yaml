@@ -16,6 +16,9 @@ voice:
   #             once: about a minute for an episode instead of ~7 locally, roughly 2.6 s of Replicate GPU time per
   #             sentence (cents per episode). Needs REPLICATE_API_TOKEN; uploads the reference clip to Replicate.
   #             No seed input, so a re-run gives a different take. Local qwen stays the fallback: --engine qwen.
+  # elevenlabs: the ElevenLabs API with the voice and settings in `elevenlabs:` below (no reference clip). Needs
+  #             ELEVENLABS_API_KEY in .env (this folder or a parent); billed per character of script. One-off:
+  #             --engine elevenlabs. The elevenlabs skill (.claude/skills/elevenlabs/SKILL.md) has the details.
   engine: qwen-cloud
 
   # The voice to clone (chatterbox and qwen): 10-20 s of clean speech, one speaker, no music, in voices/.
@@ -43,6 +46,26 @@ voice:
   kokoro:
     voice: am_michael   # list them with: npm run voice -- --voices
     speed: 1.0
+
+  elevenlabs:
+    voice: hacker_01    # a voice name on your account (case-insensitive) or a raw voice_id; list: npm run voice -- --voices
+                        # One-off: --voice <name|id>. Looking a name up needs the key's Voices: Read permission.
+    voice_id: D6xaKuxxRltWlGUSrxmR  # hacker_01; optional: the voice's ID (My Voices -> the voice -> ID). Skips the name lookup, so it works with
+                        # a key that only has Text to Speech. Leave empty to look `voice` up by name.
+    model: eleven_v4    # the user's choice (2026-10-29): v4, or eleven_v4_turbo (cheaper; both tested on the TTS API). Alternatives:
+                        # eleven_multilingual_v2 (most stable for narration, 29 languages), eleven_v3 (most dramatic, no
+                        # request-id stitching), eleven_flash_v2_5 (half the price per character, a little flatter).
+                        # One-off: --model <id>
+    stability: 0.5      # user default 50%. 0..1: lower = more expressive and varied, higher = steadier and flatter (--stability)
+    similarity_boost: 0.75  # user default 75%. 0..1: how closely it sticks to the voice (--similarity)
+    style: 0.0          # 0..1: exaggerates the voice's style; above 0 costs latency and can wobble (--style)
+    speaker_boost: true # a little closer to the original speaker
+    speed: 1.0          # 0.7..1.2 (--speed)
+    output_format: mp3_44100_128   # 44.1 kHz MP3 works on every plan; mp3_44100_192 needs Creator+, pcm_44100 Pro+
+    stitch: text        # continuity between sentences: text = send the neighbouring sentences as context (sentences
+                        # run in parallel); ids = one at a time, chained by request id (ElevenLabs' preferred method,
+                        # slower, not for eleven_v3); off = each sentence alone. One-off: --stitch ids
+    concurrency: 3      # sentences in flight at once; your plan's limit: Free 2, Starter 3, Creator 5, Pro 10 (--concurrency)
 
   pause: 0.35           # seconds of silence between sentences (paragraph breaks get double)
   seed: 7               # same seed + same text = same take; change it to get a different read

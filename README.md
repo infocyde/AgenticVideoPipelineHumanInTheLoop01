@@ -15,10 +15,10 @@ Brief Kit is built to be run with [Claude Code](https://claude.com/claude-code) 
 | 1. Intake | Paste the article text (or a file path) and say *"let's start a new episode"* (or *"make a Short from this"*). Answer a few questions: format, item count, length, theme. | Scaffolds the episode and saves the article. |
 | 2. Fact-check | — | Sends research agents to check every figure against reputable sources. Wrong numbers are replaced with sourced ones, unverifiable claims cut, and the sources list rebuilt. Every change goes in `notes.md`. |
 | 3. Script | **Approve** the script, or ask for changes. | Writes `voiceover.txt` for text-to-speech, with a table of what the fact-check changed. With Shorts on (`config.yaml`), also writes 1–3 Short scripts from the same facts. |
-| 4. Voiceover | With `voice.enabled: true` in `config.yaml`: nothing (you hear it in the preview). Otherwise record the script (e.g. ElevenLabs) and drop the MP3 in the episode folder. Optionally add your own music track (`.wav` or `.mp3`). | Voices the script locally with `npm run voice` (Qwen3-TTS, Chatterbox or Kokoro on your GPU, in your cloned voice), or moves your MP3 into place. Aligns every word to the audio. Builds the music bed from your track, or, with `music_gen.enabled: true`, composes one with Stable Audio 3 sized to the video. |
+| 4. Voiceover | With `voice.enabled: true` in `config.yaml`: nothing (you hear it in the preview). Otherwise record the script (e.g. ElevenLabs) and drop the MP3 in the episode folder. Optionally add your own music track (`.wav` or `.mp3`). | Voices the script with `npm run voice` (Qwen3-TTS, Chatterbox or Kokoro on your GPU in your cloned voice, Qwen3-TTS on Replicate, or an ElevenLabs voice through its API), or moves your MP3 into place. Aligns every word to the audio. Builds the music bed from your track, or, with `music_gen.enabled: true`, composes one with Stable Audio 3 sized to the video. |
 | 5. Build | — | Writes `episode.json` and sends sourcing agents for licensed b-roll (PD / CC0 / CC BY / CC BY-SA only). Generates a labeled AI still for any shot it can't find (locally with Z-Image Turbo, or FLUX 3 for high-detail shots, per `image_gen.mode`), and runs `check` until it reports 0 errors. You can set the rules: "favor Russian footage", "cap the search at 45 minutes". |
 | 6. Preview | **Watch** the preview Claude opens in your browser and say what to change. | Applies the changes live in Remotion Studio. |
-| 7. Render | **Approve**, and confirm you're on AC power. | Renders, masters to YouTube loudness, and writes the thumbnail and `DESCRIPTION.md`, which opens with a 1–2 sentence summary Claude writes from the fact-checked article. Then builds and renders any Shorts the same way. |
+| 7. Render | **Approve**. | Renders, masters to YouTube loudness, and writes the thumbnail and `DESCRIPTION.md`, which opens with a 1–2 sentence summary Claude writes from the fact-checked article. Then builds and renders any Shorts the same way. |
 
 Then upload `out/<slug>/youtube.mp4` with the thumbnail and description, and each Short (`out/<slug>/short1.mp4`, …) with its own `DESCRIPTION.md`. If a video uses AI-generated stills that look realistic, tick YouTube's "altered or synthetic content" box. If it uses a composed music bed, keep the "Powered by Stability AI" line that `DESCRIPTION.md` already has (see [Using Stable Audio 3 legally](#using-stable-audio-3-legally)).
 
@@ -192,13 +192,16 @@ npm run voice -- <slug> --force                        # a new take (the old one
 npm run voice-check -- <slug>                          # scan the voiceover for harsh stops (words cut off at pauses)
 npm run voice -- <slug> --engine kokoro --voice bm_george --force
 npm run voice -- --sample "A line to try."             # out/voice-samples/, to audition a voice or setting
-npm run voice -- --voices                              # your cloned voices (* = default) and Kokoro's presets
+npm run voice -- --voices                              # your cloned voices (* = default), your ElevenLabs voices and Kokoro's presets
+npm run voice -- <slug> --engine elevenlabs --force    # a take in your ElevenLabs voice (voice.elevenlabs; needs ELEVENLABS_API_KEY)
 npm run voice -- --record collin_calm                  # record a new voice from your mic into voices/ (see voices/README.md)
 npm run voice -- <slug> --out <file>.mp3               # voice the script into another file; the episode is untouched
 npm run voice -- <slug> --ignore-off                   # one episode while voice.enabled is false (never overwrites without --force)
 ```
 
 **Cloud option:** `engine: qwen-cloud` runs the same Qwen3-TTS voice clone on Replicate (the official `qwen/qwen3-tts` model, Apache-2.0), sending every sentence at once: about a minute per episode instead of ~7 locally, at roughly 2.6 s of Replicate GPU time per sentence (cents per episode). It needs `REPLICATE_API_TOKEN`, uploads your reference clip to Replicate, and has no seed, so each run is a fresh take. `--engine qwen` voices locally as before.
+
+**ElevenLabs option:** `engine: elevenlabs` (or `--engine elevenlabs` for one run) voices the script through the ElevenLabs API in a voice on your account, set by name in `voice.elevenlabs.voice` (`hacker_01` now) and resolved to its ID, or by ID in `voice.elevenlabs.voice_id`. It goes through the same sentence-by-sentence pipeline as the other engines (same `pause`, trims, tails and fades, then align), with each sentence sent alongside its neighbours as context (`stitch: text`; `ids` chains requests by ID instead, one at a time), 3 at a time by default (`concurrency`, up to your plan's limit), retrying when ElevenLabs is busy. It needs `ELEVENLABS_API_KEY` in `.env` (this folder or a parent) and is billed per character of script; each run prints the characters billed, and the quota left when the key may read it. A key limited to Text to Speech works if you put the voice's ID in `voice_id`; give it **Voices: Read** to look voices up by name and list them in `--voices`, and **User: Read** to see the quota. Model, stability, similarity, style, speed and output format are in `config.yaml` with their options. Commercial use of the output needs a paid ElevenLabs plan, and the voice must be one you made, own or have the rights to. Details: `.claude/skills/elevenlabs/SKILL.md`.
 
 It reads the script sentence by sentence, trims each one with a 250 ms tail and a short fade (so word endings never click off), joins the sentences with short pauses (longer at paragraph breaks), writes the settings it used to `episodes/<slug>/voice.json`, and runs `align`. With a fixed `seed`, the same text gives the same take; change the seed for a different read. A word it says wrong shows up in align's mismatch report and in `heard.txt`: respell it in `voiceover.txt` the way it should sound and voice it again.
 
@@ -207,7 +210,9 @@ It reads the script sentence by sentence, trims each one with a 250 ms tail and 
 | `chatterbox` + `turbo` | MIT | clones `voice.reference` (your voice) | ~3× realtime at best (a 2:50 script in under a minute) | ~3.2 GB |
 | `chatterbox` + `standard` | MIT | built-in voice, or a clone; `exaggeration` / `cfg_weight` controls | ~1× realtime | ~3.1 GB |
 | `kokoro` | Apache-2.0 | 28 English presets (`am_michael`, `bm_george`, `af_heart`…) | ~5× realtime | ~0.7 GB |
-| `qwen` (1.7B or 0.6B), **the current default** | Apache-2.0 | clones `voice.reference` + its transcript `voices/<name>.txt` | ~0.1–0.6× realtime, depending on the laptop's power state (see the note below) | ~4.6 GB (1.7B), ~2.8 GB (0.6B) |
+| `qwen` (1.7B or 0.6B) | Apache-2.0 | clones `voice.reference` + its transcript `voices/<name>.txt` | ~0.1–0.6× realtime, depending on the laptop's power state (see the note below) | ~4.6 GB (1.7B), ~2.8 GB (0.6B) |
+| `qwen-cloud`, **the current default** | Apache-2.0 | the same clone as `qwen`, on Replicate | about a minute per episode | none (cloud) |
+| `elevenlabs` | ElevenLabs terms (paid plan for commercial use) | a voice on your ElevenLabs account (`voice.elevenlabs.voice`) | several times realtime (3 at a time) | none (cloud) |
 
 Models download on first use (Chatterbox ~2 GB, Kokoro ~330 MB, Qwen 1.7B ~4.5 GB) into the Hugging Face cache. Chatterbox output carries Resemble's inaudible Perth watermark, which marks the audio as AI-generated. How to record a reference clip and what you may clone: `voices/README.md`.
 
@@ -219,16 +224,17 @@ Models download on first use (Chatterbox ~2 GB, Kokoro ~330 MB, Qwen 1.7B ~4.5 G
 
 Older takes voiced before that fix (hard cuts at sentence ends) can be softened in place without re-voicing: `.venv\Scripts\python.exe scripts\soften_cuts.py public\episodes\<slug>oiceover.mp3 --keep out\<slug>` fades the 50 ms before every pause, keeps the length (timing stays valid) and saves the original as `voiceover.before-fade.mp3`.
 
-**config.yaml** turns it on or off and sets the defaults; any setting can be overridden per run (`--engine`, `--model`, `--size`, `--reference`, `--voice`, `--speed`, `--seed`, `--pause`). As set now: local TTS on, Qwen 1.7B cloning `collin_ro`, a 20 s excerpt of your ElevenLabs voice:
+**config.yaml** turns it on or off and sets the defaults; any setting can be overridden per run (`--engine`, `--model`, `--size`, `--reference`, `--voice`, `--speed`, `--seed`, `--pause`). As set now: TTS on, Qwen3-TTS on Replicate cloning `collin_ro`, a 20 s excerpt of your ElevenLabs voice, with ElevenLabs itself one `--engine elevenlabs` away:
 
 ```yaml
 voice:
   enabled: true            # true: Claude voices each approved script itself; false: you bring voiceover.mp3 (ElevenLabs, a mic)
-  engine: qwen             # qwen | chatterbox | kokoro
+  engine: qwen-cloud       # qwen-cloud | qwen | chatterbox | kokoro | elevenlabs
   reference: voices/collin_ro.wav  # the voice chatterbox and qwen clone
   chatterbox: { model: turbo, exaggeration: 0.5, cfg_weight: 0.5 }   # model: turbo (default) | standard
   qwen: { size: 1.7B, language: English }
   kokoro: { voice: am_michael, speed: 1.0 }
+  elevenlabs: { voice: hacker_01, model: eleven_multilingual_v2, stability: 0.5, similarity_boost: 0.75, speed: 1.0, stitch: text, concurrency: 3 }
   pause: 0.35
   seed: 7
 ```
@@ -354,6 +360,7 @@ npm run preview -- <slug>     # opens the browser on this episode in Remotion St
 npm run render -- <slug>      # after you're happy with the preview: check, render, master
 npm run thumb -- <slug>       # out/<slug>/thumbnail.png, or thumbnail-1…3.png with variants
 npm run credits -- <slug>     # out/<slug>/DESCRIPTION.md for YouTube
+npm run upload-text -- <slug> # out/<slug>/upload.json: title + a description YouTube accepts (≤ 5,000 chars); then the youtube-upload skill
 ```
 
 Rendering a ~2:20 episode takes several minutes on a laptop GPU. Plug in to AC power first. Outputs:
@@ -442,6 +449,7 @@ Then `assets`, `check`, `preview`, `render`, `thumb` and `credits` as for any ep
 | `npm run master -- <slug>` | Re-master an existing render |
 | `npm run thumb -- <slug>` | Thumbnail still |
 | `npm run credits -- <slug>` | YouTube description |
+| `npm run upload-text -- <slug> [--url <link>]` | Title and a ≤ 5,000-character description for the upload (`upload.json`); `--url` records the uploaded link, which the Shorts' descriptions use |
 | `npm run kill` | Stop leftover render processes from this repo |
 | `npm run typecheck` | `tsc --noEmit` |
 
@@ -482,7 +490,7 @@ It stops only processes whose executable lives in this repo, plus node processes
 - `military-comparisons`: weapons-system spec briefing in the **split layout**. Footage plays in a bracketed frame on the left; the number, headline and stats sit on the right, and the stats build into a spec sheet that stays up (5 rows a panel, then panel 2, 3). The map card shows briefly over the footage and slides off to the left. Cool white on gunmetal, HUD-cyan readouts, signal-orange accent, with Teko, IBM Plex Mono and Saira Condensed.
 - `erotic`: a boudoir-editorial comparison sheet in the same **split layout** as `military-comparisons`. Blush cream on wine-black, lipstick-crimson accent, champagne-gold readouts, a warm low-key b-roll grade and soft grain with no scanlines. Fonts are Playfair Display, Josefin Sans and Jost. Default labels: AFTER HOURS ticker, TOP PICK, PROFILE panels. The mood comes from color and type only. The theme has no imagery of its own, and b-roll still has to pass YouTube's rules and the license gate.
 
-- `frontier`: bleeding-edge technology, and the one theme with scenes of its own (a **skin**, below). Ink-black field with a living dot lattice and drifting aurora; the b-roll floats in a turned glass window with an iridescent edge; number, region chip and a sentence-case headline on the left; stats as a row of glass **metric tiles** that count up under the window (3 visible, sliding on); text sections mirror the layout. Text decodes from cycling glyphs, cuts are a light sweep instead of a glitch, the countdown number boots inside a charging ring and flies into its badge, the map is dot-matrix and its card collapses to a line, captions are karaoke (the spoken word lit in a lime pill), the ticker is a slim signal rail, and the `#1` item gets a rotating iridescent frame. Shorts and the thumbnail have their own Frontier versions. Fonts are Sora, Geist and Geist Mono. It comes with its own sound preset, `tech` (`audio.sfxPreset`; `npm run new --theme frontier` picks it), synthesized from the explainer sound kit (recipes in `src/kit/skins/frontier/sounds/`).
+- `frontier`: bleeding-edge technology, and the one theme with scenes of its own (a **skin**, below). Ink-black field with a living dot lattice and drifting aurora; the b-roll floats in a turned glass window with an iridescent edge, cold-open stamps included (the stamp sits beside the window, never over the footage); number, region chip and a sentence-case headline on the left; stats as a row of glass **metric tiles** that count up under the window (3 visible, sliding on); text sections mirror the layout. Text decodes from cycling glyphs, cuts are a light sweep instead of a glitch, the countdown number boots inside a charging ring and flies into its badge, the map is dot-matrix and its card collapses to a line, captions are karaoke (the spoken word lit in a lime pill), the ticker is a slim signal rail, and the `#1` item gets a rotating iridescent frame. Shorts and the thumbnail have their own Frontier versions. Fonts are Sora, Geist and Geist Mono. It comes with its own sound preset, `tech` (`audio.sfxPreset`; `npm run new --theme frontier` picks it), synthesized from the explainer sound kit (recipes in `src/kit/skins/frontier/sounds/`).
 
 A theme controls colors, fonts, b-roll treatment, glows, grain and default wording (ticker label, CTA, emphasis badge), and picks a segment layout (`overlay`, `split` or `spatial`, set in `THEME_LAYOUT` in `src/kit/themes/ids.ts`). To add one, copy `src/kit/themes/threat-brief.ts`, then register it in `src/kit/themes/index.ts` and `src/kit/themes/ids.ts`. Keep the b-roll treatment light: use fades, grayscale washes, dark tints and heavy gradients sparingly, because the footage has to stay readable under the text (blackout's first pass crushed its footage nearly to black). A `grade: false` visual skips the filter and tint altogether, for explainers and infographics already drawn in the theme.
 

@@ -2,6 +2,7 @@
 
 voice.py <args.json>   args: engine, model, reference, exaggeration, cfg_weight, voice, speed, pause, seed, text, out
                        (engine qwen-cloud: Qwen3-TTS on Replicate, every sentence at once; needs REPLICATE_API_TOKEN)
+                       (engine elevenlabs: ElevenLabs API, a few sentences at a time with stitching; needs ELEVENLABS_API_KEY)
 voice.py --voices      list Kokoro voices
 
 The script is spoken sentence by sentence (paragraph breaks get a longer pause), one fixed seed per sentence, so a
@@ -137,6 +138,124 @@ def cloud_takes(a, chunks):
     return [r[0] for r in results], sr, {"gpu_seconds": round(sum(r[1] for r in results), 1)}
 
 
+ELEVEN_API = "https://api.elevenlabs.io/v1"
+
+
+def eleven_takes(a, chunks):
+    """ElevenLabs text-to-speech, one request per sentence. Continuity across sentences ("request stitching"):
+    stitch "text" sends the neighbouring sentences as previous_text / next_text, so sentences can run concurrently;
+    "ids" runs them one at a time and sends the last three request ids as previous_request_ids (the docs' preferred
+    method, not available for eleven_v3); "off" sends each sentence alone.
+    Returns ([float32 mono arrays], sample rate, stats)."""
+    import os
+    import subprocess
+    from concurrent.futures import ThreadPoolExecutor
+
+    import requests
+
+    key = os.environ.get("ELEVENLABS_API_KEY")
+    if not key:
+        sys.exit("ELEVENLABS_API_KEY is not set (put it in .env, here or in a parent folder).")
+    e = a["elevenlabs"]
+    fmt = e["output_format"]
+    m = re.match(r"(mp3|opus|pcm|wav)_(\d+)", fmt)
+    if not m:
+        sys.exit(f"voice.elevenlabs.output_format {fmt!r} isn't supported here: use an mp3_*, opus_*, pcm_* or wav_* format.")
+    sr = int(m.group(2))
+    texts = [s for s, _ in chunks]
+    stitch = e["stitch"]
+    if stitch == "ids" and e["model"] == "eleven_v3":
+        print("  ! eleven_v3 has no request-id stitching: using previous_text / next_text instead", flush=True)
+        stitch = "text"
+
+    def decode(blob):
+        if fmt.startswith("pcm"):
+            return np.frombuffer(blob, dtype="<i2").astype(np.float32) / 32768.0
+        raw = subprocess.run(["ffmpeg", "-v", "error", "-i", "pipe:0", "-f", "f32le", "-ac", "1", "-ar", str(sr), "pipe:1"],
+                             input=blob, capture_output=True, check=True).stdout
+        return np.frombuffer(raw, dtype=np.float32).copy()
+
+    def problem(r):
+        """(status, message) from an ElevenLabs error body."""
+        try:
+            d = r.json().get("detail")
+        except Exception:
+            return "", r.text[:300]
+        if isinstance(d, dict):
+            return d.get("status") or d.get("code") or "", d.get("message") or str(d)
+        if isinstance(d, list):  # 422 validation errors
+            return "invalid_request", "; ".join(f"{'.'.join(str(x) for x in i.get('loc', []))}: {i.get('msg')}" for i in d)
+        return "", str(d or r.text[:300])
+
+    def one(i, prev_ids=()):
+        body = {
+            "text": texts[i],
+            "model_id": e["model"],
+            "voice_settings": {"stability": e["stability"], "similarity_boost": e["similarity_boost"], "style": e["style"],
+                               "use_speaker_boost": e["speaker_boost"], "speed": e["speed"]},
+            "seed": (int(a["seed"]) + i) % 4294967296,  # best-effort deterministic per sentence, as with the local engines
+        }
+        if stitch != "off":
+            if prev_ids:
+                body["previous_request_ids"] = list(prev_ids)[-3:]
+            elif i > 0:
+                body["previous_text"] = " ".join(texts[max(0, i - 2) : i])
+            if i + 1 < len(texts):
+                body["next_text"] = texts[i + 1]
+        url = f"{ELEVEN_API}/text-to-speech/{e['voice_id']}"
+        last = ""
+        for attempt in range(8):
+            try:
+                r = requests.post(url, params={"output_format": fmt}, headers={"xi-api-key": key, "accept": "audio/*"}, json=body, timeout=180)
+            except requests.RequestException as ex:  # network hiccup: retry
+                last = str(ex)
+                time.sleep(min(30, 2 ** attempt))
+                continue
+            if r.status_code == 200:
+                cost = r.headers.get("character-cost")
+                return decode(r.content), r.headers.get("request-id"), int(cost) if cost and cost.isdigit() else len(texts[i])
+            status, msg = problem(r)
+            if r.status_code == 429 or r.status_code >= 500 or status in ("too_many_concurrent_requests", "system_busy"):
+                last = f"{r.status_code} {status}: {msg}"
+                wait = float(r.headers.get("retry-after") or 0) or min(30, 1.5 * 2 ** attempt)
+                time.sleep(wait)
+                continue
+            if status == "quota_exceeded" or "quota" in msg.lower():
+                sys.exit(f"\nElevenLabs quota exceeded (sentence {i + 1}): {msg}\nTop up or wait for the monthly reset (elevenlabs.io/app/subscription).")
+            if r.status_code in (401, 403):
+                sys.exit(f"\nElevenLabs refused the key ({r.status_code} {status}): {msg}\nThe key needs the Text to Speech permission (elevenlabs.io/app/settings/api-keys).")
+            if status in ("voice_not_found",) or r.status_code == 404:
+                sys.exit(f"\nElevenLabs has no voice {e['voice_id']} for this key ({status}): {msg}")
+            sys.exit(f"\nElevenLabs refused sentence {i + 1} ({r.status_code} {status}): {msg}")
+        sys.exit(f"\nsentence {i + 1} failed on ElevenLabs after retries: {last}")
+
+    done = [0]
+
+    def tick():
+        done[0] += 1
+        print(f"\r  sentence {done[0]}/{len(chunks)} (ElevenLabs)", end="", flush=True)
+
+    results = []
+    if stitch == "ids":
+        ids = []
+        for i in range(len(texts)):
+            res = one(i, tuple(ids))
+            if res[1]:
+                ids.append(res[1])
+            results.append(res)
+            tick()
+    else:
+        def run(i):
+            res = one(i)
+            tick()
+            return res
+
+        with ThreadPoolExecutor(max_workers=max(1, int(e.get("concurrency") or 3))) as ex:
+            results = list(ex.map(run, range(len(texts))))
+    print(flush=True)
+    return [r[0] for r in results], sr, {"characters": sum(r[2] for r in results), "stitch": stitch}
+
+
 def assemble(raws, chunks, sr, pause):
     """Trim each sentence (with its tail and fades), join with pauses, normalize to -1 dBFS."""
     pieces, spoken = [], 0.0
@@ -171,6 +290,19 @@ def main():
         took = time.time() - t1
         print(f"  {len(audio) / sr:.1f}s of audio in {took:.0f}s ({spoken / max(took, 1e-6):.1f}x realtime); "
               f"Replicate GPU time {stats['gpu_seconds']}s", flush=True)
+        return
+
+    if a["engine"] == "elevenlabs":
+        e = a["elevenlabs"]
+        t1 = time.time()
+        conc = 1 if e["stitch"] == "ids" else e["concurrency"]
+        print(f"  {len(chunks)} sentences to ElevenLabs ({e['model']}, voice {e['voice_name']}, stitch {e['stitch']}), {conc} at a time", flush=True)
+        raws, sr, stats = eleven_takes(a, chunks)
+        audio, spoken = assemble(raws, chunks, sr, a["pause"])
+        sf.write(a["out"], audio, sr, subtype="PCM_16")
+        took = time.time() - t1
+        print(f"  {len(audio) / sr:.1f}s of audio in {took:.0f}s ({spoken / max(took, 1e-6):.1f}x realtime); "
+              f"ElevenLabs billed {stats['characters']} characters", flush=True)
         return
 
     import torch

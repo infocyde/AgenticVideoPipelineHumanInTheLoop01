@@ -1,15 +1,16 @@
-// Frontier's cold open and outro (16:9): signal stamps over full-bleed media, the dot-matrix "all fronts" map, the
+// Frontier's cold open and outro (16:9): signal stamps beside the footage in the segments' floating window, the dot-matrix "all fronts" map, the
 // title card with an iridescent numeral and a lattice ripple, outro lines that pull into focus, and a glass CTA.
 import React, { useMemo } from "react";
 import { AbsoluteFill, Easing, interpolate, Sequence, useCurrentFrame } from "remotion";
 import { fitLines, useFontsReady } from "../../components/Headline";
 import { clamp, useEpisode, useTheme } from "../../context";
-import { allPins, firstPins } from "../../lib/resolve";
+import { allPins, type Asset, firstPins } from "../../lib/resolve";
 import { toFrame } from "../../lib/timing";
 import type { Pin } from "../../schema";
 import { DotMap } from "./DotMap";
 import { Bloom, Chip, Decode, F, Field, focusPull, GradientText, pad2, prog, RiseLines, Sweep } from "./fx";
-import { MediaStack } from "./Media";
+import { MediaStack, Window, windowEnter } from "./Media";
+import { SPATIAL } from "./Segment";
 
 /** Fitted display type (Sora), or Geist when `face="body"`. */
 export const useFitText = (text: string, width: number, maxSize: number, minSize: number, maxLines: number, face: "display" | "body" = "display") => {
@@ -27,28 +28,51 @@ export const useFitText = (text: string, width: number, maxSize: number, minSize
 export const scanGradient = "linear-gradient(100deg, #ffffff 0%, #ffffff 40%, #3df0ff 48%, #c8ff3d 52%, #ffffff 60%, #ffffff 100%)";
 export const scanShift = (since: number) => interpolate(since, [2, 22], [100, 0], { ...clamp, easing: Easing.inOut(Easing.cubic) });
 
-/** Signal stamp: "● SIGNAL 02/05" chip, the stamp pulling into focus with a light run through it, decoded subline. */
+/** Signal stamp in the left column: "● SIGNAL 02/05" chip, the stamp pulling into focus with a light run through it, decoded subline. */
 const SignalStamp: React.FC<{ text: string; sub?: string; index: number; count: number }> = ({ text, sub, index, count }) => {
   const frame = useCurrentFrame();
   const { fonts, colors, copy } = useTheme();
-  const fit = useFitText(text, 1560, 128, 64, 1);
+  const { column: col, window: win } = SPATIAL;
+  const fit = useFitText(text, col.width, 128, 56, 2);
   const rule = prog(frame, 6, 14);
   if (!fit) return null;
   return (
-    <div style={{ position: "absolute", left: 120, top: 360 }}>
-      <Chip text={`${copy.tickerLabel} ${pad2(index + 1)}/${pad2(count)}`} since={frame} size={22} />
-      <div style={{ marginTop: 26, fontFamily: fonts.display, fontWeight: F.weights.display, fontSize: fit.size, lineHeight: 1.02, whiteSpace: "nowrap", transformOrigin: "left center", ...focusPull(frame, 1.12, 22) }}>
-        <GradientText gradient={scanGradient} shift={scanShift(frame)} style={{ backgroundSize: "300% 100%", filter: "drop-shadow(0 6px 30px rgba(2,3,8,0.8))" }}>
-          {fit.lines[0]}
-        </GradientText>
+    <div style={{ position: "absolute", left: col.left, top: win.top, width: col.width, height: win.height, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+      <div>
+        <Chip text={`${copy.tickerLabel} ${pad2(index + 1)}/${pad2(count)}`} since={frame} size={22} />
       </div>
-      <div style={{ marginTop: 18, height: 3, width: 520 * rule, background: F.iris, boxShadow: `0 0 16px ${F.cyan}` }} />
+      <div style={{ marginTop: 26, fontFamily: fonts.display, fontWeight: F.weights.display, fontSize: fit.size, lineHeight: 1.02, transformOrigin: "left center", ...focusPull(frame, 1.12, 22) }}>
+        {fit.lines.map((l, i) => (
+          <div key={i} style={{ whiteSpace: "nowrap" }}>
+            <GradientText gradient={scanGradient} shift={scanShift(frame - i * 3)} style={{ backgroundSize: "300% 100%", filter: "drop-shadow(0 6px 30px rgba(2,3,8,0.8))" }}>
+              {l}
+            </GradientText>
+          </div>
+        ))}
+      </div>
+      <div style={{ marginTop: 18, height: 3, width: col.width * 0.88 * rule, background: F.iris, boxShadow: `0 0 16px ${F.cyan}` }} />
       {sub && (
-        <div style={{ marginTop: 18, fontFamily: fonts.mono, fontWeight: F.weights.monoBold, fontSize: 28, letterSpacing: 5, color: colors.text, textShadow: "0 2px 16px rgba(0,0,0,0.9)" }}>
+        <div style={{ marginTop: 18, fontFamily: fonts.mono, fontWeight: F.weights.monoBold, fontSize: 28, lineHeight: 1.35, letterSpacing: 5, color: colors.text }}>
           <Decode text={sub} since={frame - 8} per={0.5} scramble={6} />
         </div>
       )}
     </div>
+  );
+};
+
+/** A stamp beat laid out like a segment: the footage in the floating window on the right, the stamp in the left column. */
+const StampBeat: React.FC<{ visual?: string; asset: Asset | null; note?: string; stamp: string; sub?: string; index: number; count: number; dur: number }> = ({ visual, asset, note, stamp, sub, index, count, dur }) => {
+  const frame = useCurrentFrame();
+  return (
+    <AbsoluteFill>
+      <Field ripple={frame - 2} cx="25%" cy="22%" />
+      <Window box={SPATIAL.window} enter={windowEnter(frame, 2)}>
+        {asset ? <MediaStack visuals={[{ name: visual!, asset, note, from: 0 }]} durationInFrames={dur} seed={index} /> : <Field ripple={frame - 6} />}
+      </Window>
+      <Sequence from={4} layout="none">
+        <SignalStamp text={stamp} sub={sub} index={index} count={count} />
+      </Sequence>
+    </AbsoluteFill>
   );
 };
 
@@ -130,7 +154,7 @@ const TitleCard: React.FC<{ kicker: string; big: string; small: string; bigAt: n
 };
 
 export const FrontierColdOpen: React.FC = () => {
-  const { episode, timeline, theme } = useEpisode();
+  const { episode, timeline } = useEpisode();
   const { beats, title, to } = timeline.coldOpen;
   const titleFrom = toFrame(title.start);
   const pins = firstPins(episode);
@@ -145,14 +169,7 @@ export const FrontierColdOpen: React.FC = () => {
             {beat.map === "all-pins" ? (
               <AllPins pins={pins} text={beat.stamp} accent={beat.accent} width={1920} height={1000} top={110} textWidth={1640} maxSize={120} />
             ) : (
-              <>
-                {asset ? <MediaStack visuals={[{ name: beat.visual!, asset, note: beat.note, from: 0 }]} durationInFrames={dur} seed={i} noteInset={64} noteSize={18} tagInset={64} tagTop={100} /> : <Field ripple={0} />}
-                <AbsoluteFill style={{ background: theme.backdrop.sideGradient }} />
-                <AbsoluteFill style={{ background: theme.backdrop.bottomGradient }} />
-                <Sequence from={4} layout="none">
-                  <SignalStamp text={beat.stamp} sub={beat.sub} index={i} count={beats.length} />
-                </Sequence>
-              </>
+              <StampBeat visual={beat.visual} asset={asset} note={beat.note} stamp={beat.stamp} sub={beat.sub} index={i} count={beats.length} dur={dur} />
             )}
             {i > 0 && <Sweep />}
           </Sequence>

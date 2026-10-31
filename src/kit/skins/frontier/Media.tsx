@@ -1,5 +1,5 @@
-// B-roll in Frontier: a floating, slightly turned glass window (segments, text sections, Shorts) or full-bleed (cold
-// open). Visuals cut on their cues with the light sweep instead of the shared glitch cut.
+// B-roll in Frontier: a floating, slightly turned glass window (cold open, segments, text sections, Shorts), never
+// full-bleed under text. Visuals cut on their cues with the light sweep instead of the shared glitch cut.
 import React from "react";
 import { AbsoluteFill, Img, interpolate, Loop, OffthreadVideo, Sequence, staticFile, useCurrentFrame } from "remotion";
 import type { BackdropVisual } from "../../components/Backdrop";

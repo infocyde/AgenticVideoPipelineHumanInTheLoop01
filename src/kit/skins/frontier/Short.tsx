@@ -5,7 +5,7 @@ import React from "react";
 import { AbsoluteFill, Sequence, useCurrentFrame } from "remotion";
 import type { CaptionBox } from "../../components/Chrome";
 import { useEpisode, useTheme } from "../../context";
-import { allPins, firstPins, type ResolvedSegment, type ResolvedText } from "../../lib/resolve";
+import { allPins, type Asset, firstPins, type ResolvedSegment, type ResolvedText } from "../../lib/resolve";
 import { MAP_EXIT, segmentOffset, toFrame } from "../../lib/timing";
 import type { MapFocus } from "../../schema";
 import { CaptionWords, EqMark } from "./Chrome";
@@ -19,6 +19,8 @@ import { BodyCard } from "./Text";
 const W = 1080;
 const X = 70;
 const TEXT_W = W - 2 * X;
+/** Where a Short's footage sits (hook beats and segments): a floating window under the top bar. */
+const SHORT_WINDOW = { left: 60, top: 330, width: 960, height: 540 };
 export const SHORT_CAPTIONS: CaptionBox = { left: X, right: 160, bottom: 420, fontSize: 60 };
 
 /** A tall frame shows a small box as one blob of country; zoom out around it so the region reads in context. */
@@ -27,13 +29,6 @@ const widen = (m: MapFocus, k = 1.8): MapFocus => {
   const cx = (w + e) / 2, cy = (s + n) / 2, hw = ((e - w) / 2) * k, hh = ((n - s) / 2) * k;
   return { ...m, bbox: [[Math.max(-180, cx - hw), Math.max(-85, cy - hh)], [Math.min(180, cx + hw), Math.min(85, cy + hh)]] };
 };
-
-const Scrims: React.FC = () => (
-  <>
-    <AbsoluteFill style={{ background: "linear-gradient(180deg, rgba(5,6,10,0.9) 0%, rgba(5,6,10,0.5) 28%, transparent 50%)" }} />
-    <AbsoluteFill style={{ background: "linear-gradient(0deg, rgba(5,6,10,0.94) 0%, rgba(5,6,10,0.6) 28%, transparent 48%)" }} />
-  </>
-);
 
 export const FrontierShortTopBar: React.FC = () => {
   const frame = useCurrentFrame();
@@ -56,7 +51,7 @@ const VSignal: React.FC<{ text: string; sub?: string; index: number; count: numb
   const fit = useFitText(text, TEXT_W, 140, 70, 2);
   if (!fit) return null;
   return (
-    <AbsoluteFill style={{ alignItems: "center", paddingTop: 620 }}>
+    <AbsoluteFill style={{ alignItems: "center", paddingTop: SHORT_WINDOW.top + SHORT_WINDOW.height + 60 }}>
       <Chip text={`${copy.tickerLabel} ${pad2(index + 1)}/${pad2(count)}`} since={frame} size={26} />
       <div style={{ marginTop: 30, textAlign: "center", fontFamily: fonts.display, fontWeight: F.weights.display, fontSize: fit.size, lineHeight: 1.04, ...focusPull(frame, 1.12, 22) }}>
         {fit.lines.map((l, i) => (
@@ -68,10 +63,26 @@ const VSignal: React.FC<{ text: string; sub?: string; index: number; count: numb
         ))}
       </div>
       {sub && (
-        <div style={{ marginTop: 26, maxWidth: TEXT_W, textAlign: "center", fontFamily: fonts.mono, fontWeight: F.weights.monoBold, fontSize: 32, letterSpacing: 5, color: colors.text, textShadow: "0 2px 16px rgba(0,0,0,0.9)" }}>
+        <div style={{ marginTop: 26, maxWidth: TEXT_W, textAlign: "center", fontFamily: fonts.mono, fontWeight: F.weights.monoBold, fontSize: 32, lineHeight: 1.35, letterSpacing: 5, color: colors.text }}>
           <Decode text={sub} since={frame - 8} per={0.5} scramble={6} />
         </div>
       )}
+    </AbsoluteFill>
+  );
+};
+
+/** A hook beat laid out like a segment: the footage in the window, the stamp under it. */
+const VStampBeat: React.FC<{ visual?: string; asset: Asset | null; note?: string; stamp: string; sub?: string; index: number; count: number; dur: number }> = ({ visual, asset, note, stamp, sub, index, count, dur }) => {
+  const frame = useCurrentFrame();
+  return (
+    <AbsoluteFill>
+      <Field ripple={frame - 2} cx="20%" cy="15%" />
+      <Window box={SHORT_WINDOW} enter={windowEnter(frame, 2)} tilt={-4}>
+        {asset ? <MediaStack visuals={[{ name: visual!, asset, note, from: 0 }]} durationInFrames={dur} seed={index} noteSize={20} tagSize={18} tagMaxWidth={660} /> : <Field ripple={frame - 6} />}
+      </Window>
+      <Sequence from={4} layout="none">
+        <VSignal text={stamp} sub={sub} index={index} count={count} />
+      </Sequence>
     </AbsoluteFill>
   );
 };
@@ -96,13 +107,7 @@ export const FrontierShortColdOpen: React.FC = () => {
             {beat.map === "all-pins" ? (
               <AllPins pins={firstPins(episode)} text={beat.stamp} accent={beat.accent} width={W} height={1300} top={330} textWidth={TEXT_W} maxSize={120} />
             ) : (
-              <>
-                {asset ? <MediaStack visuals={[{ name: beat.visual!, asset, note: beat.note, from: 0 }]} durationInFrames={dur} seed={i} noteInset={X} noteSize={22} tagInset={X} tagTop={150} tagSize={20} tagMaxWidth={560} /> : <Field ripple={0} />}
-                <Scrims />
-                <Sequence from={4} layout="none">
-                  <VSignal text={beat.stamp} sub={beat.sub} index={i} count={beats.length} />
-                </Sequence>
-              </>
+              <VStampBeat visual={beat.visual} asset={asset} note={beat.note} stamp={beat.stamp} sub={beat.sub} index={i} count={beats.length} dur={dur} />
             )}
             {i > 0 && <Sweep />}
           </Sequence>
@@ -149,7 +154,7 @@ export const FrontierShortSegment: React.FC<{ s: ResolvedSegment }> = ({ s }) =>
   // A segment with a map opens on it in the window, then sweeps to the b-roll at MAP_EXIT (the "mapExit" sound).
   const mapEnd = seg.map ? MAP_EXIT + o : 0;
   const showMap = seg.map && (!visuals.length || frame < mapEnd);
-  const box = { left: 60, top: 330, width: 960, height: 540 };
+  const box = SHORT_WINDOW;
   const badgeIn = prog(frame, 2, 10);
   return (
     <AbsoluteFill>

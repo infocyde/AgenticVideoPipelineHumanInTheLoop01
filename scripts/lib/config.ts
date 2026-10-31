@@ -9,7 +9,7 @@ export const configSchema = z.object({
   voice: z
     .object({
       enabled: z.boolean().default(false),
-      engine: z.enum(["chatterbox", "kokoro", "qwen", "qwen-cloud"]).default("chatterbox"),
+      engine: z.enum(["chatterbox", "kokoro", "qwen", "qwen-cloud", "elevenlabs"]).default("chatterbox"),
       reference: z.string().nullish(), // the clip Chatterbox and Qwen clone (voices/<name>.wav)
       chatterbox: z
         .object({
@@ -25,6 +25,21 @@ export const configSchema = z.object({
           size: z.enum(["1.7B", "0.6B"]).default("1.7B"),
           language: z.string().default("English"),
           cloud_concurrency: z.number().int().min(1).max(32).default(8), // qwen-cloud: sentences sent to Replicate at once
+        })
+        .prefault({}),
+      elevenlabs: z
+        .object({
+          voice: z.string().default("hacker_01"), // a voice name on the account (case-insensitive) or a raw voice_id
+          voice_id: z.string().nullish(), // skips the name lookup (for API keys without the Voices: Read permission)
+          model: z.string().default("eleven_multilingual_v2"),
+          stability: z.number().min(0).max(1).default(0.5),
+          similarity_boost: z.number().min(0).max(1).default(0.75),
+          style: z.number().min(0).max(1).default(0),
+          speaker_boost: z.boolean().default(true),
+          speed: z.number().min(0.7).max(1.2).default(1),
+          output_format: z.string().default("mp3_44100_128"),
+          stitch: z.enum(["text", "ids", "off"]).default("text"), // continuity between sentences
+          concurrency: z.number().int().min(1).max(15).default(3), // sentences in flight at once (plan limit: Free 2, Starter 3, Creator 5, Pro 10)
         })
         .prefault({}),
       pause: z.number().min(0).max(3).default(0.35),

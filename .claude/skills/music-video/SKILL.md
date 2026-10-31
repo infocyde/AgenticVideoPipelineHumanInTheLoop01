@@ -7,7 +7,7 @@ description: Make a Brief Kit music video from the user's own song: lyrics align
 
 A music video is an episode with `"format": "music-video"`. The song replaces the voiceover, the lyric sheet replaces the script, and shots replace the news template. You write **data and media only**, as with any episode (CLAUDE.md rule 1). Keep a running log in `episodes/<slug>/notes.md`.
 
-There are three stops where you wait for the user: **the lyrics differences**, **the shot plan**, and **preview approval / AC power**. Explainer storyboards wait for approval as usual, unless the user waives that.
+There are three stops where you wait for the user: **the lyrics differences**, **the shot plan**, and **preview approval**. Explainer storyboards wait for approval as usual, unless the user waives that.
 
 ## 1. Intake
 
@@ -132,7 +132,7 @@ npm run check -- <slug>    # 0 errors
 
 As for episodes (new-episode skill, section 6):
 1. Run `npm run preview -- <slug>` in the background. **Stop** for approval: ask the user to watch with sound and to check that the subtitles sit on the words.
-2. Stop the preview and ask about AC power.
+2. Stop the preview (don't ask about AC power; the user is always plugged in).
 3. Run `npm run render -- <slug>`, `npm run thumb -- <slug>` and `npm run credits -- <slug>`. `DESCRIPTION.md` carries the summary, the song credit, the full lyrics and the media credits.
 
 Hand off:

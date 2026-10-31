@@ -1,14 +1,16 @@
-// Local text-to-speech for the voiceover (replaces ElevenLabs): voiceover.txt -> public/episodes/<slug>/voiceover.mp3,
-// then `align`. Engine and voice come from config.yaml (voice:), and can be overridden per run.
+// Text-to-speech for the voiceover (local engines, or Replicate / ElevenLabs in the cloud): voiceover.txt ->
+// public/episodes/<slug>/voiceover.mp3, then `align`. Engine and voice come from config.yaml (voice:), and can be overridden per run.
 // Engines run in .venv-tts (Python 3.12 + CUDA PyTorch), made by `npm run setup:voice`. See scripts/voice.py.
 //
 // Usage:
-//   npm run voice -- <slug> [--engine chatterbox|kokoro|qwen|qwen-cloud] [--model turbo|standard] [--reference voices/x.wav]
+//   npm run voice -- <slug> [--engine chatterbox|kokoro|qwen|qwen-cloud|elevenlabs] [--model turbo|standard] [--reference voices/x.wav]
 //   qwen-cloud: Qwen3-TTS on Replicate (official qwen/qwen3-tts), all sentences in parallel (--concurrency N); needs REPLICATE_API_TOKEN
+//   elevenlabs: the ElevenLabs API with voice.elevenlabs (voice by name, model, settings); needs ELEVENLABS_API_KEY. Overrides:
+//               --voice <name|id> --model <model_id> --speed 0.7-1.2 --stability --similarity --style --stitch text|ids|off --concurrency N
 //                           [--voice am_michael] [--speed 1] [--seed 7] [--force] [--no-align]
 //   --reference none   use the standard model's built-in voice instead of the clip in config.yaml
 //   npm run voice -- --sample "A line to try." [same overrides]   writes out/voice-samples/<engine>-<voice>.mp3
-//   npm run voice -- --voices                                     list Kokoro's preset voices
+//   npm run voice -- --voices                                     list your clips, the ElevenLabs voices (with a key) and Kokoro's presets
 //   npm run voice -- --record [name] [--seconds 25] [--device "Mic name"] [--no-play]
 //                     record your voice from the mic into voices/<name>.wav (default narrator), check it, play a cloned sample
 //   --force       replace an existing voiceover.mp3 (kept as voiceover.prev.mp3), or re-record an existing voices/<name>.wav
@@ -20,6 +22,7 @@ import { createInterface } from "node:readline/promises";
 import { basename, join, relative, resolve } from "node:path";
 import type { EpisodeInput } from "../src/kit/schema.ts";
 import { loadConfig } from "./lib/config.ts";
+import { elevenKey, elevenQuota, elevenVoices, MissingPermission, quotaLine, resolveElevenVoice } from "./lib/elevenlabs.ts";
 import { getSecret } from "./lib/env.ts";
 import { isMusicVideoSlug } from "./lib/musicVideo.ts";
 import { fail, info, ok, parseArgs, paths, readJson, requireSlug, ROOT, run, warn } from "./lib/util.ts";
@@ -40,8 +43,27 @@ const refDefault = v.reference ?? v.chatterbox.reference ?? "";
 
 if (flags.voices) {
   listClips();
+  await listEleven();
   console.log("Kokoro presets (--engine kokoro --voice <id>):");
   process.exit(run(py, [voicePy, "--voices"]));
+}
+
+/** Print the voices on the ElevenLabs account and its quota, when there is a key. */
+async function listEleven() {
+  const key = elevenKey();
+  if (!key) return console.log("ElevenLabs: no ELEVENLABS_API_KEY (in the environment, or a .env here or in a parent folder)\n");
+  const current = (v.elevenlabs.voice_id ?? v.elevenlabs.voice).toLowerCase();
+  try {
+    const voices = await elevenVoices(key);
+    console.log("ElevenLabs voices on your account (--engine elevenlabs --voice <name>, or voice.elevenlabs.voice):");
+    for (const x of voices.sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name))) {
+      const mine = x.voice_id.toLowerCase() === current || x.name.toLowerCase() === current;
+      console.log(`  ${mine ? "*" : " "} ${x.name.padEnd(32)} ${x.voice_id}  ${x.category}${mine ? "   (config.yaml default)" : ""}`);
+    }
+  } catch (e) {
+    console.log(e instanceof MissingPermission ? "ElevenLabs: this key can't list voices (allow Voices: Read at elevenlabs.io/app/settings/api-keys)" : `ElevenLabs: ${(e as Error).message}`);
+  }
+  console.log(`  ${quotaLine(await elevenQuota(key))}\n`);
 }
 
 /** Print the reference clips in voices/ with their length (each is a voice: --reference voices/<name>.wav). */
@@ -57,12 +79,13 @@ function listClips() {
 }
 
 // --- settings for this run: config.yaml, then command-line overrides
-const engine = (str("engine") ?? v.engine) as "chatterbox" | "kokoro" | "qwen" | "qwen-cloud";
-if (!["chatterbox", "kokoro", "qwen", "qwen-cloud"].includes(engine)) fail(`--engine must be chatterbox, kokoro, qwen or qwen-cloud`);
+const engine = (str("engine") ?? v.engine) as "chatterbox" | "kokoro" | "qwen" | "qwen-cloud" | "elevenlabs";
+if (!["chatterbox", "kokoro", "qwen", "qwen-cloud", "elevenlabs"].includes(engine)) fail(`--engine must be chatterbox, kokoro, qwen, qwen-cloud or elevenlabs`);
 const cloud = engine === "qwen-cloud";
+const eleven = engine === "elevenlabs";
 const model = (str("model") ?? v.chatterbox.model) as "turbo" | "standard";
 const refArg = str("reference") === "none" ? "" : (str("reference") ?? refDefault); // --reference none: the standard model's built-in voice
-const reference = engine !== "kokoro" && refArg ? resolve(ROOT, refArg) : "";
+const reference = engine !== "kokoro" && !eleven && refArg ? resolve(ROOT, refArg) : "";
 const qwenSize = (str("size") ?? v.qwen.size) as "1.7B" | "0.6B";
 const num = (k: string, d: number) => (str(k) === undefined ? d : Number(str(k)));
 const settings = {
@@ -79,6 +102,23 @@ const settings = {
   language: str("language") ?? v.qwen.language,
   ref_text: "", // Qwen: transcript of the reference clip, filled in by refText()
   cloud_concurrency: num("concurrency", v.qwen.cloud_concurrency),
+  // engine elevenlabs only (left out of voice.json otherwise); voice_id and voice_category are filled in once the voice is resolved
+  elevenlabs: eleven
+    ? {
+        voice_id: "",
+        voice_name: str("voice") ?? v.elevenlabs.voice,
+        voice_category: "",
+        model: str("model") ?? v.elevenlabs.model,
+        stability: num("stability", v.elevenlabs.stability),
+        similarity_boost: num("similarity", v.elevenlabs.similarity_boost),
+        style: num("style", v.elevenlabs.style),
+        speaker_boost: v.elevenlabs.speaker_boost,
+        speed: num("speed", v.elevenlabs.speed),
+        output_format: v.elevenlabs.output_format,
+        stitch: (str("stitch") ?? v.elevenlabs.stitch) as "text" | "ids" | "off",
+        concurrency: num("concurrency", v.elevenlabs.concurrency),
+      }
+    : undefined,
 };
 
 // --- record a reference clip of your voice
@@ -88,7 +128,7 @@ if (flags.record) await record();
 const isSample = str("sample") !== undefined || !!flags.sample;
 const testOut = str("out"); // --out <file>: voice an episode's script to a separate file (a test take; the episode is untouched)
 if (!isSample && !testOut && !v.enabled && !flags["ignore-off"]) fail("Local TTS is off (config.yaml: voice.enabled: false), so this episode's voiceover is recorded outside the kit. Set it to true, or pass --ignore-off for a one-off.");
-if (engine !== "kokoro") {
+if (engine !== "kokoro" && !eleven) {
   if (reference && !existsSync(reference)) fail(`No reference clip at ${rel(reference)}. Record one with: npm run voice -- --record  (see voices/README.md), or set voice.reference in config.yaml.`);
   if (!reference && (engine === "qwen" || cloud)) fail("Qwen3-TTS clones a voice, so it needs a reference clip (voice.reference in config.yaml, or --reference voices/<name>.wav).");
   if (!reference && model === "turbo") fail("Chatterbox Turbo needs a reference clip (voice.reference in config.yaml). Or use --model standard for its built-in voice, or --engine kokoro.");
@@ -103,8 +143,33 @@ if (cloud) {
   if (!existsSync(py) && !existsSync(venvPy(".venv-qwen"))) fail("qwen-cloud needs a voice environment for joining the sentences (numpy, soundfile). Run: npm run setup:voice  (one time)");
   settings.ref_text = refText(reference);
 }
+const elKey = eleven ? elevenKey() : null;
+if (eleven) {
+  const e = settings.elevenlabs!;
+  if (!elKey) fail("ElevenLabs needs an API key: put ELEVENLABS_API_KEY in .env (in this repo or a parent folder) or the environment. Make one at elevenlabs.io/app/settings/api-keys.");
+  if (!["text", "ids", "off"].includes(e.stitch)) fail("--stitch must be text, ids or off");
+  if (!(e.speed >= 0.7 && e.speed <= 1.2)) fail("ElevenLabs speed must be between 0.7 and 1.2");
+  for (const k of ["stability", "similarity_boost", "style"] as const) if (!(e[k] >= 0 && e[k] <= 1)) fail(`ElevenLabs ${k} must be between 0 and 1`);
+  try {
+    // --voice on the command line is looked up by name; voice.elevenlabs.voice_id belongs to the configured voice only
+    const r = await resolveElevenVoice(elKey!, e.voice_name, str("voice") ? null : v.elevenlabs.voice_id);
+    Object.assign(e, { voice_id: r.voice_id, voice_name: r.name, voice_category: r.category });
+  } catch (err) {
+    fail((err as Error).message);
+  }
+  info(`ElevenLabs voice "${e.voice_name}" -> ${e.voice_id} (${e.voice_category}), model ${e.model}`);
+  info(`ElevenLabs before: ${quotaLine(await elevenQuota(elKey!))}`);
+}
+/** ElevenLabs only: print the quota after a take. */
+const quotaAfter = async () => {
+  if (elKey) {
+    const q = await elevenQuota(elKey);
+    if (q) info(`ElevenLabs after: ${quotaLine(q)}`);
+  }
+};
 const label =
-  engine === "kokoro" ? `kokoro ${settings.voice}`
+  eleven ? `ElevenLabs ${settings.elevenlabs!.voice_name}, ${settings.elevenlabs!.model}`
+  : engine === "kokoro" ? `kokoro ${settings.voice}`
   : engine === "qwen" ? `qwen3-tts ${qwenSize} cloning ${rel(reference)}`
   : cloud ? `qwen3-tts on Replicate cloning ${rel(reference)}`
   : `chatterbox ${model}${reference ? ` cloning ${rel(reference)}` : " (built-in voice)"}`;
@@ -115,11 +180,12 @@ if (isSample) {
   const dir = join(ROOT, "out", "voice-samples");
   mkdirSync(dir, { recursive: true });
   const who = reference ? basename(reference).replace(/\.[^.]+$/, "") : "default";
-  const tag = engine === "kokoro" ? `kokoro-${settings.voice}` : engine === "qwen" ? `qwen-${qwenSize}-${who}` : cloud ? `qwen-cloud-${who}` : `chatterbox-${model}-${who}`;
+  const tag = eleven ? `elevenlabs-${settings.elevenlabs!.voice_name.replace(/[^\w.-]+/g, "_")}` : engine === "kokoro" ? `kokoro-${settings.voice}` : engine === "qwen" ? `qwen-${qwenSize}-${who}` : cloud ? `qwen-cloud-${who}` : `chatterbox-${model}-${who}`;
   const txt = join(dir, `${tag}.txt`);
   writeFileSync(txt, text + "\n");
   const mp3 = synth(txt, join(dir, `${tag}.mp3`), dir);
   ok(`${rel(mp3)}  (${label})`);
+  await quotaAfter();
   process.exit(0);
 }
 
@@ -153,6 +219,7 @@ if (testOut) {
   const mmss = (s: number) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, "0")}`;
   ok(`${rel(dest)}`);
   console.log(`  start  ${t0.toLocaleTimeString()}\n  end    ${t1.toLocaleTimeString()}\n  took   ${mmss(took)} (${took.toFixed(0)} s, model load included)\n  output ${mmss(length)} (${length.toFixed(1)} s), ${(length / took).toFixed(1)}x realtime`);
+  await quotaAfter();
   process.exit(0);
 }
 
@@ -171,6 +238,7 @@ writeFileSync(
   JSON.stringify({ ...settings, reference: reference ? rel(reference) : null, made: new Date().toISOString(), scriptSha1: createHash("sha1").update(script).digest("hex") }, null, 2) + "\n",
 );
 ok(`public/episodes/${slug}/${voName}  (${label}; settings in episodes/${slug}/voice.json)`);
+await quotaAfter();
 
 if (flags["no-align"]) {
   console.log(`\nNext: listen to it, then npm run align -- ${slug}`);
@@ -188,7 +256,13 @@ function synth(textFile: string, mp3: string, dir: string): string {
   const wav = mp3.replace(/\.mp3$/, ".wav");
   writeFileSync(args, JSON.stringify({ ...settings, text: textFile, out: wav }));
   const python = settings.engine === "qwen" || (cloud && !existsSync(py)) ? venvPy(".venv-qwen") : py;
-  const env = { ...process.env, PYTHONIOENCODING: "utf-8", HF_HUB_DISABLE_SYMLINKS_WARNING: "1", ...(replicate ? { REPLICATE_API_TOKEN: replicate.value } : {}) };
+  const env = {
+    ...process.env,
+    PYTHONIOENCODING: "utf-8",
+    HF_HUB_DISABLE_SYMLINKS_WARNING: "1",
+    ...(replicate ? { REPLICATE_API_TOKEN: replicate.value } : {}),
+    ...(elKey ? { ELEVENLABS_API_KEY: elKey } : {}),
+  };
   const code = run(python, [voicePy, args], { env });
   if (code !== 0 || !existsSync(wav)) fail("speech synthesis failed (see above).");
   if (run("ffmpeg", ["-v", "error", "-y", "-i", wav, "-ar", "44100", "-c:a", "libmp3lame", "-q:a", "2", mp3]) !== 0) fail("ffmpeg could not encode the MP3.");

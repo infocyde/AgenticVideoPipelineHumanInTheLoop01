@@ -7,7 +7,7 @@ description: Make one Brief Kit video episode from a source article, from intake
 
 You take an article to a finished, licensed, loudness-mastered MP4 by writing **data and media only**. Read `CLAUDE.md` first: its hard rules apply at every step. Keep a running log in `episodes/<slug>/notes.md`. Raw downloads go in `episodes/<slug>/raw/` and working files in `episodes/<slug>/work/` (CLAUDE.md, "Where things are"), never in a temp folder.
 
-There are three stops where you wait for the user: **script approval**, **the MP3**, and **preview approval / AC power**.
+There are three stops where you wait for the user: **script approval**, **the MP3**, and **preview approval**.
 
 ## 1. Intake
 
@@ -57,7 +57,7 @@ Optionally run `npm run align -- <slug> --estimate` and draft `episode.json` aga
 
 **Stop.** Give the user the script (and any Short scripts) and wait for approval. Then read `config.yaml`:
 
-- **`voice.enabled: true`:** voice it yourself: `npm run voice -- <slug>`. It writes `public/episodes/<slug>/voiceover.mp3` with the configured engine and voice, then runs align (step 3). Don't wait for an MP3. If it fails because the reference clip (`voices/narrator.wav`) is missing, tell the user (`voices/README.md` explains how to record one), or offer `--engine kokoro` for now.
+- **`voice.enabled: true`:** voice it yourself: `npm run voice -- <slug>`. It writes `public/episodes/<slug>/voiceover.mp3` with the configured engine and voice, then runs align (step 3). Don't wait for an MP3. If it fails because the reference clip (`voices/narrator.wav`) is missing, tell the user (`voices/README.md` explains how to record one), or offer `--engine kokoro` for now. With `voice.engine: elevenlabs`, or when the user asks for ElevenLabs or one of their ElevenLabs voices (e.g. `hacker_01`), follow the **elevenlabs** skill (`--engine elevenlabs` for a one-off).
 - **`voice.enabled: false`:** wait for the user's MP3 at `public/episodes/<slug>/voiceover.mp3`.
 
 ## 3. Align
@@ -81,13 +81,13 @@ npm run voice-check -- <slug>
 
 It follows the level over the last 130 ms before every pause. A natural ending dips toward silence there; a **HARSH** stop stays near speaking level right up to the cut (the word was chopped while still sounding; the 50 ms fade `npm run voice` adds hides the click, not the cut). **CHECK** is borderline. Each flagged stop gets a listening snippet and a waveform in `episodes/<slug>/work/voice-check/`, with `report.txt` listing every pause.
 
-- Look at every HARSH and CHECK item. A real cut-off needs a new take: re-voice (`npm run voice -- <slug> --force`; the cloud engine gives a fresh take each run), or reword or respell the line so it ends on a softer word, then run `voice-check` again. Keep the take with the fewest harsh stops (save takes in `work/voice-takes/`), and never trade a clean take for one with new misreads (check `heard.txt` too).
+- Look at every HARSH and CHECK item. A real cut-off needs a new take: re-voice (`npm run voice -- <slug> --force`; `qwen-cloud` gives a fresh take each run, while the local engines (and, mostly, `elevenlabs`, which sends the seed too) repeat a take unless you add `--seed <n>`), or reword or respell the line so it ends on a softer word, then run `voice-check` again. Keep the take with the fewest harsh stops (save takes in `work/voice-takes/`), and never trade a clean take for one with new misreads (check `heard.txt` too).
 - Aim for **0 HARSH** before the preview. If one can't be cleared after a few takes, tell the user where it is.
 - Log the result in `notes.md` under "Voice" (takes tried, harsh stops before and after).
 
 ### 3b. Music bed (when `config.yaml` has `music_gen.enabled: true`)
 
-Once the final voiceover is aligned, compose the bed with the **compose-music** skill: write a prompt that fits the theme and the subject, then `npm run compose -- <slug> bed --prompt "..."` (sized to the video, new random seed each run) and set `"audio": { "music": { "file": "bed", "level": 0.16, "duck": true } }`. If the user hands over their own track, use theirs instead. Log the prompt and seed in `notes.md`. Each Short composes its own bed the same way, with the parent's prompt.
+Once the final voiceover is aligned, compose the bed with the **compose-music** skill: write a prompt that fits the theme and the subject, then `npm run compose -- <slug> bed --prompt "..."` (sized to the video, new random seed each run) and set `"audio": { "music": { "file": "bed", "level": 0.45, "duck": true } }` (the scaffold default, `MUSIC_LEVEL` in `scripts/lib/template.ts`). If the user hands over their own track, use theirs instead. Log the prompt and seed in `notes.md`. Each Short composes its own bed the same way, with the parent's prompt.
 
 ## 4. Episode data → `episodes/<slug>/episode.json`
 
@@ -143,7 +143,7 @@ When they report back:
    It runs `check`, starts Remotion Studio and opens the user's browser on this episode. Give the user the URL from the `preview ready:` line, and ask them to play it through with sound and tell you what to change. Studio shows any unresolved cue as a red panel over the video.
 2. Apply their feedback in `episode.json` (and re-align if they re-record). Studio hot-reloads, so they just keep watching. Repeat until they approve.
 3. Stop the preview (stop the background task, or `npm run kill`) so it doesn't compete with the render.
-4. **Ask whether they're on AC power**; rendering takes several minutes at full GPU and CPU.
+4. Don't ask whether they're on AC power: assume they always are, and go straight to the render.
 5. Run:
    ```
    npm run render -- <slug>
@@ -165,6 +165,10 @@ Tell the user:
 - Every file-footage substitution and every approved claim beyond the article (from `notes.md`).
 - Every AI-generated image, with a reminder to tick YouTube's "altered or synthetic content" box if any look realistic.
 
+## 7b. Upload to YouTube (when the user asks)
+
+Use the **youtube-upload** skill. `npm run upload-text -- <slug>` turns `DESCRIPTION.md` into a title and a description YouTube accepts (`out/<slug>/upload.json`). Then, in the user's Chrome, upload the main video first (the user drags the file in; you fill title, description, audience, AI use and visibility, Unlisted by default), record its link with `npm run upload-text -- <slug> --url <link>`, and upload each Short with a description that links to it. Save only once YouTube's copyright checks are complete. Log the links in `notes.md`.
+
 ## 8. Shorts (optional)
 
 YouTube Shorts are vertical (9:16, 1080×1920) and each one is its own small episode with its own script and voiceover, so every command works on it. Two kinds:
@@ -182,7 +186,7 @@ YouTube Shorts are vertical (9:16, 1080×1920) and each one is its own small epi
 
 **episode.json**: `summary` (1–2 sentences: the Short's one idea and its key fact; the description adds a link line to the full video and `#Shorts`), `coldOpen.beats` (1 hook beat: stamp ≤ 16 chars over a strong visual), `coldOpen.title` (kicker = brand, `big` ≤ 4 chars such as "#1" or "VS", `small` ≤ 2 short lines), `segments` (1–3 items or text sections, each with stats and 1–3 visuals; a `map` shows full-height first, then the b-roll), `outro` (1–2 lines + `cta`). `sourcesCard` and `creditsCard` stay `false`: on Shorts the sources and credits go in the description. File-footage `note`s and AI-image notes apply as usual.
 
-**Then**, per Short: voice it (`npm run voice -- <short>` when local TTS is on, otherwise the user records `voiceover.mp3` alongside the main one), `npm run align`, `npm run voice-check -- <short>` (step 3c), `npm run assets`, `npm run check` (0 errors), and preview it with the main episode (`npm run preview -- <short>`; the user can approve them together). After approval and the AC-power question, `npm run render -- <short>` writes `out/<short>/youtube.mp4` and copies it to `out/<parent>/short<N>.mp4`. `npm run credits -- <short>` writes its description (link to the full video + `#Shorts`, sources, credits); no thumbnail (YouTube uses a frame).
+**Then**, per Short: voice it (`npm run voice -- <short>` when local TTS is on, otherwise the user records `voiceover.mp3` alongside the main one), `npm run align`, `npm run voice-check -- <short>` (step 3c), `npm run assets`, `npm run check` (0 errors), and preview it with the main episode (`npm run preview -- <short>`; the user can approve them together). After approval, `npm run render -- <short>` writes `out/<short>/youtube.mp4` and copies it to `out/<parent>/short<N>.mp4`. `npm run credits -- <short>` writes its description (link to the full video + `#Shorts`, sources, credits); no thumbnail (YouTube uses a frame).
 
 **Hand off** each Short's path, length and description with the main episode, and log the picks and scripts in the parent's `notes.md`.
 

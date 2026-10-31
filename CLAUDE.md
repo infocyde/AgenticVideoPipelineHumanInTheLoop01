@@ -2,7 +2,7 @@
 
 This repo turns an article plus a voiceover into a short narrated YouTube video (Remotion). You are the **producer**: you make one episode at a time by filling one episode folder with **data and media only**.
 
-**To make an episode, use the `new-episode` skill** (`.claude/skills/new-episode/SKILL.md`). It has the full step-by-step procedure and the asset-sourcing prompts. **To make a music video** from the user's own song (`"format": "music-video"`: the song replaces the voiceover, the lyric sheet the script), **use the `music-video` skill**. **To find video ideas** ("recon"), **use the `recon` skill**: it reads the user's X lists and X trending in their own browser, read-only, and reports a ranked list; posts are leads, never facts. This file holds the rules that apply at every step.
+**To make an episode, use the `new-episode` skill** (`.claude/skills/new-episode/SKILL.md`). It has the full step-by-step procedure and the asset-sourcing prompts. **To make a music video** from the user's own song (`"format": "music-video"`: the song replaces the voiceover, the lyric sheet the script), **use the `music-video` skill**. **To upload the finished videos to YouTube** (Unlisted, in the user's own Chrome), **use the `youtube-upload` skill**. **To find video ideas** ("recon"), **use the `recon` skill**: it reads the user's X lists and X trending in their own browser, read-only, and reports a ranked list; posts are leads, never facts. This file holds the rules that apply at every step.
 
 ## Hard rules
 
@@ -12,7 +12,7 @@ This repo turns an article plus a voiceover into a short narrated YouTube video 
 4. **`npm run check -- <slug>` must show 0 errors before rendering.** Fix the cause; don't work around it. `render` refuses to start otherwise.
 5. **Captions show what was said.** If the recording differs from `voiceover.txt`, update `voiceover.txt` to match the audio (see `heard.txt`) and re-run align. Never the other way round. With local TTS the audio is made from the text, so when it misreads a word, respell that word in `voiceover.txt` for the ear (or change `--seed`) and voice it again until the audio says the script. **Voice check, every project:** once a voiceover (episode or Short, TTS or recorded) is laid out and aligned, run `npm run voice-check -- <slug>`. It scans every pause for harsh stops (a word cut off while still sounding). Look at each HARSH and CHECK item (its snippet and waveform in `work/voice-check/`) and fix every real cut-off by re-voicing or rewording the line, then run it again, before the preview. Log the result in `notes.md`.
 6. **Wait for the user** at the three handoffs: script approval, the recorded MP3, and preview approval. When `config.yaml` has `voice.enabled: true`, there is no MP3 handoff: right after script approval, voice it yourself with `npm run voice -- <slug>` and carry on (the user hears it in the preview). When it's `false`, wait for the user's MP3 and don't run `npm run voice`. **Music videos** have no voice step; their three stops are the lyrics differences (`lyrics-diff.txt`), the shot plan, and preview approval.
-7. **Preview before every render.** Right before rendering, run `npm run preview -- <slug>` in the background; it opens the user's browser on the episode in Remotion Studio. Wait until they've watched it and approved, stop the preview, ask whether they're on AC power, and only then run `npm run render`.
+7. **Preview before every render.** Right before rendering, run `npm run preview -- <slug>` in the background; it opens the user's browser on the episode in Remotion Studio. Wait until they've watched it and approved, stop the preview, and only then run `npm run render`. Don't ask about AC power: the user is always plugged in.
 
 ## Commands (all take the episode slug)
 
@@ -20,7 +20,7 @@ This repo turns an article plus a voiceover into a short narrated YouTube video 
 npm run new -- <slug> [--format countdown|list|short] [--count N] [--theme threat-brief|clean-light|after-dark|military|military-comparisons|erotic|frontier|blackout]
 npm run new -- <slug> --format music-video --song <path> [--title "…"] [--subtitle "…"] [--artist "…"]   # music video (music-video skill)
 npm run lyrics -- <slug> [--force] [--aligner mms|whisper]   # music videos: lyrics.txt + song -> timing.json (words, lines, beats), lyrics-diff.txt
-npm run voice -- <slug> [--force]         # local TTS (config.yaml voice:): voiceover.txt -> voiceover.mp3, then align
+npm run voice -- <slug> [--force] [--engine qwen-cloud|qwen|chatterbox|kokoro|elevenlabs]   # TTS (config.yaml voice:): voiceover.txt -> voiceover.mp3, then align; elevenlabs: elevenlabs skill
 npm run voice-check -- <slug>             # scan the laid-out voiceover for harsh stops (words cut off at pauses); every project
 npm run compose -- <slug> bed --prompt "..." [--force]   # local music bed (config.yaml music_gen:, compose-music skill), new random seed each run
 npm run short -- <slug> [--count 1-3]     # scaffold YouTube Shorts (<slug>-short1…) from an episode; each is its own small episode
@@ -41,6 +41,7 @@ npm run preview -- <slug>                 # check, start Studio, open the browse
 npm run render -- <slug>                  # only after the user approves the preview -> out/<slug>/youtube.mp4
 npm run thumb -- <slug>                   # out/<slug>/thumbnail.png
 npm run credits -- <slug>                 # out/<slug>/DESCRIPTION.md
+npm run upload-text -- <slug> [--url <link>]   # out/<slug>/upload.json: YouTube title + description (≤ 5,000 chars); --url records the uploaded link (youtube-upload skill)
 npm run kill                              # stop leftover render processes from this repo
 ```
 
