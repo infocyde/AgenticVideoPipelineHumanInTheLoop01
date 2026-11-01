@@ -236,7 +236,9 @@ agents:
   research: sonnet     # find and read sources, write research.md and article.md. Mostly retrieval: low risk.
   factcheck: sonnet    # verify the premise and every figure, fill the notes.md fact-check table. The judgment step;
                        # the review below covers it.
-  script: sonnet       # write voiceover.txt (word count, markers, ear rules). check and voice-check catch most slips.
+  script: sonnet       # write voiceover.txt (word count, markers, ear rules) when delegated, i.e. batches such as the
+                       # auto run. A one-off video's script is written in the main session (opus) instead: a ~300-word
+                       # script costs little, and it saves a round of review fixes (the user's choice, 2026-11-01).
   review: opus         # read notes.md, article.md and voiceover.txt before voicing, and the credits table and contact
                        # sheets after sourcing; fix what's wrong. Keep this on opus when the steps above are sonnet.
   media: sonnet        # find, license-check, download and credit the footage and stills. The biggest token cost.
