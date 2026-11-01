@@ -91,6 +91,10 @@ shorts:
     musicLevel: 0.6   # audio.music.level in every new long Short (louder than the 0.45 episode default)
     voiceSpeed: 1.1   # audio.voiceSpeed: npm run voice plays the take back this much faster (pitch kept), then aligns
                       # At 1.1x a long Short holds about 2.85 words a second: ~170 words for 1:00, ~430 for 2:30 (1.2 until 2026-11-01)
+    voiceEngine: qwen # long Shorts are voiced with local Qwen3-TTS (the user's choice, 2026-11-01), not voice.engine:
+                      # the producer runs `npm run voice -- <slug> --engine qwen`. Local takes repeat for the same
+                      # seed, so a re-voice needs --seed <n>. It runs on the GPU: never alongside compose, render
+                      # or another local voicing.
     scenes: 5         # chapters in a new long Short (--count 2-10 overrides)
     theme: dispatch   # theme of a standalone long Short (signal yellow on ink, made for this layout); --theme overrides
 

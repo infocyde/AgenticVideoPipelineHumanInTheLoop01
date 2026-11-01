@@ -115,9 +115,11 @@ export const Ticker: React.FC = () => {
   const { colors, fonts } = theme;
   const items =
     episode.ticker?.items ??
-    (timeline.format === "countdown" ? [...timeline.segments].reverse() : timeline.segments).map(
-      (s) => `${s.seg.region} — ${s.seg.headline.toUpperCase()}`,
-    );
+    (timeline.segments.length
+      ? (timeline.format === "countdown" ? [...timeline.segments].reverse() : timeline.segments).map(
+          (s) => `${s.seg.region} — ${s.seg.headline.toUpperCase()}`,
+        )
+      : [...timeline.texts].sort((a, b) => a.from - b.from).map((t) => t.seg.heading.toUpperCase()));
   const text = items.join("   ◆   ");
   return (
     <div

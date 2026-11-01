@@ -182,7 +182,8 @@ export const resolveEpisode = (ep: Episode, timing: Timing, assets: AssetManifes
   });
 
   // --- segments and text sections ---
-  if (!items(ep).length) err("segments", 'every scene is a text section; add at least one numbered segment (no `kind`, or `kind: "item"`)');
+  // An episode may be text sections only (unnumbered chapters): the chrome then shows no "N / total" counter, and
+  // its pips and ticker follow the sections instead.
   const segments: ResolvedSegment[] = [];
   const texts: ResolvedText[] = [];
   ep.segments.forEach((seg, i) => {

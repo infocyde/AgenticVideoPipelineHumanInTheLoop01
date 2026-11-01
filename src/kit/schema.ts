@@ -241,7 +241,7 @@ export const episodeSchema = z.object({
   segments: z
     .array(sceneSchema)
     .min(1)
-    .describe("Scenes in spoken order: numbered segments, plus optional text sections (`kind: \"text\"`) anywhere among them"),
+    .describe("Scenes in spoken order: numbered segments, plus optional text sections (`kind: \"text\"`) anywhere among them. All text sections is fine too: unnumbered chapters, no counter on screen"),
   outro: z.object({
     cue,
     lines: z.array(outroLineSchema).min(1),

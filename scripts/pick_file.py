@@ -140,9 +140,16 @@ def pick(path: str, timeout: float) -> int:
     dlg = dialogs[0]
     title = dlg.window_text()
     browser = process_name(dlg.process_id())
+    time.sleep(1)  # the dialog lists its File name box before it is ready to take input
     edit = control(dlg, "Edit", "1148")
     edit.set_edit_text(path)
-    control(dlg, "Button", "1").invoke()
+    # The classic dialog's Open is Button "1"; Brave's (2026-11) is a split button with no such id, so press Enter in
+    # the File name box instead, which opens the file in both.
+    button = control(dlg, "Button", "1")
+    if button is not None:
+        button.invoke()
+    else:
+        edit.type_keys("{ENTER}", set_foreground=True)
 
     # The dialog closes once the browser has the file; if it stays (an error box, a bad path), say so.
     end = time.time() + 5

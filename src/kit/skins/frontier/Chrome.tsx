@@ -33,8 +33,9 @@ export const FrontierTopBar: React.FC = () => {
   const pipsIn = interpolate(frame, [timeline.coldOpen.to, timeline.coldOpen.to + 12], [0, 1], clamp) * interpolate(frame, [timeline.outro.from - 6, timeline.outro.from], [1, 0], clamp);
   const current = [...timeline.segments, ...timeline.texts].sort((a, b) => b.from - a.from).find((s) => frame >= s.from);
   const num = inBody && current && "num" in current ? current.num : null;
-  // Pips in the order the items play; each fills while its segment is on screen.
-  const order = [...segs].sort((a, b) => a.from - b.from);
+  // Pips in the order the items play; each fills while its segment is on screen. An episode with no numbered
+  // segments (text sections only) gets one pip per section instead.
+  const order = [...(segs.length ? segs : timeline.texts)].sort((a, b) => a.from - b.from);
   return (
     <div
       style={{
@@ -90,7 +91,9 @@ export const FrontierRail: React.FC = () => {
   const { colors, fonts, copy } = theme;
   const items =
     episode.ticker?.items ??
-    (timeline.format === "countdown" ? [...timeline.segments].reverse() : timeline.segments).map((s) => `${pad2(s.num)}  ${s.seg.headline}`);
+    (timeline.segments.length
+      ? (timeline.format === "countdown" ? [...timeline.segments].reverse() : timeline.segments).map((s) => `${pad2(s.num)}  ${s.seg.headline}`)
+      : [...timeline.texts].sort((a, b) => a.from - b.from).map((t) => t.seg.heading));
   const text = items.join("      ◇      ");
   const enter = interpolate(frame, [0, 12], [44, 0], { ...clamp, easing: Easing.out(Easing.cubic) });
   return (

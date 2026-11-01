@@ -75,11 +75,13 @@ high). The default config gives, per Short:
    fix overreach, unattributed claims, missing caveats, ear problems. This replaces the user's script approval, so
    be strict: when a figure isn't sourced, cut it.
 3. **Production agent** (opus), started after review, which runs the **media** step (sonnet agent) in parallel:
-   voice, voice-check, the **final voice pass** (section 8b; at most 5 voice runs, then keep the best take),
+   voice with **local Qwen** (`npm run voice -- <slug> --engine qwen`, a new `--seed` for each re-voice; see the GPU
+   queue below), voice-check, the **final voice pass** (section 8b; at most 5 voice runs, then keep the best take),
    infographics at `--size 1200x850`, `episode.json`, licensed media with `credits.json`, `assets`, `check` (0
    errors), half-scale test stills. It does **not** compose, render, preview or upload.
 4. **Review of the credits and contact sheets** (opus, main session): every file licensed per CLAUDE.md rule 3,
-   file-footage notes present, nothing that misrepresents the event. Replace or cut a doubtful file rather than
+   file-footage notes present, nothing that misrepresents the event, and every person the shot is about has their
+   whole face in frame in the test stills (reframe the image if not; the user's rule, 2026-11-01). Replace or cut a doubtful file rather than
    keep it; if that breaks `check`, fix it before rendering.
 
 Tell every agent: full-auto run, no user, no questions; write only under `episodes/<slug>/` and
@@ -95,7 +97,11 @@ review passes → compose → render → credits and upload-text → upload (sec
 compose. Don't wait for the other Shorts' agents before taking a ready one through; between notifications, check
 whether any Short is ready and take it.
 
-Compose, render and upload never run in parallel (one GPU). **Memory:** a render holds about 9 GB plus a dozen
+Compose, render and upload never run in parallel (one GPU). **Local voicing is a GPU job too** (Qwen 1.7B, about
+6 GB of VRAM): only one `npm run voice` at a time across the whole run, and never during a compose or render.
+Before voicing, a production agent checks for one already running (`Get-CimInstance Win32_Process` whose
+CommandLine contains `voice` with `--engine qwen`, `compose` or `remotion`) and waits, re-checking every 30 s;
+the main session makes the same check before each compose or render. **Memory:** a render holds about 9 GB plus a dozen
 headless Chrome tabs; on 2026-11-01 a render started while ten agents were still working ran the PC down to 4 GB free
 and FFmpeg crashed. Before each compose or render, run `npm run kill` and check free RAM (`Get-CimInstance
 Win32_OperatingSystem`, FreePhysicalMemory). Below 12 GB free, wait only until enough agents have finished to free
