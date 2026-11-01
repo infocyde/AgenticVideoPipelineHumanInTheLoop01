@@ -3,6 +3,7 @@
 import { afterDark } from "./after-dark";
 import { blackout } from "./blackout";
 import { cleanLight } from "./clean-light";
+import { dispatch } from "./dispatch";
 import { erotic } from "./erotic";
 import { frontier } from "./frontier";
 import { military } from "./military";
@@ -20,6 +21,7 @@ export const themes: Record<ThemeId, Theme> = {
   erotic,
   frontier,
   blackout,
+  dispatch,
 };
 export const DEFAULT_THEME: ThemeId = "threat-brief";
 

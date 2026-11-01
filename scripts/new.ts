@@ -1,7 +1,10 @@
 // Scaffold a new episode: episodes/<slug>/ (data) and public/episodes/<slug>/ (media), then sync.
-// Usage: npm run new -- <slug> [--format countdown|list|short] [--count N] [--theme threat-brief|clean-light|after-dark|military|military-comparisons|erotic|frontier|blackout]
+// Usage: npm run new -- <slug> [--format countdown|list|short|long-short] [--count N] [--theme threat-brief|clean-light|after-dark|military|military-comparisons|erotic|frontier|blackout|dispatch]
 //        npm run new -- <slug> --format music-video --song <path> [--title "…"] [--subtitle "…"] [--artist "…"] [--theme id]
 //   --format short: a standalone YouTube Short (vertical 9:16, its own article and facts); --count = scenes (1-3, default 1).
+//   --format long-short: a standalone long Short (format "short" with "long": true, 1-2.5 min; config.yaml shorts.long):
+//     --count = chapters (2-10, default shorts.long.scenes), theme shorts.long.theme (dispatch) unless --theme, music at
+//     shorts.long.musicLevel, voice sped up by shorts.long.voiceSpeed.
 //   --format music-video: a song cut to licensed shots (music-video skill). The song is copied in as song.<ext>; the title
 //     comes from the file name ("Artist - Title (Mix).wav") unless given; the artist carries over from the last music video.
 //   For Shorts cut from an existing episode, use npm run short -- <episode> instead.
@@ -15,10 +18,11 @@ import { THEME_IDS } from "../src/kit/themes/ids.ts";
 import { scanAssets } from "./lib/assets.ts";
 import { songFileName, titleFromFile } from "./lib/musicVideo.ts";
 import { ARTICLE_PLACEHOLDER, dateLabelFromSlug, MUSIC_VIDEO_NOTES_TEMPLATE, NOTES_TEMPLATE, templateEpisode, templateMusicVideo, templateShort } from "./lib/template.ts";
+import { loadConfig } from "./lib/config.ts";
 import { fail, info, ok, parseArgs, paths, readJson, requireSlug, ROOT } from "./lib/util.ts";
 import { sync } from "./sync.ts";
 
-const slug = requireSlug("npm run new -- <slug> [--format countdown|list|short] [--count N] [--theme id]", false);
+const slug = requireSlug("npm run new -- <slug> [--format countdown|list|short|long-short] [--count N] [--theme id]", false);
 const { flags } = parseArgs();
 const p = paths(slug);
 if (existsSync(p.src)) fail(`episodes/${slug}/ already exists. Pick another slug or delete that folder first.`);
@@ -77,12 +81,16 @@ Next (the music-video skill has the full procedure):
   process.exit(0);
 }
 
-const format = (flags.format ?? "countdown") as "countdown" | "list" | "short";
-if (!["countdown", "list", "short"].includes(format)) fail(`--format must be "countdown", "list", "short" or "music-video", not "${format}"`);
-const count = flags.count ? Number(flags.count) : format === "countdown" ? 10 : format === "list" ? 5 : 1;
-const maxCount = format === "short" ? 3 : 20;
-if (!Number.isInteger(count) || count < 1 || count > maxCount) fail(`--count must be a whole number from 1 to ${maxCount}${format === "short" ? " (scenes in the Short)" : ""}`);
-const theme = (flags.theme ?? "threat-brief") as string;
+// A long Short is a Short with "long": true (its own layout, length, music level and voice speed).
+const long = flags.format === "long-short";
+const longCfg = loadConfig().shorts.long;
+const format = (long ? "short" : flags.format ?? "countdown") as "countdown" | "list" | "short";
+if (!["countdown", "list", "short"].includes(format)) fail(`--format must be "countdown", "list", "short", "long-short" or "music-video", not "${format}"`);
+const count = flags.count ? Number(flags.count) : long ? longCfg.scenes : format === "countdown" ? 10 : format === "list" ? 5 : 1;
+const [minCount, maxCount] = long ? [2, 10] : format === "short" ? [1, 3] : [1, 20];
+if (!Number.isInteger(count) || count < minCount || count > maxCount)
+  fail(`--count must be a whole number from ${minCount} to ${maxCount}${long ? " (chapters in the long Short)" : format === "short" ? " (scenes in the Short)" : ""}`);
+const theme = (flags.theme ?? (long ? longCfg.theme : "threat-brief")) as string;
 if (!(THEME_IDS as readonly string[]).includes(theme)) fail(`unknown theme "${theme}". Available: ${THEME_IDS.join(", ")}`);
 
 // Carry brand/theme/audio from the latest episode of the same format (slugs sort by date); a Short falls back to the
@@ -96,7 +104,8 @@ for (const pass of format === "short" ? ["same", "any"] : ["same"]) {
       const e = readJson<EpisodeInput>(paths(prev).episode);
       if (isMusicVideo(e)) continue; // no brand or narration settings to carry
       if (pass === "any" || (e.format ?? "countdown") === format) {
-        carry = { brand: e.brand, theme: flags.theme ? (theme as EpisodeInput["theme"]) : e.theme, audio: e.audio };
+        // A long Short keeps its own theme (shorts.long.theme) unless --theme names one.
+        carry = { brand: e.brand, theme: flags.theme || long ? (theme as EpisodeInput["theme"]) : e.theme, audio: e.audio };
         info(`carrying brand, theme and audio settings over from ${prev}`);
       }
     } catch {
@@ -107,7 +116,13 @@ for (const pass of format === "short" ? ["same", "any"] : ["same"]) {
 
 const { episode, script } =
   format === "short"
-    ? templateShort({ slug, theme, scenes: count, carry: carry && { ...carry, brand: carry.brand && { ...carry.brand, dateLabel: dateLabelFromSlug(slug) } } })
+    ? templateShort({
+        slug,
+        theme,
+        scenes: count,
+        carry: carry && { ...carry, brand: carry.brand && { ...carry.brand, dateLabel: dateLabelFromSlug(slug) } },
+        ...(long ? { long: { musicLevel: longCfg.musicLevel, voiceSpeed: longCfg.voiceSpeed } } : {}),
+      })
     : templateEpisode({ slug, format, count, theme, carry });
 
 mkdirSync(p.src, { recursive: true });
@@ -121,7 +136,7 @@ writeFileSync(p.timing, JSON.stringify(estimateTiming(script), null, 1) + "\n");
 scanAssets(slug);
 sync();
 
-ok(`created episodes/${slug}/ and public/episodes/${slug}/ (${format === "short" ? `standalone Short, 9:16, ${count} scene${count > 1 ? "s" : ""}` : `${format}, ${count} segments`}, theme ${episode.theme})`);
+ok(`created episodes/${slug}/ and public/episodes/${slug}/ (${long ? `standalone long Short, 9:16, ${count} chapters, ${longCfg.minSeconds}-${longCfg.maxSeconds} s, music ${longCfg.musicLevel}, voice ${longCfg.voiceSpeed}x` : format === "short" ? `standalone Short, 9:16, ${count} scene${count > 1 ? "s" : ""}` : `${format}, ${count} segments`}, theme ${episode.theme})`);
 console.log(`
 Next:
   1. Save the source article to episodes/${slug}/article.md

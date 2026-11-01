@@ -28,11 +28,16 @@ declined on 2026-10-29.
    **When the text is too long, the credits go first** (the user's rule, 2026-10-31, project-wide): they're replaced by
    one line pointing to the video's credits roll, which has the full list. If it is still too long, the sources shrink
    to "Outlet (date): link" while they fit, with the rest named on one "Also:" line (the video's sources card has every
-   title). Shorts drop the credits (the user's choice) and get the parent's link once it's recorded. If you paste a
-   description by hand, follow the same order: cut the credits before anything else.
+   title). **Shorts** (episodic, standalone and long; the user's rule, 2026-10-31) keep summary, sources and credits
+   when they fit; when they don't, **the credits are dropped whole**, with no pointer line (a Short has no credits
+   roll), and only then do the sources shrink the same way. Episodic Shorts also get the parent's link once it's
+   recorded; standalone Shorts have no "Full video" line. If you paste a description by hand, follow the same order:
+   cut the credits before anything else. A line you add by hand (e.g. a disclosure) goes in `upload.json` after
+   `upload-text`, which rewrites the description each time.
 4. Settings, unless the user says otherwise: **Private** (the user's default since 2026-10-31; it was Unlisted before); **No, it's not made for kids**; **AI use: Yes** when the
    video has a cloned or synthetic voice, AI stills or AI music (the kit's TTS voices are clones, so nearly always);
-   no thumbnail (the user makes and adds their own); no playlist.
+   **Paid promotion: No** on every upload (the user's standing rule, 2026-10-31); no thumbnail (the user makes and
+   adds their own); no playlist.
 
 ## Procedure (Claude in Chrome)
 
@@ -59,7 +64,9 @@ find, javascript_tool). Start from `tabs_context_mcp`, work in the group's own t
    ```
    Paste TITLE and DESCRIPTION from `upload.json` as JSON string literals. Check the returned lengths.
 4. Click **"No, it's not made for kids"**, then **Show advanced settings** (labelled "Show more"), then
-   **"Yes, AI was used"** under *AI use* when it applies.
+   **"Yes, AI was used"** under *AI use* when it applies (the radio's text is just "Yes"; match its aria-label), and
+   **"No, my video doesn't include paid promotion"** under *Paid promotion*, every time. Both radios only render after
+   "Show more", so on a reopened draft check them on `/video/<id>/edit` instead of in the dialog.
 5. **Next** three times to *Visibility*, choose **Private**.
 6. **Copyright checks.** If the footer still says "Checking …", don't save: Studio warns that publishing before checks
    finish can bring a strike. Close the dialog (it keeps everything as a draft) and carry on with the next upload.

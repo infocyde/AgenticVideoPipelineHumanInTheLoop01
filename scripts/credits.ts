@@ -92,7 +92,9 @@ ${ep.summary ?? "<1–2 sentence summary: what this episode covers. Only claims 
 
 ${
   isShort
-    ? `Full video: <link to ${ep.parent ?? "the full episode"} on YouTube>\n\n#Shorts`
+    ? ep.parent
+      ? `Full video: <link to ${ep.parent} on YouTube>\n\n#Shorts`
+      : "#Shorts"
     : `CHAPTERS\n${chapters.map((c) => `${fmtTime(c.at)} ${c.title}`).join("\n")}`
 }
 

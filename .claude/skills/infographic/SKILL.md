@@ -19,9 +19,10 @@ You write one self-contained HTML page per graphic, and `npm run infographic` re
 2. **Theme, not hard-coded style:** use the injected CSS variables for every color and font. Never name a font or write a hex color in the page.
 3. **Safe area:** keep everything inside `left/right 200px, top/bottom 120px` of the 1920×1080 page. The kit zooms b-roll up to 1.18× and drifts it 30px.
 4. **Legible at half size:** in split-layout themes (`military-comparisons`, `erotic`) and in `frontier` (a floating window) the clip plays in a frame about 1040–1060px wide. Body text ≥ 40px, values ≥ 64px, at most ~6 rows or items, one idea per graphic.
-5. **Animate early, then hold:** finish the motion by ~3 s, then hold the finished state. Make the clip **longer than its slot** (default `--seconds 12`). A shorter clip gets slowed to as little as half speed and then loops, which replays the animation.
-6. **Frame-accurate motion only:** use CSS animations/transitions or the Web Animations API (the renderer pauses and seeks them), and/or define `window.bkSeek(ms)` to draw from the time directly (counters, bar widths, SVG line drawing). No `requestAnimationFrame`, `setTimeout`, `setInterval` or `Date.now()` for motion.
-7. **Self-contained:** no external scripts, and no images unless they're licensed media already credited for this episode. Local files next to the HTML resolve relative to `episodes/<slug>/infographics/`.
+5. **Long Shorts:** render with `--size 1200x850` (the page gets `window.BK.width/height`); lay the graphic out for that canvas (labels ≥ 30px, key numbers ≥ 80px), not for 1920×1080.
+6. **Animate early, then hold:** finish the motion by ~3 s, then hold the finished state. Make the clip **longer than its slot** (default `--seconds 12`). A shorter clip gets slowed to as little as half speed and then loops, which replays the animation.
+7. **Frame-accurate motion only:** use CSS animations/transitions or the Web Animations API (the renderer pauses and seeks them), and/or define `window.bkSeek(ms)` to draw from the time directly (counters, bar widths, SVG line drawing). No `requestAnimationFrame`, `setTimeout`, `setInterval` or `Date.now()` for motion.
+8. **Self-contained:** no external scripts, and no images unless they're licensed media already credited for this episode. Local files next to the HTML resolve relative to `episodes/<slug>/infographics/`.
 
 ## Theme variables (injected)
 

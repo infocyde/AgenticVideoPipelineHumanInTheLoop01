@@ -51,6 +51,17 @@ export const configSchema = z.object({
       enabled: z.boolean().default(false),
       count: z.number().int().min(1).max(3).default(2),
       maxSeconds: z.number().min(15).max(180).default(60),
+      // Long Shorts (npm run new --format long-short, npm run short --long): 1–2.5 min, "long": true.
+      long: z
+        .object({
+          minSeconds: z.number().min(15).max(180).default(60),
+          maxSeconds: z.number().min(15).max(180).default(150),
+          musicLevel: z.number().min(0).max(1).default(0.6), // audio.music.level written into a new long Short
+          voiceSpeed: z.number().min(0.8).max(1.5).default(1.1), // audio.voiceSpeed: npm run voice speeds the take up by this
+          scenes: z.number().int().min(2).max(10).default(5), // chapters in a new long Short (--count overrides, 2-10)
+          theme: z.string().default("dispatch"), // theme of a standalone long Short (one from an episode keeps the parent's unless --theme)
+        })
+        .prefault({}),
     })
     .prefault({}),
   music_gen: z

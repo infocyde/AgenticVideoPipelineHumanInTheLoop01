@@ -7,6 +7,8 @@
 //                   shorter than its slot (down to half speed) and then loops it, which replays the animation.
 //   --still         one PNG of the finished state (or of the moment given by --at <ms>)
 //   --theme <id>    use another theme's tokens (default: the episode's theme)
+//   --size WxH      canvas size in px (default 1920x1080). Long Shorts: 1200x850, which fills their media card at 0.8x
+//                   instead of 0.5x, so labels stay readable on a phone (window.BK.width/height tell the page)
 //   --open          only build the page and print its path, to look at it in a browser (no render, no credit)
 //
 // The page gets the theme as CSS variables (--bg, --text, --accent, --highlight, --font-display…; see the skill) and the
@@ -25,7 +27,7 @@ import { IMAGE_EXT, listMedia, scanAssets, VIDEO_EXT } from "./lib/assets.ts";
 import { launchBrowser, newContext } from "./lib/browser.ts";
 import { fail, info, ok, parseArgs, paths, readJson, requireSlug, warn } from "./lib/util.ts";
 
-const usage = "npm run infographic -- <slug> <name> [--seconds 12] [--fps 30] [--still] [--theme <id>] [--force]";
+const usage = "npm run infographic -- <slug> <name> [--seconds 12] [--fps 30] [--still] [--size WxH] [--theme <id>] [--force]";
 const slug = requireSlug(usage);
 const { positional, flags } = parseArgs();
 const str = (k: string) => (typeof flags[k] === "string" ? (flags[k] as string).trim() : undefined);
@@ -52,6 +54,11 @@ const still = !!flags.still;
 const fps = num("fps", 30);
 const seconds = num("seconds", 12);
 if (!still && (seconds < 1 || fps < 1)) fail("--seconds and --fps must be at least 1");
+const sizeArg = str("size") ?? "1920x1080";
+const sizeMatch = /^(\d{3,4})x(\d{3,4})$/.exec(sizeArg);
+if (!sizeMatch) fail(`--size must look like 1200x850, not "${sizeArg}"`);
+// Even numbers: libx264 with yuv420p needs them.
+const [W, H] = [Number(sizeMatch![1]), Number(sizeMatch![2])].map((n) => n - (n % 2));
 
 const outFile = still ? join(p.pub, "images", `${name}.png`) : join(p.pub, "clips", `${name}.mp4`);
 const taken = [...listMedia(join(p.pub, "images"), IMAGE_EXT), ...listMedia(join(p.pub, "clips"), VIDEO_EXT)].filter((f) => f.replace(/\.[^.]+$/, "") === name);
@@ -84,10 +91,10 @@ const head = [
   `<link rel="stylesheet" href="${fontsUrl}">`,
   `<style id="bk-theme">`,
   `:root { ${Object.entries(vars).map(([k, v]) => `--${k}: ${v};`).join(" ")} }`,
-  `html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); color: var(--text); font-family: var(--font-body); }`,
+  `html, body { margin: 0; width: ${W}px; height: ${H}px; overflow: hidden; background: var(--bg); color: var(--text); font-family: var(--font-body); }`,
   `*, *::before, *::after { box-sizing: border-box; }`,
   `</style>`,
-  `<script>window.BK = ${JSON.stringify({ theme: themeId, brand: episode.brand?.name ?? "", seconds: still ? 0 : seconds, fps })};</script>`,
+  `<script>window.BK = ${JSON.stringify({ theme: themeId, brand: episode.brand?.name ?? "", seconds: still ? 0 : seconds, fps, width: W, height: H })};</script>`,
 ].join("\n");
 const html = readFileSync(src, "utf8");
 const built = /<head[^>]*>/i.test(html) ? html.replace(/<head[^>]*>/i, (h) => `${h}\n${head}\n`) : `${head}\n${html}`;
@@ -107,7 +114,7 @@ const framesDir = join(workDir, `${name}-frames`);
 let title = "";
 let sourcesMeta = "";
 try {
-  const ctx = await newContext(browser, { viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 });
+  const ctx = await newContext(browser, { viewport: { width: W, height: H }, deviceScaleFactor: 1 });
   const page = await ctx.newPage();
   const problems: string[] = [];
   page.on("pageerror", (e) => problems.push(e.message));

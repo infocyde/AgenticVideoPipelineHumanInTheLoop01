@@ -276,10 +276,29 @@ export const runCheck = (slug: string): Issue[] => {
     // A standalone Short (npm run new --format short) has no parent; one cut from an episode names it.
     if (ep.parent && !existsSync(join(p.src, "..", ep.parent, "episode.json"))) err("parent", `no episode "${ep.parent}" (episodes/${ep.parent}/episode.json)`);
     const secs = d.timing && !d.timing.estimated ? d.timing.duration : null;
-    const target = loadConfig().shorts.maxSeconds;
+    const shorts = loadConfig().shorts;
+    const target = shorts.maxSeconds;
     if (secs !== null && secs > 180) err("timing", `${secs.toFixed(0)} s of voiceover: a YouTube Short can be at most 3 minutes`);
-    else if (secs !== null && secs > target) warn("timing", `${secs.toFixed(0)} s of voiceover; Shorts work best at ${target} s or less (config.yaml shorts.maxSeconds)`);
+    else if (ep.long) {
+      // A long Short: 1–2.5 min by default (config.yaml shorts.long).
+      const { minSeconds, maxSeconds } = shorts.long;
+      if (secs !== null && secs < minSeconds) warn("timing", `${secs.toFixed(0)} s of voiceover; a long Short aims for ${minSeconds}–${maxSeconds} s (config.yaml shorts.long). Add a chapter, or drop "long" for a regular Short`);
+      else if (secs !== null && secs > maxSeconds) warn("timing", `${secs.toFixed(0)} s of voiceover; a long Short aims for ${minSeconds}–${maxSeconds} s (config.yaml shorts.long)`);
+    } else if (secs !== null && secs > target) warn("timing", `${secs.toFixed(0)} s of voiceover; Shorts work best at ${target} s or less (config.yaml shorts.maxSeconds)`);
   }
+  if (ep.long && ep.format !== "short") err("long", '"long": true is only for Shorts ("format": "short")');
+  // The voice speed is applied when `npm run voice` makes the take; a take made at another speed (or a recording) doesn't have it.
+  const wantSpeed = ep.audio.voiceSpeed ?? 1;
+  const voiceJson = join(p.src, "voice.json");
+  if (existsSync(voiceJson)) {
+    let made = 1;
+    try {
+      made = (JSON.parse(readFileSync(voiceJson, "utf8")) as { voiceSpeed?: number }).voiceSpeed ?? 1;
+    } catch {
+      /* unreadable voice.json: nothing to compare */
+    }
+    if (made !== wantSpeed) warn("audio.voiceSpeed", `voiceover.mp3 was voiced at ${made}x but audio.voiceSpeed is ${wantSpeed}: run npm run voice -- ${slug} --force`);
+  } else if (wantSpeed !== 1 && existsSync(join(p.pub, ep.audio.voiceover))) warn("audio.voiceSpeed", `audio.voiceSpeed (${wantSpeed}x) is applied by npm run voice; this voiceover wasn't made by it, so it plays at its own speed`);
 
   // --- generated files ---
   if (!existsSync(p.timing)) err("timing", `timing.json missing: run \`npm run align -- ${slug}\``);

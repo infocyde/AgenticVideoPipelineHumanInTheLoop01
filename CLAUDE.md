@@ -2,7 +2,7 @@
 
 This repo turns an article plus a voiceover into a short narrated YouTube video (Remotion). You are the **producer**: you make one episode at a time by filling one episode folder with **data and media only**.
 
-**To make an episode, use the `new-episode` skill** (`.claude/skills/new-episode/SKILL.md`). It has the full step-by-step procedure and the asset-sourcing prompts. **To make a music video** from the user's own song (`"format": "music-video"`: the song replaces the voiceover, the lyric sheet the script), **use the `music-video` skill**. **To upload the finished videos to YouTube** (Private, in the user's own Chrome), **use the `youtube-upload` skill**. **To find video ideas** ("recon"), **use the `recon` skill**: it reads the user's X lists and X trending in their own browser, read-only, and reports a ranked list; posts are leads, never facts. This file holds the rules that apply at every step.
+**To make an episode, use the `new-episode` skill** (`.claude/skills/new-episode/SKILL.md`). It has the full step-by-step procedure and the asset-sourcing prompts. **To make a music video** from the user's own song (`"format": "music-video"`: the song replaces the voiceover, the lyric sheet the script), **use the `music-video` skill**. **To upload the finished videos to YouTube** (Private, in the user's own Chrome), **use the `youtube-upload` skill**. **To find video ideas** ("recon"), **use the `recon` skill**: it reads the user's X lists and X trending in their own browser, read-only, and reports a ranked list; posts are leads, never facts. **The scheduled auto run** (Task Scheduler, 06:00 and 18:00: `scripts/auto/daily-run.ps1`) runs recon and then **the `auto-long-shorts` skill**, which makes 3 long Shorts from that report end to end and uploads them Private. It is the one place the handoffs of rules 6 and 7 are waived (the user's standing approval, 2026-11-01). This file holds the rules that apply at every step.
 
 ## Hard rules
 
@@ -13,17 +13,34 @@ This repo turns an article plus a voiceover into a short narrated YouTube video 
 5. **Captions show what was said.** If the recording differs from `voiceover.txt`, update `voiceover.txt` to match the audio (see `heard.txt`) and re-run align. Never the other way round. With local TTS the audio is made from the text, so when it misreads a word, respell that word in `voiceover.txt` for the ear (or change `--seed`) and voice it again until the audio says the script. **Voice check, every project:** once a voiceover (episode or Short, TTS or recorded) is laid out and aligned, run `npm run voice-check -- <slug>`. It scans every pause for harsh stops (a word cut off while still sounding). Look at each HARSH and CHECK item (its snippet and waveform in `work/voice-check/`) and fix every real cut-off by re-voicing or rewording the line, then run it again, before the preview. Log the result in `notes.md`.
 6. **Wait for the user** at the three handoffs: script approval, the recorded MP3, and preview approval. When `config.yaml` has `voice.enabled: true`, there is no MP3 handoff: right after script approval, voice it yourself with `npm run voice -- <slug>` and carry on (the user hears it in the preview). When it's `false`, wait for the user's MP3 and don't run `npm run voice`. **Music videos** have no voice step; their three stops are the lyrics differences (`lyrics-diff.txt`), the shot plan, and preview approval.
 7. **Preview before every render.** Right before rendering, run `npm run preview -- <slug>` in the background; it opens the user's browser on the episode in Remotion Studio. Wait until they've watched it and approved, stop the preview, and only then run `npm run render`. Don't ask about AC power: the user is always plugged in.
+8. **Similarity review before research, for every episode, standalone Short and long Short** (not Shorts cut from an episode, not music videos). Compare the idea with the videos already made (section 0 of the `new-episode` skill) and decide one of three verdicts:
+   - **Skip** an idea too close to an existing one.
+   - Make it an **update** when there's a significant new development. An update assumes viewers know the basics, recaps in a sentence or two, and focuses on what changed.
+   - Go ahead as **new** otherwise.
+
+   Log the verdict in `notes.md`.
+
+## Agents
+
+When you hand production steps to subagents (several episodes or Shorts at once, a sourcing pass), start each step on the model that `config.yaml` `agents:` names for it:
+
+- `opus` means the latest Claude Opus and `sonnet` the latest Sonnet, both at **high** effort (the user's standing instruction). Pass the model alias and `effort: "high"` to the agent.
+- **Order of the steps:** `similarity` → `research` → `factcheck` → `script` → `review` → `production` and `media` in parallel → `review` of the credits and contact sheets.
+- Consecutive steps with the same model run in one agent.
+- **Review:** `review` reads the outputs before voicing and fixes them. If it names the model the main session already runs on, do it yourself instead of starting an agent.
+- **What changes take effect:** a change to `agents:` applies only to agents started after it.
+- **Never delegated:** compose, render and upload stay in the main session, one at a time.
 
 ## Commands (all take the episode slug)
 
 ```
-npm run new -- <slug> [--format countdown|list|short] [--count N] [--theme threat-brief|clean-light|after-dark|military|military-comparisons|erotic|frontier|blackout]
+npm run new -- <slug> [--format countdown|list|short|long-short] [--count N] [--theme threat-brief|clean-light|after-dark|military|military-comparisons|erotic|frontier|blackout|dispatch]
 npm run new -- <slug> --format music-video --song <path> [--title "…"] [--subtitle "…"] [--artist "…"]   # music video (music-video skill)
 npm run lyrics -- <slug> [--force] [--aligner mms|whisper]   # music videos: lyrics.txt + song -> timing.json (words, lines, beats), lyrics-diff.txt
 npm run voice -- <slug> [--force] [--engine qwen-cloud|qwen|chatterbox|kokoro|elevenlabs]   # TTS (config.yaml voice:): voiceover.txt -> voiceover.mp3, then align; elevenlabs: elevenlabs skill
 npm run voice-check -- <slug>             # scan the laid-out voiceover for harsh stops (words cut off at pauses); every project
 npm run compose -- <slug> bed --prompt "..." [--force]   # local music bed (config.yaml music_gen:, compose-music skill), new random seed each run
-npm run short -- <slug> [--count 1-3]     # scaffold YouTube Shorts (<slug>-short1…) from an episode; each is its own small episode
+npm run short -- <slug> [--count 1-3] [--long [--scenes 2-10] [--theme id]]   # scaffold YouTube Shorts (<slug>-short1…) from an episode; each is its own small episode; --long: long Shorts
 npm run align -- <slug> [--estimate]      # timing.json from voiceover.mp3 (or rough, from text only)
 npm run assets -- <slug>                  # assets.json from clips/, images/, library sfx/music
 npm run generate -- <slug> <name> --prompt "..." [--detail high]   # last-resort AI still: local Z-Image Turbo or FLUX 3 (config.yaml image_gen:, generate-image skill)
@@ -33,7 +50,7 @@ npm run youtube -- <slug> clip <id|url> <name> --from <t> --to <t> [--license PD
 npm run stock -- <slug> search "<query>" | get <site>:<id> <name> | import <file> <name> --site … --page <url> --author "…"   # music videos only (stock-media skill)
 npm run shot -- <slug> <name> --url <url> [--selector "<css>"] [--license PD]   # web-page screenshot still (PD/CC pages only)
 npm run xpost -- <slug> <post url> --basis "<why the account counts>" [--still <name>] [--no-media]   # post on X as a source (x_posts.enabled only)
-npm run infographic -- <slug> <name> [--still]     # render episodes/<slug>/infographics/<name>.html (see infographic skill)
+npm run infographic -- <slug> <name> [--still] [--size 1200x850]     # render episodes/<slug>/infographics/<name>.html (see infographic skill)
 npm run explainer -- new|storyboard|frames|render <name> [--episode <slug>]   # illustrated explainer (see explainer skill)
 npm run sfx -- <slug> <name> --sound <kit sound> | --recipe   # synthesize a new sound into the episode's sfx/ (npm run sfx -- list)
 npm run check -- <slug>                   # 0 errors required
@@ -41,7 +58,7 @@ npm run preview -- <slug>                 # check, start Studio, open the browse
 npm run render -- <slug>                  # only after the user approves the preview -> out/<slug>/youtube.mp4
 npm run thumb -- <slug>                   # out/<slug>/thumbnail.png
 npm run credits -- <slug>                 # out/<slug>/DESCRIPTION.md
-npm run upload-text -- <slug> [--url <link>]   # out/<slug>/upload.json: YouTube title + description (≤ 5,000 chars; too long: credits dropped first); --url records the uploaded link (youtube-upload skill)
+npm run upload-text -- <slug> [--url <link>]   # out/<slug>/upload.json: YouTube title + description (≤ 5,000 chars; too long: credits dropped first, Shorts included); --url records the uploaded link (youtube-upload skill)
 npm run pick-file -- <path> --tab "<tab title>"   # fill the browser's Open dialog with a file (any size; youtube-upload skill, Windows)
 npm run kill                              # stop leftover render processes from this repo
 ```
@@ -67,7 +84,8 @@ npm run kill                              # stop leftover render processes from 
 - Shared sounds and the music bed: `public/library/` (`sfx/`, `music/`, `credits.json`). Available sfx: alarm, glitch, impact, riser, tick, typing, whoosh, whoosh2. Music: bed.
 - **A sound the library doesn't have:** synthesize it with `npm run sfx -- <slug> <name> --sound <kit sound>` (one of the ~40 sounds in the explainer sound kit, with options such as `--f`, `--dur`, `--material`) or `--recipe` (layer kit sounds and raw tones and noise in `episodes/<slug>/sfx/<name>.js`). It lands in the episode's `sfx/`, normalized like the library and credited `OWN WORK`, and is used by name in `sfxExtra`. A name that matches a library sound replaces it for that episode. `--library` adds it to `public/library/` for every episode instead.
 - Map country names must match world-atlas 110m (e.g. "United States of America", "Dem. Rep. Congo", "Bosnia and Herz."). `check` warns and suggests names.
-- **Shorts** (`format: "short"`, vertical 9:16, `config.yaml` `shorts:`): each is its own small episode (`npm run short -- <slug>` from an episode, or `npm run new -- <slug> --format short` standalone), with its own ≤ 60 s script from the parent's facts. The procedure is section 8 of the `new-episode` skill. Shorts turn the on-screen sources and credits rolls off; their sources and credits go in the description (`npm run credits`).
+- **Shorts** (`format: "short"`, vertical 9:16, `config.yaml` `shorts:`): each is its own small episode (`npm run short -- <slug>` from an episode, or `npm run new -- <slug> --format short` standalone), with its own ≤ 60 s script from the parent's facts. The procedure is section 8 of the `new-episode` skill. Shorts turn the on-screen sources and credits rolls off; their sources and credits go in the description (`npm run credits`). **When a Short's description doesn't fit YouTube's 5,000 characters, drop the credits** (all Shorts: episodic, standalone and long; the user's rule, 2026-10-31). `upload-text` does it, before it shortens any source.
+- **Long Shorts** (`"long": true` on a Short; `npm run new -- <slug> --format long-short` or `npm run short -- <slug> --long`; `config.yaml` `shorts.long:`): 1:00–2:30, 2–10 chapters, theme `dispatch` by default, music at **0.6**, voice played back at **1.1×** (`audio.voiceSpeed`, applied by `npm run voice`; 1.2× until 2026-11-01), so a script of about 170–430 words. Their layout shows every image, infographic and clip whole in a card (never cropped); make their infographics with `--size 1200x850`. Before render they get a **final voice pass for awkward sentence endings** (voice-check's HARSH and CHECK items, sentence-final words under 0.15 s in `timing.json`, last words in `heard.txt`), logged in `notes.md`. The procedure is section 8b of the `new-episode` skill.
 - Every `episode.json` (Shorts too) gets a **`summary`**: 1–2 sentences for the top of the YouTube description, facts from the article and fact-check only. `npm run credits` writes it into `DESCRIPTION.md`, which it regenerates each time, so never edit the summary there by hand.
 - Every video ends with a **sources scene** and a **credits roll** (on by default; `outro.sourcesCard` / `outro.creditsCard`). So `sources` in `episode.json` must list what the script relies on, and every media file must be in `credits.json`; the roll is built from it.
 - Human docs: `README.md`.

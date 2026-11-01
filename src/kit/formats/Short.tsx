@@ -19,6 +19,7 @@ import { SourcesCard } from "../scenes/SourcesCard";
 import { useSkin } from "../skins";
 import type { MapFocus } from "../schema";
 import { alpha } from "../themes";
+import { LONG_CAPTIONS, longShortScenes } from "./LongShort";
 
 export const SHORT_WIDTH = 1080;
 export const SHORT_HEIGHT = 1920;
@@ -360,12 +361,16 @@ const ShortOutro: React.FC = () => {
   );
 };
 
-/** The vertical timeline: same scenes, chrome and audio as an episode, without the ticker. */
+/**
+ * The vertical timeline: same scenes, chrome and audio as an episode, without the ticker. A long Short (`"long": true`)
+ * uses the long-Short scenes (LongShort.tsx: chapter rail, uncropped media cards) unless its theme's skin has Short scenes.
+ */
 export const Short: React.FC = () => {
-  const { timeline, theme } = useEpisode();
+  const { episode, timeline, theme } = useEpisode();
   const { coldOpen, segments, texts, outro, sourcesCard, creditsCard, endScreen } = timeline;
   const skin = useSkin();
-  const v = skin.short ?? {};
+  const long = !skin.short && !!episode.long;
+  const v = skin.short ?? (long ? longShortScenes : {});
   const Open = v.ColdOpen ?? ShortColdOpen;
   const Seg = v.Segment ?? ShortSegment;
   const Text = v.Text ?? ShortText;
@@ -411,7 +416,7 @@ export const Short: React.FC = () => {
       <Sequence durationInFrames={outro.to} layout="none">
         <Bar />
       </Sequence>
-      <Caps box={CAPTIONS} />
+      <Caps box={long ? LONG_CAPTIONS : CAPTIONS} />
       <IssuesOverlay />
       <Voiceover />
       <MusicBed />

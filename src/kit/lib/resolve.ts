@@ -5,8 +5,10 @@ import { captionChunks, type Chunk, findPhrase, FPS, LEAD, TAIL, toFrame } from 
 
 export type Issue = { level: "error" | "warning"; where: string; msg: string };
 
-/** `infographic`: made by npm run infographic (overlay layouts put it in a panel). */
-export type Asset = { kind: "clip"; file: string; duration: number; attribution?: string; infographic?: boolean } | { kind: "image"; file: string; infographic?: boolean };
+/** `infographic`: made by npm run infographic (overlay layouts put it in a panel). `width`/`height`: pixel size, when probed. */
+type AssetSize = { width?: number; height?: number };
+export type Asset = ({ kind: "clip"; file: string; duration: number; attribution?: string; infographic?: boolean } | { kind: "image"; file: string; infographic?: boolean }) & AssetSize;
+const sizeOf = (m: AssetSize): AssetSize => (m.width && m.height ? { width: m.width, height: m.height } : {});
 
 export type ResolvedVisual = { name: string; note?: string; grade?: boolean; panel?: boolean; at: number; asset: Asset | null };
 export type ResolvedStat = Stat & { at: number };
@@ -66,9 +68,9 @@ export type Timeline = {
 
 export const resolveVisual = (assets: AssetManifest, name: string): Asset | null => {
   const clip = assets.clips[name];
-  if (clip) return { kind: "clip", file: clip.file, duration: clip.duration ?? 1, ...(clip.attribution ? { attribution: clip.attribution } : {}), ...(clip.infographic ? { infographic: true } : {}) };
+  if (clip) return { kind: "clip", file: clip.file, duration: clip.duration ?? 1, ...(clip.attribution ? { attribution: clip.attribution } : {}), ...(clip.infographic ? { infographic: true } : {}), ...sizeOf(clip) };
   const img = assets.images[name];
-  if (img) return { kind: "image", file: img.file, ...(img.infographic ? { infographic: true } : {}) };
+  if (img) return { kind: "image", file: img.file, ...(img.infographic ? { infographic: true } : {}), ...sizeOf(img) };
   return null;
 };
 

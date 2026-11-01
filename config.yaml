@@ -81,6 +81,19 @@ shorts:
   count: 2          # Shorts per episode, 1-3 (the producer picks the strongest items)
   maxSeconds: 60    # target length; check warns above this (YouTube allows up to 3 minutes)
 
+  # Long Shorts: vertical like any Short, but 1 to 2.5 minutes with 2-10 chapters, a chapter rail across the top,
+  # and every image, infographic and clip shown whole in a card (never cropped to the tall frame). "long": true in
+  # episode.json. Make one standalone (npm run new -- <slug> --format long-short) or from an episode
+  # (npm run short -- <slug> --long). The new-episode skill, section 8b, has the procedure.
+  long:
+    minSeconds: 60    # check warns below this...
+    maxSeconds: 150   # ...and above this (2:30)
+    musicLevel: 0.6   # audio.music.level in every new long Short (louder than the 0.45 episode default)
+    voiceSpeed: 1.1   # audio.voiceSpeed: npm run voice plays the take back this much faster (pitch kept), then aligns
+                      # At 1.1x a long Short holds about 2.85 words a second: ~170 words for 1:00, ~430 for 2:30 (1.2 until 2026-11-01)
+    scenes: 5         # chapters in a new long Short (--count 2-10 overrides)
+    theme: dispatch   # theme of a standalone long Short (signal yellow on ink, made for this layout); --theme overrides
+
 music_gen:
   # Local background music with Stable Audio 3 (Stability AI), instead of a library or hand-made bed.
   #   true:  for every episode and Short the producer writes a prompt that fits the theme and mood and runs
@@ -196,3 +209,32 @@ recon:
   trend_dives: 5    # at most this many trends opened to see what they're about
   ideas: 8          # at most this many ideas in the report
   min_accounts: 3   # a story needs posts from at least this many different accounts
+
+auto_long_shorts:
+  # The scheduled auto run (scripts/auto/daily-run.ps1 via Task Scheduler, 06:00 and 18:00; install or remove with
+  # scripts/auto/install-task.ps1 [-Remove]): recon, then the auto-long-shorts skill makes the best ideas from that
+  # report into long Shorts end to end, with no handoffs, and uploads them. Run report: recon/runs/<date>-<HHmm>.md.
+  min: 3             # aim for at least this many; fewer only when fewer ideas survive the similarity and fact checks
+  max: 3             # never more than this many per run (3 per session since 2026-11-01; was 7)
+  min_free_gb: 25    # C: must have this much free space or the run stops before producing anything
+  max_agents: 3      # background agents running at once, nested ones included; the rest wait in a queue (since
+                     # 2026-11-01: fewer agents = less RAM and usage, and the first Short reaches YouTube sooner)
+  visibility: private  # uploads stay Private; publishing is yours
+
+agents:
+  # Which model each delegated production step runs on, when Claude hands a step to a subagent (CLAUDE.md "Agents").
+  #   opus:   the latest Claude Opus, high reasoning effort.
+  #   sonnet: the latest Claude Sonnet, high reasoning effort (cheaper and faster; see the trade-offs below).
+  # Steps that share a model run in one agent, in order. A change takes effect for agents started after it; agents
+  # already running keep their model. Compose, render and upload always run in the main session, one at a time.
+  similarity: sonnet   # before research, every episode and Short: compare the idea with existing videos; skip it, make it
+                       # an update, or go ahead as new (new-episode skill, section 0). Listing and reading: low risk.
+  research: sonnet     # find and read sources, write research.md and article.md. Mostly retrieval: low risk.
+  factcheck: sonnet    # verify the premise and every figure, fill the notes.md fact-check table. The judgment step;
+                       # the review below covers it.
+  script: sonnet       # write voiceover.txt (word count, markers, ear rules). check and voice-check catch most slips.
+  review: opus         # read notes.md, article.md and voiceover.txt before voicing, and the credits table and contact
+                       # sheets after sourcing; fix what's wrong. Keep this on opus when the steps above are sonnet.
+  media: sonnet        # find, license-check, download and credit the footage and stills. The biggest token cost.
+  production: opus     # everything else a producer agent does: voice and the final voice pass, infographics,
+                       # episode.json, assets, check and the test stills.

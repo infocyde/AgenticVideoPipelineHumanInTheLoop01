@@ -381,6 +381,7 @@ For a quick partial render, pass Remotion flags after a second `--`: `npm run re
 YouTube Shorts are vertical videos (9:16, 1080×1920), 60 seconds or less here. In the kit, each Short is a **small episode of its own** (`format: "short"`, `aspect: "9:16"`) with its own script, voiceover and `episode.json`, so every command above works on it. A Short has a hook stamp, a title, 1–3 scenes (b-roll full height, each opening on its map if it has one, with the headline and stats stacked in the clear zone) and an outro with the CTA. Everything sits clear of the Shorts player's own overlays: the icons at the top, the title and channel at the bottom, and the buttons on the right.
 
 - **From an episode:** `npm run short -- <slug> [--count 1-3]` makes `<slug>-short1`, `-short2`, … with the parent's theme, brand, music, sources and article, and its media hard-linked in (no extra disk space) with the credits. Write each Short's script (≤ 60 s, from the parent's facts) and `episode.json`, voice or record it, align, check, preview, and render. `npm run render -- <slug>-short1` also copies the result to `out/<slug>/short1.mp4`, next to the main video.
+- **Long Shorts** (1:00–2:30, `"long": true`): `npm run new -- <slug> --format long-short` or `npm run short -- <slug> --long`. They get the `dispatch` theme, a chapter rail, every visual shown whole in a card, music at 0.6 and the voice played back at 1.1× (`config.yaml` `shorts.long`). Make their infographics with `--size 1200x850`.
 - **Standalone:** `npm run new -- <slug> --format short [--count 1-3]` (count = scenes) makes a Short with its own article and fact-check, carrying the channel's brand and theme.
 - **config.yaml** turns the per-episode Shorts on (`shorts.enabled`), sets how many (`shorts.count`, 1–3) and the target length (`shorts.maxSeconds`; check warns above it and errors past YouTube's 3-minute limit). When it's on, Claude writes the Short scripts at the script-approval step, so you record everything in one session, and renders the Shorts after the main video.
 - Shorts have no on-screen sources and credits rolls; `npm run credits -- <short>` puts the sources, credits, a link line for the full video and `#Shorts` in its `DESCRIPTION.md`. There's no thumbnail step: YouTube picks a frame.
@@ -418,7 +419,7 @@ Say *"upload them to YouTube"* after the render and Claude runs the `youtube-upl
 - **Private** by default (it was Unlisted before 2026-10-31). Making a video Unlisted or Public, scheduling, end screens, cards and thumbnails stay your call.
 - **Main video first**, so each Short's description can link to it. `npm run upload-text -- <slug>` writes the title and a description YouTube accepts (≤ 5,000 characters). When the full description is too long, the credits go first, replaced by a line pointing to the video's credits roll; then the sources shrink. Shorts get the sources and the main video's link, without credits.
 - **Claude picks the files itself.** The extension's own upload tool stops at 10 MB, so `npm run pick-file` (Windows, pywinauto in `.venv`) brings the Studio tab to the front, fills the browser's Open dialog with the video's path and presses Open, then switches back to your tab after 2 seconds. Don't click in the browser during those 2 seconds. If it fails twice, Claude asks you to drag the file in instead.
-- Claude sets **not made for kids**, and **AI use: Yes** when there's a cloned voice, AI stills or AI music, and saves only once YouTube's copyright checks are complete. An upload still being checked is left as a draft and finished later.
+- Claude sets **not made for kids**, **AI use: Yes** when there's a cloned voice, AI stills or AI music, and **paid promotion: No** on every upload. It saves only once YouTube's copyright checks are complete. An upload still being checked is left as a draft and finished later.
 - The links go in the episode's `notes.md`.
 
 `npm run pick-file` needs `pywinauto` in `.venv`: `npm run setup:align` installs it from `requirements.txt`, or run `.venv\Scripts\python.exe -m pip install pywinauto` once.
@@ -429,11 +430,11 @@ Say *"upload them to YouTube"* after the render and Claude runs the `youtube-upl
 
 | Command | Does |
 |---|---|
-| `npm run new -- <slug> [--format list\|short] [--count N] [--theme id]` | Scaffold an episode (or a standalone Short) with placeholder content |
+| `npm run new -- <slug> [--format list\|short\|long-short] [--count N] [--theme id]` | Scaffold an episode (or a standalone Short or long Short) with placeholder content |
 | `npm run new -- <slug> --format music-video --song <path> [--title "…"] [--subtitle "…"] [--artist "…"]` | Scaffold a music video from a song (copied in as `song.<ext>`, credited OWN WORK) |
 | `npm run lyrics -- <slug> [--force] [--model medium] [--aligner mms\|whisper]` | Music videos: align `lyrics.txt` to the song (vocal stem, Whisper, forced alignment) and find the beats |
 | `npm run setup:lyrics` | One-time: add Demucs and librosa to `.venv-music` (for `npm run lyrics`) |
-| `npm run short -- <slug> [--count 1-3] [--only N]` | Scaffold YouTube Shorts from an episode: `<slug>-short1…`, media hard-linked from the parent |
+| `npm run short -- <slug> [--count 1-3] [--only N] [--long]` | Scaffold YouTube Shorts from an episode: `<slug>-short1…`, media hard-linked from the parent; `--long`: long Shorts (1–2.5 min) |
 | `npm run sync` | Regenerate `src/episodes.generated.ts` (run by `new`, `dev`, `render`, `align`) |
 | `npm run voice -- <slug> [--engine qwen\|chatterbox\|kokoro] [--reference voices/x.wav] [--seed N] [--force] [--out file.mp3] [--ignore-off]` | Local TTS: voice `voiceover.txt` to `voiceover.mp3`, then align (settings in `config.yaml`) |
 | `npm run voice -- --sample "text"` / `--voices` / `--record <name>` | Audition a voice or setting / list your voices and Kokoro's / record a new voice from the mic |

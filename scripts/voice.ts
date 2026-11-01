@@ -15,6 +15,8 @@
 //                     record your voice from the mic into voices/<name>.wav (default narrator), check it, play a cloned sample
 //   --force       replace an existing voiceover.mp3 (kept as voiceover.prev.mp3), or re-record an existing voices/<name>.wav
 //   --ignore-off  voice one episode while config.yaml has voice.enabled: false (still never overwrites without --force)
+// An episode's audio.voiceSpeed (long Shorts: 1.1) plays the finished take back that much faster, pitch kept, before
+// align, so captions and cues follow the sped-up audio. It's recorded in voice.json; check warns if the two differ.
 import { execFileSync, spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
@@ -195,11 +197,17 @@ if (isMusicVideoSlug(slug)) fail(`${slug} is a music video: there is no voiceove
 const p = paths(slug);
 if (!existsSync(p.script)) fail(`episodes/${slug}/voiceover.txt is missing. Write (and get approval for) the script first.`);
 let voName = "voiceover.mp3";
+// audio.voiceSpeed (long Shorts: 1.1) speeds the finished take up, pitch kept, before it is aligned.
+let tempo = 1;
 try {
-  voName = readJson<EpisodeInput>(p.episode).audio?.voiceover ?? voName;
+  const audio = readJson<EpisodeInput>(p.episode).audio;
+  voName = audio?.voiceover ?? voName;
+  tempo = audio?.voiceSpeed ?? 1;
 } catch {
-  /* default name */
+  /* default name and speed */
 }
+if (!(tempo >= 0.8 && tempo <= 1.5)) fail(`audio.voiceSpeed must be between 0.8 and 1.5, not ${tempo}`);
+const speedNote = tempo !== 1 ? `, played back at ${tempo}x` : "";
 const out = join(p.pub, voName);
 
 if (testOut) {
@@ -210,7 +218,7 @@ if (testOut) {
   mkdirSync(work, { recursive: true });
   const t0 = new Date();
   info(`start ${t0.toLocaleTimeString()}: voicing episodes/${slug}/voiceover.txt with ${label} (test take; ${voName}, timing.json and voice.json are not touched)`);
-  const tmp = synth(p.script, join(work, "take.mp3"), work);
+  const tmp = synth(p.script, join(work, "take.mp3"), work, tempo);
   mkdirSync(join(dest, ".."), { recursive: true });
   renameSync(tmp, dest);
   const t1 = new Date();
@@ -227,17 +235,17 @@ if (existsSync(out) && !flags.force) fail(`public/episodes/${slug}/${voName} alr
 
 const work = join(p.out, "voice");
 mkdirSync(work, { recursive: true });
-info(`voicing episodes/${slug}/voiceover.txt with ${label}…`);
-const tmpMp3 = synth(p.script, join(work, "voiceover.mp3"), work);
+info(`voicing episodes/${slug}/voiceover.txt with ${label}${speedNote}…`);
+const tmpMp3 = synth(p.script, join(work, "voiceover.mp3"), work, tempo);
 if (existsSync(out)) renameSync(out, out.replace(/\.mp3$/, ".prev.mp3"));
 mkdirSync(p.pub, { recursive: true });
 renameSync(tmpMp3, out);
 const script = readFileSync(p.script, "utf8");
 writeFileSync(
   join(p.src, "voice.json"),
-  JSON.stringify({ ...settings, reference: reference ? rel(reference) : null, made: new Date().toISOString(), scriptSha1: createHash("sha1").update(script).digest("hex") }, null, 2) + "\n",
+  JSON.stringify({ ...settings, reference: reference ? rel(reference) : null, ...(tempo !== 1 ? { voiceSpeed: tempo } : {}), made: new Date().toISOString(), scriptSha1: createHash("sha1").update(script).digest("hex") }, null, 2) + "\n",
 );
-ok(`public/episodes/${slug}/${voName}  (${label}; settings in episodes/${slug}/voice.json)`);
+ok(`public/episodes/${slug}/${voName}  (${label}${speedNote}; settings in episodes/${slug}/voice.json)`);
 await quotaAfter();
 
 if (flags["no-align"]) {
@@ -250,8 +258,8 @@ if (flags["no-align"]) {
 Fix it by respelling the word in voiceover.txt for the ear (it is also the caption text), then run npm run voice -- ${slug} --force.`);
 }
 
-/** Run voice.py on a text file, return the MP3 path. */
-function synth(textFile: string, mp3: string, dir: string): string {
+/** Run voice.py on a text file, return the MP3 path. `tempo` ≠ 1 speeds the take up (ffmpeg atempo keeps the pitch). */
+function synth(textFile: string, mp3: string, dir: string, tempo = 1): string {
   const args = join(dir, "voice-args.json");
   const wav = mp3.replace(/\.mp3$/, ".wav");
   writeFileSync(args, JSON.stringify({ ...settings, text: textFile, out: wav }));
@@ -265,7 +273,8 @@ function synth(textFile: string, mp3: string, dir: string): string {
   };
   const code = run(python, [voicePy, args], { env });
   if (code !== 0 || !existsSync(wav)) fail("speech synthesis failed (see above).");
-  if (run("ffmpeg", ["-v", "error", "-y", "-i", wav, "-ar", "44100", "-c:a", "libmp3lame", "-q:a", "2", mp3]) !== 0) fail("ffmpeg could not encode the MP3.");
+  const speed = tempo !== 1 ? ["-filter:a", `atempo=${tempo}`] : [];
+  if (run("ffmpeg", ["-v", "error", "-y", "-i", wav, ...speed, "-ar", "44100", "-c:a", "libmp3lame", "-q:a", "2", mp3]) !== 0) fail("ffmpeg could not encode the MP3.");
   rmSync(wav);
   rmSync(args);
   return mp3;

@@ -113,22 +113,28 @@ export type ShortTemplateOpts = {
   carry?: Partial<EpisodeInput>;
   /** A visual for the placeholder, so the preview isn't blank (the parent's first clip). */
   visual?: string;
+  /** A long Short (config.yaml shorts.long): 2–10 chapters, its music level and voice speed, `"long": true`. */
+  long?: { musicLevel: number; voiceSpeed: number };
 };
 
 /**
- * Placeholder YouTube Short (vertical 9:16, format "short"): one hook beat, a title, 1–3 scenes and an outro + CTA,
+ * Placeholder YouTube Short (vertical 9:16, format "short"): one hook beat, a title, 1–3 scenes (2–10 chapters for a
+ * long Short) and an outro + CTA,
  * with a matching script, so it previews right away. No on-screen sources or credits rolls: on Shorts they go in the
  * description (npm run credits).
  */
-export const templateShort = ({ slug, theme, scenes = 1, parent, title, carry, visual }: ShortTemplateOpts) => {
-  const ORD = ["First", "Second", "Third"];
-  const n = Math.max(1, Math.min(3, scenes));
+export const templateShort = ({ slug, theme, scenes = 1, parent, title, carry, visual, long }: ShortTemplateOpts) => {
+  const ORD = ["First", "Second", "Third", "Fourth", "Fifth", "Sixth", "Seventh", "Eighth", "Ninth", "Tenth"];
+  const n = long ? Math.max(2, Math.min(10, scenes)) : Math.max(1, Math.min(3, scenes));
+  // A long Short's placeholder chapters run ~15 s each, so the estimated preview is long-Short sized.
+  const filler = " Replace this chapter with two or three sentences from the article and its fact-check, each one adding a new detail, a number or a consequence.";
   const script = [
     "Here is the hook line.",
-    "This is the short title.",
-    ...ORD.slice(0, n).map((o, i) => (i === 0 ? `${o}, the one thing to know, and it costs one hundred million.` : `${o}, another point worth knowing.`)),
+    long ? `These are the ${numberWord(n)} things to know.` : "This is the short title.",
+    ...ORD.slice(0, n).map((o, i) => (i === 0 ? `${o}, the one thing to know, and it costs one hundred million.` : `${o}, another point worth knowing.`) + (long ? filler : "")),
     "Full story on the channel. Subscribe for more.",
   ].join("\n\n");
+  const music = carry?.audio?.music ?? (long ? { file: "bed", duck: true } : undefined);
   const visuals = visual ? [{ name: visual }] : [];
   const episode: EpisodeInput = {
     $schema: "../episode.schema.json",
@@ -137,18 +143,22 @@ export const templateShort = ({ slug, theme, scenes = 1, parent, title, carry, v
     title: title ?? "Short title",
     theme: (carry?.theme ?? theme) as EpisodeInput["theme"],
     format: "short",
+    ...(long ? { long: true } : {}),
     aspect: "9:16",
     brand: { ...(carry?.brand ?? { name: "YOUR BRAND", tagline: "// SHORTS" }), dateLabel: carry?.brand?.dateLabel ?? dateLabelFromSlug(slug) },
     audio: {
       voiceover: "voiceover.mp3",
-      ...(carry?.audio?.music ? { music: { ...carry.audio.music, level: MUSIC_LEVEL } } : {}),
+      ...(music ? { music: { ...music, level: long ? long.musicLevel : MUSIC_LEVEL } } : {}),
+      ...(long ? { voiceSpeed: long.voiceSpeed } : {}),
       sfxPreset: presetFor(carry?.theme ?? theme, carry?.audio?.sfxPreset),
       sfxOff: [],
       sfxExtra: [],
     },
     coldOpen: {
       beats: [{ cue: "Here is", stamp: "HOOK LINE", ...(visual ? { visual } : {}) }],
-      title: { cue: "This is", kicker: carry?.brand?.name ?? "YOUR BRAND", big: "#1", small: "SHORT\nTITLE" },
+      title: long
+        ? { cue: "These are", bigCue: `${numberWord(n)} things`, kicker: carry?.brand?.name ?? "YOUR BRAND", big: String(n), small: "THINGS\nTO KNOW" }
+        : { cue: "This is", kicker: carry?.brand?.name ?? "YOUR BRAND", big: "#1", small: "SHORT\nTITLE" },
     },
     segments: ORD.slice(0, n).map((o, i) => ({
       marker: o,

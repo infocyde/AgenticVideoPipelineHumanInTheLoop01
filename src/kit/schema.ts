@@ -185,6 +185,12 @@ export const episodeSchema = z.object({
     .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/)
     .optional()
     .describe("Shorts only: slug of the episode this Short comes from (its facts, theme, media and credits)"),
+  long: z
+    .boolean()
+    .optional()
+    .describe(
+      "Shorts only: a long Short (1–2.5 min, config.yaml shorts.long). Its own layout: a chapter rail across the top, headline above a framed media card that shows every image, infographic and clip whole at its own aspect ratio, the stat under the card. Frontier keeps its own Short scenes",
+    ),
   brand: z.object({
     name: z.string().min(1).describe("Top-bar brand, e.g. 'GLOBAL THREAT BRIEF'"),
     tagline: z.string().optional().describe("e.g. '// WEEKLY'"),
@@ -199,6 +205,12 @@ export const episodeSchema = z.object({
         duck: z.boolean().default(true).describe("Dip under speech, swell in gaps and on slams"),
       })
       .optional(),
+    voiceSpeed: z
+      .number()
+      .min(0.8)
+      .max(1.5)
+      .optional()
+      .describe("Speed-up applied by `npm run voice` to the voiced take (ffmpeg atempo, pitch kept) before align, e.g. 1.1 on long Shorts; recorded in voice.json. Default 1"),
     sfxPreset: z.enum(["intense", "calm", "tech", "none"]).default("intense").describe("Sound-effect preset (lib/sfx.ts); tech suits the frontier theme"),
     sfxOff: z
       .array(z.enum(SFX_EVENTS))

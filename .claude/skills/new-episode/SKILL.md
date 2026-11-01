@@ -9,6 +9,29 @@ You take an article to a finished, licensed, loudness-mastered MP4 by writing **
 
 There are three stops where you wait for the user: **script approval**, **the MP3**, and **preview approval**.
 
+## 0. Similarity review (every episode, Short and long Short)
+
+The user's rule, 2026-10-31. This is its own step (`config.yaml` `agents: similarity` when delegated), done before any research. Compare the idea with everything already made. It doesn't apply to Shorts cut from an episode with `npm run short` (they share their parent's subject by design) or to music videos.
+
+1. List the episodes, standalone Shorts and long Shorts with their summaries (Shorts that have a `parent` are covered by the parent):
+   ```
+   python -c "import json,glob,os;[print(os.path.basename(os.path.dirname(f)),'|',(e.get('summary') or '')[:120]) for f in sorted(glob.glob('episodes/*/episode.json')) for e in [json.load(open(f,encoding='utf-8'))] if not e.get('parent')]"
+   ```
+2. Open the `article.md` and `notes.md` of the closest matches. Recon reports also mark follow-ups ("NEW DEVELOPMENT, follows …").
+3. Decide one of three verdicts:
+   - **Skip** when it's the same subject with no material new development since that video (the same event and numbers, just another angle).
+     - In a full-auto run, drop the idea, take the next one, and name the skipped idea in your report.
+     - When the user asked for it, tell them which video it repeats and offer the update or a different angle before going on.
+   - **Update** when it's the same subject with a significant development, such as an official confirmation or attribution, an outcome, new figures that change the story, or a new phase. Make it as an update that assumes the viewer knows the basics:
+     - The title leads with the searchable name and the new development ("Binance Heist Update: FBI Names North Korea").
+     - The hook is the new development.
+     - The recap of the old story is at most one or two sentences ("Two days ago, hackers drained…").
+     - The items or chapters spend their time on what changed.
+     - Recap facts may come from the earlier video's fact-checked `article.md`, with its sources cited.
+     - The `summary` names the earlier video.
+   - **New** when it's a different subject or a clearly different angle. Proceed as normal.
+4. Log the verdict in `notes.md` under "Similarity review": the closest existing videos, the verdict and why. When it isn't **New**, tell the user at intake.
+
 ## 1. Intake
 
 A music video (the user's song, not an article) uses the **music-video** skill instead.
@@ -166,7 +189,7 @@ Tell the user:
 
 ## 7b. Upload to YouTube (when the user asks)
 
-Use the **youtube-upload** skill. `npm run upload-text -- <slug>` turns `DESCRIPTION.md` into a title and a description YouTube accepts (`out/<slug>/upload.json`). Then, in the user's Chrome, upload the main video first (you pick the file with `npm run pick-file` and fill title, description, audience, AI use and visibility, Private by default), record its link with `npm run upload-text -- <slug> --url <link>`, and upload each Short with a description that links to it. Save only once YouTube's copyright checks are complete. Log the links in `notes.md`.
+Use the **youtube-upload** skill. `npm run upload-text -- <slug>` turns `DESCRIPTION.md` into a title and a description YouTube accepts (`out/<slug>/upload.json`). Then, in the user's Chrome, upload the main video first (you pick the file with `npm run pick-file` and fill title, description, audience, AI use, paid promotion (always No) and visibility, Private by default), record its link with `npm run upload-text -- <slug> --url <link>`, and upload each Short with a description that links to it. Save only once YouTube's copyright checks are complete. Log the links in `notes.md`.
 
 ## 8. Shorts (optional)
 
@@ -185,7 +208,30 @@ YouTube Shorts are vertical (9:16, 1080×1920) and each one is its own small epi
 
 **episode.json**: `summary` (1–2 sentences: the Short's one idea and its key fact; the description adds a link line to the full video and `#Shorts`), `coldOpen.beats` (1 hook beat: stamp ≤ 16 chars over a strong visual), `coldOpen.title` (kicker = brand, `big` ≤ 4 chars such as "#1" or "VS", `small` ≤ 2 short lines), `segments` (1–3 items or text sections, each with stats and 1–3 visuals; a `map` shows full-height first, then the b-roll), `outro` (1–2 lines + `cta`). `sourcesCard` and `creditsCard` stay `false`: on Shorts the sources and credits go in the description. File-footage `note`s and AI-image notes apply as usual.
 
-**Then**, per Short: voice it (`npm run voice -- <short>` when local TTS is on, otherwise the user records `voiceover.mp3` alongside the main one), `npm run align`, `npm run voice-check -- <short>` (step 3c), `npm run assets`, `npm run check` (0 errors), and preview it with the main episode (`npm run preview -- <short>`; the user can approve them together). After approval, `npm run render -- <short>` writes `out/<short>/youtube.mp4` and copies it to `out/<parent>/short<N>.mp4`. `npm run credits -- <short>` writes its description (link to the full video + `#Shorts`, sources, credits); no thumbnail (YouTube uses a frame).
+**Then**, per Short: voice it (`npm run voice -- <short>` when local TTS is on, otherwise the user records `voiceover.mp3` alongside the main one), `npm run align`, `npm run voice-check -- <short>` (step 3c), `npm run assets`, `npm run check` (0 errors), and preview it with the main episode (`npm run preview -- <short>`; the user can approve them together). After approval, `npm run render -- <short>` writes `out/<short>/youtube.mp4` and copies it to `out/<parent>/short<N>.mp4`. `npm run credits -- <short>` writes its description (link to the full video + `#Shorts`, sources, credits); no thumbnail (YouTube uses a frame). If the description won't fit YouTube's 5,000 characters, the credits are dropped (every kind of Short; `npm run upload-text` does it).
 
 **Hand off** each Short's path, length and description with the main episode, and log the picks and scripts in the parent's `notes.md`.
+
+## 8b. Long Shorts
+
+A long Short is a Short with `"long": true`: vertical, **1:00 to 2:30** (`config.yaml` `shorts.long`), with 2–10 chapters. Everything in section 8 applies, except:
+
+- **Similarity review:** section 0 applies to long Shorts too, before any research.
+
+- **Scaffold:** standalone `npm run new -- <slug> --format long-short [--count <chapters>]`, or from an episode `npm run short -- <slug> --long [--scenes N] [--theme id]`. The scaffold sets `"long": true`, theme `dispatch` (standalone; from an episode it keeps the parent's theme unless `--theme`), `audio.music` level **0.6** with `duck: true` (not the 0.45 episode default), and `audio.voiceSpeed` **1.1** (`shorts.long.voiceSpeed`; 1.2 until 2026-11-01).
+- **Script:** at 1.1× the narration runs ~2.85 words a second, so write **170–430 words** (aim ~285–345 for 1:40–2:00). Hook in the first 2 s; a title line ("These are the five things to know about…"); 3–6 chapters, each opening on a distinctive marker inside a full sentence and carrying one idea plus a number or a consequence; one outro line; a CTA. Fit more content per chapter rather than more chapters: two or three sentences each. Same ear rules (numbers spelled out, no colons, no fragments).
+- **Research:** keep it proportionate: one solid source per fact for facts you find (lighter fact-check memory), the full check on the article's own figures.
+- **Voice:** `npm run voice -- <slug>` speeds the take up by `audio.voiceSpeed` (pitch kept) before aligning, and records it in `voice.json`; `check` warns when they differ. A recorded MP3 plays at its own speed. Run `npm run voice-check` as always.
+- **Final voice pass (the user's rule, 2026-10-31; required before render):** once the take is final, do one last pass for awkward sentence endings. The speed-up makes clipped, swallowed or rushed endings more likely.
+  1. Run `npm run voice-check -- <slug>` on the final audio and review every HARSH **and** CHECK item (snippet and png in `work/voice-check/`), not only the HARSH ones.
+  2. Scan the sentence-final words in `timing.json`. A last word under about 0.15 s usually means it was clipped or swallowed. (Whisper's gaps between words aren't reliable, so don't judge run-ons from them.)
+     ```
+     python -c "import json;w=json.load(open('public/episodes/<slug>/timing.json'))['words'];[print(f\"{x['start']:7.2f} {x['word']:<14} {x['end']-x['start']:.2f}s\") for x in w if x['word'][-1:] in '.?!' and x['end']-x['start']<0.15]"
+     ```
+  3. Compare the last word of every sentence in `heard.txt` with the script. A sentence whose last word is missing or misheard ends awkwardly.
+  4. Fix each real one by re-voicing (`--force`, or another `--seed`), or by rewording so the sentence ends on a longer, stressed word. Avoid ending on short function words such as "up", "it", "out" or "all". Repeat steps 1–3 after every re-voice.
+  5. Log the pass in `notes.md` under "Final voice pass": what was flagged, what was fixed, and what was accepted and why.
+- **Layout** (`src/kit/formats/LongShort.tsx`, any theme without its own Short skin): a chapter rail across the top, the chapter line ("02 / 05 REGION") and headline (≤ 2 lines) above a **media card** that shows every image, infographic, explainer and clip **whole at its own aspect ratio** (fitted into 960×680, over a blurred copy of itself), the stat under the card, captions above the Shorts interface. No text covers footage. A `map` opens in the card, then the visuals. Text sections show their heading above the card and their body under it.
+- **Visuals:** 2–3 per chapter, a new one every 5–8 s. Landscape stills and clips fill the card's width; portrait stills show whole but narrower, so prefer landscape or square. **Make infographics at `--size 1200x850`** (`npm run infographic -- <slug> <name> --size 1200x850`): they fill the card at 0.8× instead of 0.5×; keep labels ≥ 30px and key numbers ≥ 80px in that canvas. Explainers are 16:9 and show at the card's width.
+- **Music bed:** with `music_gen.enabled`, compose the bed for the full length as usual, and keep the level at 0.6.
 
