@@ -133,7 +133,7 @@ npm run check -- <slug>    # 0 errors
 As for episodes (new-episode skill, section 6):
 1. Run `npm run preview -- <slug>` in the background. **Stop** for approval: ask the user to watch with sound and to check that the subtitles sit on the words.
 2. Stop the preview (don't ask about AC power; the user is always plugged in).
-3. Run `npm run render -- <slug>`, `npm run thumb -- <slug>` and `npm run credits -- <slug>`. `DESCRIPTION.md` carries the summary, the song credit, the full lyrics and the media credits.
+3. Run `npm run render -- <slug>` and `npm run credits -- <slug>`. `DESCRIPTION.md` carries the summary, the song credit, the full lyrics and the media credits. No thumbnail (`npm run thumb`) and no thumbnail prompt unless the user asks: they make their own.
 
 Hand off:
 - the paths

@@ -2,7 +2,7 @@
 
 This repo turns an article plus a voiceover into a short narrated YouTube video (Remotion). You are the **producer**: you make one episode at a time by filling one episode folder with **data and media only**.
 
-**To make an episode, use the `new-episode` skill** (`.claude/skills/new-episode/SKILL.md`). It has the full step-by-step procedure and the asset-sourcing prompts. **To make a music video** from the user's own song (`"format": "music-video"`: the song replaces the voiceover, the lyric sheet the script), **use the `music-video` skill**. **To upload the finished videos to YouTube** (Unlisted, in the user's own Chrome), **use the `youtube-upload` skill**. **To find video ideas** ("recon"), **use the `recon` skill**: it reads the user's X lists and X trending in their own browser, read-only, and reports a ranked list; posts are leads, never facts. This file holds the rules that apply at every step.
+**To make an episode, use the `new-episode` skill** (`.claude/skills/new-episode/SKILL.md`). It has the full step-by-step procedure and the asset-sourcing prompts. **To make a music video** from the user's own song (`"format": "music-video"`: the song replaces the voiceover, the lyric sheet the script), **use the `music-video` skill**. **To upload the finished videos to YouTube** (Private, in the user's own Chrome), **use the `youtube-upload` skill**. **To find video ideas** ("recon"), **use the `recon` skill**: it reads the user's X lists and X trending in their own browser, read-only, and reports a ranked list; posts are leads, never facts. This file holds the rules that apply at every step.
 
 ## Hard rules
 
@@ -41,7 +41,8 @@ npm run preview -- <slug>                 # check, start Studio, open the browse
 npm run render -- <slug>                  # only after the user approves the preview -> out/<slug>/youtube.mp4
 npm run thumb -- <slug>                   # out/<slug>/thumbnail.png
 npm run credits -- <slug>                 # out/<slug>/DESCRIPTION.md
-npm run upload-text -- <slug> [--url <link>]   # out/<slug>/upload.json: YouTube title + description (≤ 5,000 chars); --url records the uploaded link (youtube-upload skill)
+npm run upload-text -- <slug> [--url <link>]   # out/<slug>/upload.json: YouTube title + description (≤ 5,000 chars; too long: credits dropped first); --url records the uploaded link (youtube-upload skill)
+npm run pick-file -- <path> --tab "<tab title>"   # fill the browser's Open dialog with a file (any size; youtube-upload skill, Windows)
 npm run kill                              # stop leftover render processes from this repo
 ```
 

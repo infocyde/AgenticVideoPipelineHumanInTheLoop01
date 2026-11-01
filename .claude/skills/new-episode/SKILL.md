@@ -110,7 +110,7 @@ Replace every placeholder. The schema with docs is in `src/kit/schema.ts`; timin
 - `outro.lines`: the first line has no cue ("ANY ONE COULD" + accent "BOIL OVER"); the next gets `cue: "That's the week"`. `cta.cue` = "Subscribe".
 - `sources`: title and URL of each source the script relies on (required). Every video ends with a sources scene and a credits roll, both on by default (`outro.sourcesCard`, `outro.creditsCard`; only set `false` if the user asks). `npm run credits` also writes the sources to `out/<slug>/REFERENCES.md`.
 - Optional: `outro.endScreen: { "seconds": 12 }` if the user wants YouTube end-screen slots.
-- **Thumbnails: 3 variants** for YouTube's Test & Compare, in `thumbnail` with `"layout": "punch"` and `variants` (Shorts get none). Each variant tests a different hook (the count, the headline figure, the stakes) on a different subject. Rules: one dominant subject filling about the right half (frame it with `position` and `zoom`, and for a clip pick the moment with `frame`, in seconds); 2–4 words in all (`big` + `title`, `check` warns above 4); figures only from the script and fact-check; never a press, stock or YouTube visual. Look at all three PNGs after `npm run thumb` and reframe any where the subject is cut, small or hidden.
+- **Thumbnails: only when the user asks.** The user makes their own thumbnails, so by default the producer makes none: no `npm run thumb` at render and no `THUMBNAIL-PROMPT.md` (turned off 2026-10-31). The `thumbnail` block can stay as scaffolded. When the user does ask for kit thumbnails, give them **3 variants** for YouTube's Test & Compare, in `thumbnail` with `"layout": "punch"` and `variants` (Shorts get none). Each variant tests a different hook (the count, the headline figure, the stakes) on a different subject. Rules: one dominant subject filling about the right half (frame it with `position` and `zoom`, and for a clip pick the moment with `frame`, in seconds); 2–4 words in all (`big` + `title`, `check` warns above 4); figures only from the script and fact-check; never a press, stock or YouTube visual. Look at all three PNGs after `npm run thumb` and reframe any where the subject is cut, small or hidden.
 
 Run `npm run check -- <slug>`. Asset and license errors are expected at this point; fix everything else.
 
@@ -147,19 +147,18 @@ When they report back:
 5. Run:
    ```
    npm run render -- <slug>
-   npm run thumb -- <slug>
    npm run credits -- <slug>
    ```
-   `render` fails unless `youtube.mp4` measures -14 ±1 LUFS with true peak ≤ -1 dBTP. If a render is interrupted, run `npm run kill`.
+   `render` fails unless `youtube.mp4` measures -14 ±1 LUFS with true peak ≤ -1 dBTP. If a render is interrupted, run `npm run kill`. No thumbnail step: don't run `npm run thumb` and don't write a thumbnail prompt unless the user asks for one.
 6. Check that `out/<slug>/DESCRIPTION.md` opens with the episode's `summary` (from `episode.json`). Never write the summary into `DESCRIPTION.md` by hand: `npm run credits` rewrites that file, so put any change in `episode.json` and run it again.
 
-If the user wants a painted thumbnail instead, use the image-model prompt in [thumbnail-prompt.md](thumbnail-prompt.md).
+Only if the user asks for a thumbnail: `npm run thumb -- <slug>` for the kit's punch layout, or, for a painted one, the image-model prompt in [thumbnail-prompt.md](thumbnail-prompt.md).
 
 ## 7. Handoff
 
 Tell the user:
 
-- Paths: `out/<slug>/youtube.mp4` (upload this), `thumbnail-1…3.png` (upload all three to Test & Compare; `thumbnail.png` is variant 1), `DESCRIPTION.md`, `REFERENCES.md`.
+- Paths: `out/<slug>/youtube.mp4` (upload this), `DESCRIPTION.md`, `REFERENCES.md` (plus thumbnails only if the user asked for them).
 - Final loudness and true peak (printed by render).
 - What to check by ear: names and numbers the TTS might mispronounce, and any sfx landing awkwardly.
 - Every file-footage substitution and every approved claim beyond the article (from `notes.md`).
@@ -167,7 +166,7 @@ Tell the user:
 
 ## 7b. Upload to YouTube (when the user asks)
 
-Use the **youtube-upload** skill. `npm run upload-text -- <slug>` turns `DESCRIPTION.md` into a title and a description YouTube accepts (`out/<slug>/upload.json`). Then, in the user's Chrome, upload the main video first (the user drags the file in; you fill title, description, audience, AI use and visibility, Unlisted by default), record its link with `npm run upload-text -- <slug> --url <link>`, and upload each Short with a description that links to it. Save only once YouTube's copyright checks are complete. Log the links in `notes.md`.
+Use the **youtube-upload** skill. `npm run upload-text -- <slug>` turns `DESCRIPTION.md` into a title and a description YouTube accepts (`out/<slug>/upload.json`). Then, in the user's Chrome, upload the main video first (you pick the file with `npm run pick-file` and fill title, description, audience, AI use and visibility, Private by default), record its link with `npm run upload-text -- <slug> --url <link>`, and upload each Short with a description that links to it. Save only once YouTube's copyright checks are complete. Log the links in `notes.md`.
 
 ## 8. Shorts (optional)
 

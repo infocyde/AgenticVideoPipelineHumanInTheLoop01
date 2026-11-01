@@ -38,7 +38,8 @@
     "stock": "tsx scripts/stock.ts",
     "xpost": "tsx scripts/xpost.ts",
     "test": "tsx --test \"src/**/*.test.ts\" \"scripts/**/*.test.ts\"",
-    "upload-text": "tsx scripts/upload-text.ts"
+    "upload-text": "tsx scripts/upload-text.ts",
+    "pick-file": "tsx scripts/pick-file.ts"
   },
   "dependencies": {
     "@remotion/cli": "4.0.536",
