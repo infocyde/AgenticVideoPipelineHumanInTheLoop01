@@ -43,6 +43,10 @@ Settings: `config.yaml` `auto_long_shorts:` (defaults: `min: 3`, `max: 3`, `min_
      lower unless they're huge and game-changing. One-off military incidents count too (the user, 2026-11-02, on a
      Su-57 lost on the ground: "a one off, and doesn't move the needle"): pick only what changes something bigger, such
      as a war's course, a market, a capability or a policy, however many accounts post it.
+   - **Ideas the user reposted or quoted** (a `You:` line in the report; the user's rule, 2026-11-02) are
+     definite candidates: they count as epic, so the one-off rule above doesn't drop them, and they're picked
+     before ideas without one. They still go through the similarity review and step 3's fact test, and still fit
+     in `max` (more than `max` of them: the freshest first, the rest named in the run report).
    - **No epic idea, no Short:** if nothing clears the bar, make fewer than `min` (even zero) and say so in the
      run report, naming the best candidates and why each fell short.
 2. **Similarity review** (new-episode section 0) for each against every video made, including this morning's run:

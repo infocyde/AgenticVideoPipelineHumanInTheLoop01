@@ -37,7 +37,7 @@ Then paste the article and say *"let's start a new episode"*.
 
 You don't need the commands, slugs or file paths in the rest of this README. Claude picks the slug, runs the `npm` commands, and finds the right episode from context. Say what you want:
 
-- *"Recon"* (experimental: Claude reads your X lists and what's trending on X in your own Brave, read-only, and brings back a ranked list of video ideas, each with a blurb on why. Run it from the Claude Code CLI; setup is under [Recon (experimental)](#recon-experimental-claude-in-your-browser))
+- *"Recon"* (Claude reads your X lists and what's trending on X in your own Brave, read-only, and brings back a ranked list of video ideas, each with a blurb on why; also runs on its own twice a day as the first step of the auto run) or *"recon light"* (a quick peek: the top 5 things on your lists and trending, on Haiku, in a few minutes). Run them from the Claude Code CLI; setup is under [Recon: Claude in your browser](#recon-claude-in-your-browser)
 - *"Let's start a new episode"* (then paste the article)
 - *"Make it the top 5, about 5 minutes, same look as the last one"*
 - *"Verify those facts on the web and update the sources"*
@@ -85,9 +85,14 @@ Optional, for local AI stills (Z-Image Turbo through stable-diffusion.cpp; no Py
 npm run setup:image      # sd-cli + Z-Image Turbo Q4_K + Qwen3-4B encoder + FLUX.1 VAE into models/image/ (~6.7 GB); --from <folder> hard-links files you already have
 ```
 
-### Recon (experimental): Claude in your browser
+### Recon: Claude in your browser
 
-Recon has Claude read your X lists and X's trending pages in **your own browser**, signed in as you, through the Claude browser extension ("Claude in Chrome"). It's experimental. It hasn't had a full run yet. It depends on X's page layout, which changes without notice, and on Brave, which Anthropic supports but tests less than Chrome and Edge. Expect to tune it after the first runs.
+Recon has Claude read your X lists and X's trending pages in **your own browser**, signed in as you, through the Claude browser extension ("Claude in Chrome"). It depends on X's page layout, which changes without notice, and on Brave, which Anthropic supports but tests less than Chrome and Edge.
+
+**Status (2026-11-02):**
+
+- **Recon** is in regular use. It has run since 2026-10-31, by hand and as the first step of the **scheduled auto run** (Task Scheduler, 05:00 and 17:00, `scripts/auto/daily-run.ps1`), which then makes up to 3 long Shorts from the report and uploads them Private. Each run reads both lists, the Trending and News tabs, and opens up to 5 trends. The OSINT list is busy enough that `max_posts` (120) usually stops the read at about 12 hours back, well inside `hours_back` (48). The auto run itself is still an experiment (since 2026-11-01). A post you've reposted (green repost icon) or quoted is always an idea, whatever the account count, and the auto run treats it as a definite long-Short candidate; recon also reads your own profile for these.
+- **Recon light** was added on 2026-11-02 and has had one run, on Haiku, in about 3.5 minutes. It's for a quick look at what's going on, not a researched report: treat its picks as headlines to glance at. It runs only when you ask; nothing schedules it.
 
 **Run recon from the Claude Code CLI in a terminal, not the VS Code chat panel.** `/chrome` is a CLI command, and the browser tools only load into a session that starts after the integration is on.
 
@@ -112,6 +117,8 @@ If it doesn't connect:
 
 When it runs, Claude only reads. It never likes, posts, follows or replies, and it stops and asks you whenever X shows a login page or a CAPTCHA. Settings are in `config.yaml` `recon:`, the procedure is in `.claude/skills/recon/SKILL.md`, and each run's report is saved in `recon/<date>.md`.
 
+For a quick look, say *"recon light"*: Claude reads the last 50 posts on each list and the top 20 trends (no trend dives, no News tab) and writes one file, `recon/light/<date>-<HHmm>.md`, with the top 5 things you might be interested in, and shows you the same list in chat. A Haiku agent does the reading by default; set `config.yaml` `recon_light.model` to `sonnet`, `opus` or `main` (this session) to change it. Its files sit in `recon/light/`, apart from the full reports, so the full recon's "already seen" check and the auto run never read them. The procedure is in `.claude/skills/recon-light/SKILL.md`.
+
 ### config.yaml at a glance
 
 | Section | What it switches | Now |
@@ -123,6 +130,7 @@ When it runs, Claude only reads. It never likes, posts, follows or replies, and 
 | `youtube:` | YouTube as a research source and clip source (`npm run youtube`, no API key). `search_youtube`: Claude searches YouTube and reads transcripts during the fact-check and asset steps (off: no YouTube unless you ask). `use_video_as_citation`: a video can be a cited source (off: videos are leads only, and a fact from one needs a non-YouTube source that confirms it). | both on |
 | `x_posts:` | Posts on X as sources (`npm run xpost`): official or well-known accounts only, archived with a screenshot, optionally shown on screen (credited `X POST`). Off: posts are leads only. | off |
 | `recon:` | Video ideas from X (the recon skill): the `lists` and `trending` pages Claude reads in your browser, how far back (`hours_back`), and how many ideas to report. | your two lists, 48 h, 8 ideas |
+| `recon_light:` | Quick recon (the recon-light skill): posts per list, how many trends, how many picks, and the `model` that runs it. | 50 posts, 20 trends, 5 picks, haiku |
 | `image_gen:` | Where AI stills come from: `local_render`, `cloud_render` or `mixed` (local, with FLUX 3 for `--detail high`). Local steps, CFG, size and negative prompt live under `local:`. | mixed |
 
 ### Using Stable Audio 3 legally
@@ -542,7 +550,7 @@ requirements-qwen.txt            Python packages for .venv-qwen (npm run voice w
 requirements-music.txt           Python packages for .venv-music (npm run compose: Stable Audio 3, Flash Attention)
 models/image/                    sd-cli + Z-Image Turbo GGUF, encoder and VAE for local stills (git-ignored; npm run setup:image)
 config.yaml                      kit settings: voice, shorts, music_gen (composed beds), image_gen (local / cloud / mixed stills), youtube and recon
-recon/                           recon reports, one per run (git-ignored)
+recon/                           recon reports, one per run; light/ recon light peeks; runs/ auto run reports (git-ignored)
 voices/                          reference clips for voice cloning (git-ignored except README.md)
-.claude/skills/                  new-episode, find-media, generate-image, infographic, explainer, compose-music, youtube, recon
+.claude/skills/                  new-episode, find-media, generate-image, infographic, explainer, compose-music, youtube, recon, recon-light
 ```
