@@ -151,5 +151,75 @@
     "author": "Own work (synthesized)",
     "license": "OWN WORK",
     "notes": "Synthesized with npm run sfx from the explainer sound kit, recipe src/kit/skins/frontier/sounds/tech_click.js: (k) => { k.play('click', 0, { f: 2200 }); k.tone(0.01, { f: 'A6', type: 'sine', dur: 0.14, gain: 0.08, a: 0.001 }); k.tone(0.05, { f: 'E7', type: 'sine', dur: 0.18, gain: 0.05, a: 0.001, verb: 0.3 }); }. Duration 0.58s."
+  },
+  {
+    "file": "sfx/sonar_ping.mp3",
+    "title": "Sound effect: sonar_ping",
+    "author": "Own work (synthesized)",
+    "license": "OWN WORK",
+    "notes": "Synthesized with npm run sfx from the explainer sound kit, recipe public/library/recipes/sonar_ping.js: (k) => { k.tone(0, { f: 1180, dur: 2.2, gain: 0.22, a: 0.005, verb: 0.7 }); k.tone(0, { f: 2360, dur: 0.5, gain: 0.04, a: 0.005, verb: 0.6 }); k.tone(1.15, { f: 1180, dur: 1.6, gain: 0.05, a: 0.01, verb: 0.85 }); k.noise(0, { dur: 2.6, color: 'brown', filter: 'lowpass', f: 180, gain: 0.05, a: 0.6, hold: 1.2 }); }. Duration 2.57s."
+  },
+  {
+    "file": "sfx/radar_sweep.mp3",
+    "title": "Sound effect: radar_sweep",
+    "author": "Own work (synthesized)",
+    "license": "OWN WORK",
+    "notes": "Synthesized with npm run sfx from the explainer sound kit, recipe public/library/recipes/radar_sweep.js: (k) => { k.noise(0, { dur: 2.2, color: 'pink', filter: 'bandpass', f: [[0, 450], [1.1, 1500], [2.2, 450]], q: 5, gain: 0.14, a: 0.3, hold: 1.4 }); for (const t of [0.55, 1.4]) { k.play('blip', t, { f: 'A6', dur: 0.05, type: 'sine' }); k.tone(t, { f: 'A6', dur: 0.9, gain: 0.05, a: 0.003, verb: 0.55 }); } }. Duration 2.28s."
+  },
+  {
+    "file": "sfx/jet_flyby.mp3",
+    "title": "Sound effect: jet_flyby",
+    "author": "Own work (synthesized)",
+    "license": "OWN WORK",
+    "notes": "Synthesized with npm run sfx from the explainer sound kit, recipe public/library/recipes/jet_flyby.js: (k) => { k.noise(0, { dur: 3.2, color: 'pink', filter: 'bandpass', f: [[0, 600], [1.5, 3600], [3.2, 380]], q: 0.8, gain: 0.34, a: 1.4, verb: 0.25 }); k.noise(0, { dur: 3.2, color: 'brown', filter: 'lowpass', f: [[0, 260], [1.5, 1000], [3.2, 140]], gain: 0.4, a: 1.3 }); k.tone(0, { f: [[0, 3300], [1.5, 2700], [3.2, 1400]], type: 'sawtooth', dur: 3.2, gain: 0.025, a: 1.4, filter: 'lowpass', f2: 5000 }); }. Duration 2.83s."
+  },
+  {
+    "file": "sfx/missile_launch.mp3",
+    "title": "Sound effect: missile_launch",
+    "author": "Own work (synthesized)",
+    "license": "OWN WORK",
+    "notes": "Synthesized with npm run sfx from the explainer sound kit, recipe public/library/recipes/missile_launch.js: (k) => { k.play('thud', 0, { f: 85 }); k.noise(0, { dur: 0.08, filter: 'highpass', f: 2500, gain: 0.35, a: 0.001 }); k.noise(0.02, { dur: 3.2, color: 'brown', filter: 'lowpass', f: [[0, 350], [2.8, 1900]], gain: 0.42, a: 0.06, hold: 2.2, verb: 0.3 }); k.noise(0.05, { dur: 3.2, color: 'pink', filter: 'bandpass', f: [[0, 700], [3, 3200]], q: 0.7, gain: 0.2, a: 0.15, hold: 2.2, verb: 0.3 }); }. Duration 3.47s."
+  },
+  {
+    "file": "sfx/artillery_boom.mp3",
+    "title": "Sound effect: artillery_boom",
+    "author": "Own work (synthesized)",
+    "license": "OWN WORK",
+    "notes": "Synthesized with npm run sfx from the explainer sound kit, recipe public/library/recipes/artillery_boom.js: (k) => { k.play('impact', 0, { f: 68, gain: 1.2 }); k.noise(0, { dur: 3.2, color: 'brown', filter: 'lowpass', f: [[0, 900], [2.8, 80]], gain: 0.38, a: 0.01, verb: 0.65 }); k.play('thud', 0.42, { f: 55, gain: 0.35 }); k.noise(0.42, { dur: 1.8, color: 'brown', filter: 'lowpass', f: [[0, 400], [1.6, 70]], gain: 0.14, verb: 0.8 }); }. Duration 2.08s."
+  },
+  {
+    "file": "sfx/radio_squelch.mp3",
+    "title": "Sound effect: radio_squelch",
+    "author": "Own work (synthesized)",
+    "license": "OWN WORK",
+    "notes": "Synthesized with npm run sfx from the explainer sound kit, recipe public/library/recipes/radio_squelch.js: (k) => { k.play('click', 0, { f: 1200 }); k.noise(0.01, { dur: 0.5, filter: 'bandpass', f: 1900, q: 0.7, gain: 0.26, a: 0.004, hold: 0.42 }); k.tone(0.52, { f: 1450, dur: 0.12, gain: 0.08, a: 0.002, hold: 0.1 }); k.play('click', 0.66, { f: 900 }); }. Duration 0.71s."
+  },
+  {
+    "file": "sfx/morse_sos.mp3",
+    "title": "Sound effect: morse_sos",
+    "author": "Own work (synthesized)",
+    "license": "OWN WORK",
+    "notes": "Synthesized with npm run sfx from the explainer sound kit, recipe public/library/recipes/morse_sos.js: (k) => { const dot = 0.08, dash = 0.24, gap = 0.08, letter = 0.24; let t = 0; for (const ch of ['...', '---', '...']) { for (const s of ch) { const d = s === '.' ? dot : dash; k.tone(t, { f: 720, dur: d, gain: 0.12, a: 0.004, hold: d - 0.012 }); t += d + gap; } t += letter - gap; } }. Duration 2.19s."
+  },
+  {
+    "file": "sfx/geiger.mp3",
+    "title": "Sound effect: geiger",
+    "author": "Own work (synthesized)",
+    "license": "OWN WORK",
+    "notes": "Synthesized with npm run sfx from the explainer sound kit, recipe public/library/recipes/geiger.js: (k) => { let s = 7, t = 0; const r = () => (s = (s * 16807) % 2147483647) / 2147483647; while (t < 2.6) { k.noise(t, { dur: 0.005, filter: 'highpass', f: 2400, gain: 0.55, a: 0.0005 }); k.tone(t, { f: 1700 + r() * 600, type: 'square', dur: 0.006, gain: 0.05, a: 0.0005 }); const rate = 0.28 - (t / 2.6) * 0.25; t += rate * (0.3 + r() * 1.4); } }. Duration 2.59s."
+  },
+  {
+    "file": "sfx/market_drop.mp3",
+    "title": "Sound effect: market_drop",
+    "author": "Own work (synthesized)",
+    "license": "OWN WORK",
+    "notes": "Synthesized with npm run sfx from the explainer sound kit, recipe public/library/recipes/market_drop.js: (k) => { k.tone(0, { f: [[0, 880], [1.2, 110]], type: 'sawtooth', dur: 1.3, gain: 0.08, a: 0.01, hold: 1.1, filter: 'lowpass', f2: [[0, 3200], [1.2, 450]] }); k.tone(0, { f: [[0, 892], [1.2, 112]], type: 'sawtooth', dur: 1.3, gain: 0.06, a: 0.01, hold: 1.1, filter: 'lowpass', f2: [[0, 3000], [1.2, 400]] }); k.play('thud', 1.22, { f: 62, gain: 1.1 }); k.noise(1.22, { dur: 0.9, color: 'brown', filter: 'lowpass', f: [[0, 600], [0.8, 90]], gain: 0.25, verb: 0.4 }); }. Duration 2.23s."
+  },
+  {
+    "file": "sfx/access_denied.mp3",
+    "title": "Sound effect: access_denied",
+    "author": "Own work (synthesized)",
+    "license": "OWN WORK",
+    "notes": "Synthesized with npm run sfx from the explainer sound kit, recipe public/library/recipes/access_denied.js: (k) => { k.play('glitch', 0); k.play('error', 0.14, { f: 'E3' }); k.tone(0.14, { f: 55, dur: 0.5, gain: 0.25, a: 0.005, hold: 0.3 }); k.noise(0.14, { dur: 0.35, filter: 'bandpass', f: 1200, q: 1, gain: 0.08, hold: 0.25 }); }. Duration 0.62s."
   }
 ]

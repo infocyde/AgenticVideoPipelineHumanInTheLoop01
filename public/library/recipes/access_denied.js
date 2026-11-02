@@ -1,0 +1,1 @@
+(k) => { k.play('glitch', 0); k.play('error', 0.14, { f: 'E3' }); k.tone(0.14, { f: 55, dur: 0.5, gain: 0.25, a: 0.005, hold: 0.3 }); k.noise(0.14, { dur: 0.35, filter: 'bandpass', f: 1200, q: 1, gain: 0.08, hold: 0.25 }); }

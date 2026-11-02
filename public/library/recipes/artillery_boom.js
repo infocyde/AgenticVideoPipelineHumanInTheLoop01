@@ -1,0 +1,1 @@
+(k) => { k.play('impact', 0, { f: 68, gain: 1.2 }); k.noise(0, { dur: 3.2, color: 'brown', filter: 'lowpass', f: [[0, 900], [2.8, 80]], gain: 0.38, a: 0.01, verb: 0.65 }); k.play('thud', 0.42, { f: 55, gain: 0.35 }); k.noise(0.42, { dur: 1.8, color: 'brown', filter: 'lowpass', f: [[0, 400], [1.6, 70]], gain: 0.14, verb: 0.8 }); }

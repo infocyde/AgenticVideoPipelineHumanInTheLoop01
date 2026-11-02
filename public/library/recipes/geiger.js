@@ -1,0 +1,1 @@
+(k) => { let s = 7, t = 0; const r = () => (s = (s * 16807) % 2147483647) / 2147483647; while (t < 2.6) { k.noise(t, { dur: 0.005, filter: 'highpass', f: 2400, gain: 0.55, a: 0.0005 }); k.tone(t, { f: 1700 + r() * 600, type: 'square', dur: 0.006, gain: 0.05, a: 0.0005 }); const rate = 0.28 - (t / 2.6) * 0.25; t += rate * (0.3 + r() * 1.4); } }

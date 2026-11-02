@@ -36,8 +36,13 @@ to copy from. At handoff, tell the user the files are ready to post on the other
 ## 1. Facts
 
 - Sources: the maker's pricing and spec pages and press releases (prices, trims, specs), **fueleconomy.gov** and
-  **NHTSA** (US government, public domain), **IIHS** (attributed), and reviews by named outlets for anything tested
-  (0–60, how the third row feels). `niches.md` has where each number is reliable and its traps.
+  **NHTSA** (US government, public domain), **IIHS** (attributed), **Consumer Reports** or **J.D. Power** for
+  reliability (attributed, one outlet per video), and reviews by named outlets for anything tested (0–60, how the
+  third row feels). `niches.md` has where each number is reliable and its traps.
+- **Every car gets cargo room and projected reliability** (the user's rule, 2026-11-02): two rows at the end of every
+  segment's stats, the subject's trims and every rival's, in every niche. Which cargo figure, which reliability
+  outlet, and what to do when a model isn't rated: `niches.md`, "Every car". Log the outlet and each score's model
+  year in `notes.md`.
 - **Every price** says its model year and whether destination is included, the same way for every car, and the source
   date in `notes.md`. When a rival's new model year isn't priced yet, say so and use the current one, labeled.
 - **Never mix standards** in one row: EPA with WLTP, NHTSA with IIHS, cargo measured two ways. Use one standard or
@@ -55,6 +60,8 @@ to copy from. At handoff, tell the user the files are ready to post on the other
 - **Wording, on screen and in narration:** a rival is *"a strong alternative worth a look"*. Never "better", "beats",
   "destroys", "more capable", or "don't buy". When no rival qualifies, say the subject holds up: *"still the one to
   beat in its class"*.
+- **Reliability** and cargo are weighed alongside the deciding numbers, never as a gate: a car is never sunk on
+  reliability (`niches.md`, "Every car").
 - One or two rivals can be worth a look. More than two means the price point or the niche is wrong; recheck.
 
 ## 3. Script and structure
@@ -76,8 +83,11 @@ Write the script as new-episode step 2 says (no colons in narration, sentences t
 7. Outro: one or two lines (`THAT'S THE` + accent `LINEUP`), CTA, sources and credits cards on.
 
 Stat values ≤ 10 characters, labels ≤ 42 (`check` enforces). Suspension is a code plus a label (see `niches.md`).
-Five rows per spec panel; an SUV segment's four always-shown rows plus its deciding rows fill two panels, which is fine.
-Every segment needs its stats' cues spoken in its own part of the script, in order.
+Five rows per spec panel; an SUV segment's deciding rows, its four always-shown rows and the two every-car rows (cargo,
+reliability) fill two panels, which is fine. Every segment needs its stats' cues spoken in its own part of the script,
+in order, so each segment says its cargo figure and its reliability score with the outlet's name ("J.D. Power gives
+it eighty-two"). Keep those lines short; the "worth a look" rival's segment and the verdict are where they matter
+most.
 
 `summary` (1–2 sentences) names the model, the price range and the verdict without a superiority claim.
 
@@ -103,7 +113,7 @@ variables only, every number from the script or `notes.md`, look at a frame befo
 |---|---|---|
 | `trim-ladder.html` | every trim as a rung, cheapest at the bottom: chip color, name, price, 2–3 things it adds | 2–7 trims; `pick` + `tag` marks a recommended trim |
 | `rival-grid.html` | the subject and its rivals as cards: compared trim, price, the niche's two top numbers | 3–7 cards, lays itself out; optional `photo` per card |
-| `verdict.html` | the subject vs the one or two alternatives: price difference, the three deciding numbers, the leader of each in yellow | `VERDICT` = `worth-a-look` or `still-the-one` |
+| `verdict.html` | the subject vs the one or two alternatives: price difference, the three deciding numbers, then cargo and reliability, the leader of each in yellow | `VERDICT` = `worth-a-look` or `still-the-one` |
 
 **Photos in the rival grid:** a still already in `public/episodes/<slug>/images/` with its own `credits.json` entry.
 A maker's press photo of that model is fine (`licensing.press_images: true`; each card shows a product the section

@@ -1,0 +1,1 @@
+(k) => { k.tone(0, { f: 1180, dur: 2.2, gain: 0.22, a: 0.005, verb: 0.7 }); k.tone(0, { f: 2360, dur: 0.5, gain: 0.04, a: 0.005, verb: 0.6 }); k.tone(1.15, { f: 1180, dur: 1.6, gain: 0.05, a: 0.01, verb: 0.85 }); k.noise(0, { dur: 2.6, color: 'brown', filter: 'lowpass', f: 180, gain: 0.05, a: 0.6, hold: 1.2 }); }

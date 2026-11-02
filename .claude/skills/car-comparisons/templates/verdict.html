@@ -1,7 +1,8 @@
 <!doctype html>
 <!--
   Car comparisons: VERDICT. The model against the one or two rivals the video calls a strong alternative worth a look:
-  the price difference, then the niche's three deciding numbers side by side, the leader of each in the accent color.
+  the price difference, then the niche's three deciding numbers side by side, then cargo and reliability (every car,
+  niches.md), the leader of each in the accent color.
   The tag is WORTH A LOOK on the alternative(s), or STILL THE ONE on the model when no rival qualifies (VERDICT below).
   Never "better" or "beats" on screen.
   Copy to episodes/<slug>/infographics/<name>.html, edit the data and the text, then:
@@ -26,7 +27,7 @@
   th .brand { font-family: var(--font-mono); font-weight: 700; font-size: 24px; letter-spacing: 4px; text-transform: uppercase; color: var(--dim); }
   th .model { font-family: var(--font-display); font-weight: 800; font-size: 64px; line-height: 1; text-transform: uppercase; white-space: nowrap; }
   th .trim { font-family: var(--font-body); font-weight: 800; font-size: 30px; color: var(--highlight); }
-  td { background: var(--panel); padding: 12px 22px; font-family: var(--font-display); font-weight: 800; font-size: 66px; line-height: 1; white-space: nowrap;
+  td { background: var(--panel); padding: var(--pad, 12px) 22px; font-family: var(--font-display); font-weight: 800; font-size: var(--cell, 66px); line-height: 1; white-space: nowrap;
        font-variant-numeric: tabular-nums; animation: rise 550ms cubic-bezier(.2,.8,.2,1) both; }
   td.label { font-family: var(--font-mono); font-weight: 700; font-size: 26px; letter-spacing: 3px; text-transform: uppercase; color: var(--dim); white-space: normal; width: 300px; }
   td.lead { color: var(--accent); }
@@ -47,7 +48,7 @@
   <div class="kicker">The verdict</div>
   <h1>A strong alternative</h1>
   <table id="t"></table>
-  <div class="source">MSRP incl. destination · EPA · IIHS 2026 · EXAMPLE DATA</div>
+  <div class="source">MSRP incl. destination · EPA · J.D. Power · EXAMPLE DATA</div>
 </div>
 <script>
   // EXAMPLE DATA: replace with the episode's figures.
@@ -57,13 +58,17 @@
     { subject: true, brand: "Toyota", model: "RAV4", trim: "XLE", price: 34200 },
     { brand: "Mazda", model: "CX-50", trim: "Preferred", price: 33900, worth: true },
   ];
-  // The niche's three deciding numbers (niches.md), in the same order as in the segments. `values` follow CARS.
-  // better: "high" | "low" marks the leader in the accent color; leave it out for values that aren't ranked (e.g.
-  // a suspension type). Numbers are compared as numbers; shown as `show` when given.
+  // The niche's three deciding numbers (niches.md), in the same order as in the segments, then the two every-car rows:
+  // cargo (skip it when it is already a deciding number) and reliability (the outlet in its label). `values` follow
+  // CARS. better: "high" | "low" marks the leader in the accent color; leave it out for values that aren't ranked
+  // (e.g. a suspension type). Numbers are compared as numbers; shown as `show` when given. An unrated car is "N/A"
+  // (never leads).
   const METRICS = [
-    { label: "Cargo, rear seats up", values: [37.5, 31.4], unit: " cu ft", better: "high" },
+    { label: "MPG combined", values: [39, 27], unit: "", better: "high" },
     { label: "Ground clearance", values: [8.6, 8.6], unit: " in", better: "high" },
     { label: "Torque", values: [163, 186], unit: " lb-ft", better: "high" },
+    { label: "Cargo, rear seats up", values: [37.5, 31.4], unit: " cu ft", better: "high" },
+    { label: "Reliability · J.D. Power", values: [82, 80], unit: "/100", better: "high" },
   ];
   const usd = (n) => "$" + Math.round(Math.abs(n)).toLocaleString("en-US");
   const base = CARS.find((c) => c.subject) ?? CARS[0];
@@ -83,11 +88,20 @@
     },
     ...METRICS.map((m) => {
       const nums = m.values.map(Number);
-      const best = m.better ? (m.better === "high" ? Math.max(...nums) : Math.min(...nums)) : null;
+      const rated = nums.filter((v) => !Number.isNaN(v)); // "N/A" never leads
+      const best = m.better && rated.length ? (m.better === "high" ? Math.max(...rated) : Math.min(...rated)) : null;
       const lead = best !== null && nums.filter((v) => v === best).length < nums.length; // a tie for all = no leader
-      return { label: m.label, cells: m.values.map((v, i) => ({ html: `${m.show?.[i] ?? v}${m.unit ?? ""}`, lead: lead && nums[i] === best })) };
+      const cell = (v, i) => (m.show?.[i] ?? (Number.isNaN(nums[i]) ? v : `${v}${m.unit ?? ""}`));
+      return { label: m.label, cells: m.values.map((v, i) => ({ html: cell(v, i), lead: lead && nums[i] === best })) };
     }),
   ];
+  // More than four rows (price, three deciding, cargo, reliability): smaller cells so the table fits the safe area.
+  if (rowsData.length > 4) {
+    const css = document.documentElement.style;
+    css.setProperty("--cell", rowsData.length > 5 ? "46px" : "56px");
+    css.setProperty("--pad", "8px");
+    document.querySelector("h1").style.fontSize = "72px";
+  }
   rowsData.forEach((r, i) => {
     const delay = 700 + i * 260;
     html += `<tr><td class="label" style="animation-delay:${delay}ms">${r.label}</td>${r.cells

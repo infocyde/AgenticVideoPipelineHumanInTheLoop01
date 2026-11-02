@@ -1,0 +1,1 @@
+(k) => { k.play('click', 0, { f: 1200 }); k.noise(0.01, { dur: 0.5, filter: 'bandpass', f: 1900, q: 0.7, gain: 0.26, a: 0.004, hold: 0.42 }); k.tone(0.52, { f: 1450, dur: 0.12, gain: 0.08, a: 0.002, hold: 0.1 }); k.play('click', 0.66, { f: 900 }); }

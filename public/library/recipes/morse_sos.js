@@ -1,0 +1,1 @@
+(k) => { const dot = 0.08, dash = 0.24, gap = 0.08, letter = 0.24; let t = 0; for (const ch of ['...', '---', '...']) { for (const s of ch) { const d = s === '.' ? dot : dash; k.tone(t, { f: 720, dur: d, gain: 0.12, a: 0.004, hold: d - 0.012 }); t += d + gap; } t += letter - gap; } }

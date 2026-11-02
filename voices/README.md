@@ -54,6 +54,25 @@ ffmpeg -i out/voice-samples/kokoro-am_michael.mp3 voices/michael.wav
 npm run voice -- --sample "A line to try." --reference voices/michael.wav
 ```
 
+## Female voices from CMU ARCTIC "slt" (added 2026-11-01)
+
+Two female voice options, made the same way as the Kokoro clone above, from a voice recorded for speech synthesis:
+
+| Voice | Made with | Clip | Use |
+|---|---|---|---|
+| `voices/slt_qwen.wav` | Qwen3-TTS 1.7B | 12.8 s, 24 kHz mono | `--reference voices/slt_qwen.wav` |
+| `voices/slt_chatterbox.wav` | Chatterbox Turbo | 13.8 s, 24 kHz mono | `--reference voices/slt_chatterbox.wav` |
+
+Each has a Whisper transcript next to it (`.txt`, checked word for word against the script it read) for Qwen. Both work with either engine. The clips are local only, like everything in this folder; if they're lost, remake them from `voices/slt_LICENSE.txt`'s description.
+
+**Licensing chain**
+
+1. **Source voice:** CMU ARCTIC speech synthesis databases, speaker "slt" (US English, female), by John Kominek and Alan W Black, Language Technologies Institute, Carnegie Mellon University (2003), [festvox.org/cmu_arctic](http://www.festvox.org/cmu_arctic/). Recorded for building synthetic voices, so cloning it is the use it was made for (unlike the voices this file says never to clone). License: CMU's permissive license, "free for use for any purpose (commercial or otherwise)" on three conditions: keep the copyright notice, clearly mark modifications, and don't delete the original authors' names. `voices/slt_LICENSE.txt` keeps the notice unmodified, names the authors, and marks these clips as a modified work.
+2. **Models:** Qwen3-TTS is Apache-2.0 and Chatterbox is MIT; neither restricts the audio you generate. Chatterbox output carries Resemble's inaudible Perth watermark marking it as AI-generated. Whisper (MIT) made the transcripts.
+3. **The clips themselves:** synthetic speech of a sentence that isn't in the corpus. The six original recordings they were cloned from (`arctic_a0001`–`a0006`) are in `out/voice-experiment/raw/cmu_slt/` with the license.
+
+**When a video uses one:** the narration is AI-generated in a voice derived from a real speaker, the same situation as the Collin clone. Credit it in the description, e.g. "Narration: synthetic voice based on the CMU ARCTIC slt voice (Kominek & Black, Carnegie Mellon University)", and set YouTube's altered or synthetic content disclosure the same way you do for the Collin voice.
+
 ## Tuning the read
 
 - **Turbo** (default): understands tags such as `[chuckle]`, `[sigh]` or `[cough]`. Keep them out of episode scripts: `voiceover.txt` is also the caption text, so a tag would show up on screen. They're fine in `--sample` tests.
