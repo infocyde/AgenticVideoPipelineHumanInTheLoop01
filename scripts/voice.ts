@@ -15,7 +15,7 @@
 //                     record your voice from the mic into voices/<name>.wav (default narrator), check it, play a cloned sample
 //   --force       replace an existing voiceover.mp3 (kept as voiceover.prev.mp3), or re-record an existing voices/<name>.wav
 //   --ignore-off  voice one episode while config.yaml has voice.enabled: false (still never overwrites without --force)
-// An episode's audio.voiceSpeed (long Shorts: 1.1) plays the finished take back that much faster, pitch kept, before
+// An episode's audio.voiceSpeed (default 1) plays the finished take back that much faster, pitch kept, before
 // align, so captions and cues follow the sped-up audio. It's recorded in voice.json; check warns if the two differ.
 import { execFileSync, spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -197,7 +197,7 @@ if (isMusicVideoSlug(slug)) fail(`${slug} is a music video: there is no voiceove
 const p = paths(slug);
 if (!existsSync(p.script)) fail(`episodes/${slug}/voiceover.txt is missing. Write (and get approval for) the script first.`);
 let voName = "voiceover.mp3";
-// audio.voiceSpeed (long Shorts: 1.1) speeds the finished take up, pitch kept, before it is aligned.
+// audio.voiceSpeed (default 1) speeds the finished take up, pitch kept, before it is aligned.
 let tempo = 1;
 try {
   const audio = readJson<EpisodeInput>(p.episode).audio;

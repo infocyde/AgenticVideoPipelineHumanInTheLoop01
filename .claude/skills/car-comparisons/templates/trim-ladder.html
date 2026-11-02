@@ -1,0 +1,89 @@
+<!doctype html>
+<!--
+  Car comparisons: TRIM LADDER. Every trim of the model as a rung, cheapest at the bottom: its series color (the same
+  `chip` its segment uses), name, price, and the 2-3 things it adds over the rung below.
+  Copy to episodes/<slug>/infographics/<name>.html, edit DATA and the text, then:
+    npm run infographic -- <slug> <name>            (12 s MP4: rungs climb in ~2.5 s, then hold)
+    npm run infographic -- <slug> <name> --still    (PNG of the finished state)
+  Theme variables only (--series-1 … --series-8 are the trim colors). Every price and feature must be in the script or
+  the fact-check log; prices say their model year and whether destination is included (the .source line).
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<title>2027 Toyota RAV4 trims</title>
+<meta name="sources" content="EXAMPLE: Toyota pricing press release, Oct 2026">
+<style>
+  .safe { position: absolute; left: 200px; right: 200px; top: 110px; bottom: 110px; display: flex; flex-direction: column; }
+  .kicker { font-family: var(--font-mono); font-weight: 700; font-size: 30px; letter-spacing: 8px; text-transform: uppercase; color: var(--accent);
+            display: flex; align-items: center; gap: 20px; animation: rise 600ms cubic-bezier(.2,.8,.2,1) both; }
+  .kicker::before { content: ""; width: 80px; height: 4px; background: var(--accent); }
+  h1 { font-family: var(--font-display); font-weight: 800; font-size: 96px; line-height: .95; margin: 14px 0 28px; text-transform: uppercase; text-shadow: var(--text-shadow);
+       animation: rise 700ms 120ms cubic-bezier(.2,.8,.2,1) both; }
+  .ladder { flex: 1; display: flex; flex-direction: column-reverse; justify-content: center; gap: var(--gap); }
+  .rung { display: grid; grid-template-columns: 22px var(--name-w, 330px) 1fr auto; align-items: center; gap: 28px; height: var(--rung);
+          background: var(--panel); border: 1px solid var(--line); padding: 0 34px 0 0; animation: climb 650ms cubic-bezier(.2,.8,.2,1) both; }
+  .chip { height: 100%; }
+  .name { font-family: var(--font-display); font-weight: 800; font-size: var(--name); line-height: 1; text-transform: uppercase; white-space: nowrap; }
+  .adds { font-family: var(--font-body); font-weight: 600; font-size: var(--adds); line-height: 1.1; color: var(--dim);
+          overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .adds b { color: var(--text); font-weight: 800; }
+  .price { font-family: var(--font-display); font-weight: 800; font-size: var(--price); color: var(--highlight); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .rung.pick { border-color: var(--accent); box-shadow: var(--accent-glow); }
+  .rung.pick .price { color: var(--accent); }
+  .tag { font-family: var(--font-mono); font-weight: 700; font-size: 22px; letter-spacing: 3px; color: var(--on-accent); background: var(--accent);
+         padding: 4px 10px; margin-left: 14px; vertical-align: middle; }
+  .source { font-family: var(--font-mono); font-size: 24px; letter-spacing: 3px; text-transform: uppercase; color: var(--dim); margin-top: 26px;
+            animation: fade 600ms 2600ms both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: none; } }
+  @keyframes climb { from { opacity: 0; transform: translateX(-60px); } to { opacity: 1; transform: none; } }
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+</style>
+</head>
+<body>
+<div class="safe">
+  <div class="kicker">The trims</div>
+  <h1>2027 RAV4 lineup</h1>
+  <div class="ladder" id="ladder"></div>
+  <div class="source">MSRP incl. $1,395 destination · Source: Toyota, Oct 2026 · EXAMPLE DATA</div>
+</div>
+<script>
+  // EXAMPLE DATA: replace with the episode's figures. Cheapest first. `chip` = the trim's series color (1-8), the same
+  // number as its segment's `chip` in episode.json. `adds`: 2-3 short items over the rung below (the first rung: the
+  // headline standard features). `pick: true` marks the trim the video recommends (optional), with `tag`.
+  const DATA = [
+    { name: "LE", price: 31900, chip: 1, adds: ["2.5L hybrid", "8-in screen", "Safety Sense 4.0"] },
+    { name: "XLE", price: 34200, chip: 2, adds: ["Heated seats", "Blind-spot monitor", "18-in wheels"], pick: true, tag: "BEST VALUE" },
+    { name: "XLE Premium", price: 37100, chip: 3, adds: ["Moonroof", "SofTex seats"] },
+    { name: "Woodland", price: 39500, chip: 4, adds: ["All-terrain tires", "Raised suspension"] },
+    { name: "Limited", price: 42800, chip: 5, adds: ["12.9-in screen", "JBL audio", "Ventilated seats"] },
+  ];
+  const fmt = (n) => (typeof n === "number" ? "$" + Math.round(n).toLocaleString("en-US") : n);
+  // Sizes shrink with the rung count so 2-7 trims all fit.
+  const n = DATA.length;
+  const rung = Math.min(130, Math.floor((620 - (n - 1) * 14) / n));
+  const css = document.documentElement.style;
+  css.setProperty("--rung", rung + "px");
+  css.setProperty("--gap", "14px");
+  css.setProperty("--name", Math.min(68, rung * 0.6) + "px");
+  css.setProperty("--price", Math.min(64, rung * 0.56) + "px");
+  css.setProperty("--adds", Math.max(30, Math.min(38, rung * 0.36)) + "px");
+  const ladder = document.getElementById("ladder");
+  DATA.forEach((d, i) => {
+    const el = document.createElement("div");
+    el.className = "rung" + (d.pick ? " pick" : "");
+    el.style.animationDelay = 500 + i * 220 + "ms";
+    el.innerHTML = `<div class="chip" style="background: var(--series-${d.chip ?? i + 1})"></div>
+      <div class="name">${d.name}</div>
+      <div class="adds">${i === 0 ? "" : "<b>+</b> "}${d.adds.join(" · ")}</div>
+      <div class="price">${fmt(d.price)}${d.pick && d.tag ? `<span class="tag">${d.tag}</span>` : ""}</div>`;
+    ladder.appendChild(el);
+  });
+  // The name column fits the longest trim name ("Wilderness Hybrid"), never less than 330px.
+  // (Estimated from the name length: Barlow Condensed 800 caps run about 0.47 em a character; measuring the element
+  // would read the fallback font before the web font loads.)
+  const nameW = Math.max(330, Math.ceil(Math.max(...DATA.map((d) => d.name.length)) * parseFloat(css.getPropertyValue("--name")) * 0.47));
+  css.setProperty("--name-w", nameW + "px");
+</script>
+</body>
+</html>

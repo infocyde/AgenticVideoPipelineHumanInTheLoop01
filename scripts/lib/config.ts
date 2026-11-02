@@ -57,7 +57,7 @@ export const configSchema = z.object({
           minSeconds: z.number().min(15).max(180).default(60),
           maxSeconds: z.number().min(15).max(180).default(150),
           musicLevel: z.number().min(0).max(1).default(0.6), // audio.music.level written into a new long Short
-          voiceSpeed: z.number().min(0.8).max(1.5).default(1.1), // audio.voiceSpeed: npm run voice speeds the take up by this
+          voiceSpeed: z.number().min(0.8).max(1.5).default(1), // audio.voiceSpeed: npm run voice speeds the take up by this
           scenes: z.number().int().min(2).max(10).default(5), // chapters in a new long Short (--count overrides, 2-10)
           theme: z.string().default("dispatch"), // theme of a standalone long Short (one from an episode keeps the parent's unless --theme)
         })
@@ -87,6 +87,12 @@ export const configSchema = z.object({
   x_posts: z
     .object({
       enabled: z.boolean().default(false), // posts by official / well-known accounts may be cited and shown (npm run xpost)
+    })
+    .prefault({}),
+  upload: z
+    .object({
+      // Themes whose videos go to another channel: Claude never uploads them (scripts/lib/upload.ts).
+      blocked_themes: z.array(z.string()).default([]),
     })
     .prefault({}),
   image_gen: z

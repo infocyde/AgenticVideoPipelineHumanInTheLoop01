@@ -8,6 +8,9 @@ const presetFor = (theme: string, carried?: Preset): Preset => (theme === "front
 
 // Music bed level for every new episode and Short (the user's standing setting; carried episodes are raised to it too).
 const MUSIC_LEVEL = 0.45;
+type Audio = NonNullable<EpisodeInput["audio"]>;
+/** A carried-over audio block without its voiceSpeed: new videos play the voice at 1.0x. */
+const withoutVoiceSpeed = ({ voiceSpeed: _speed, ...rest }: Audio): Omit<Audio, "voiceSpeed"> => rest;
 const ONES = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty"];
 export const numberWord = (n: number) => ONES[n] ?? String(n);
 const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
@@ -57,8 +60,9 @@ export const templateEpisode = ({ slug, format, count, theme, carry }: TemplateO
     format,
     aspect: "16:9",
     brand: { ...(carry?.brand ?? { name: "YOUR BRAND", tagline: "// WEEKLY" }), dateLabel: dateLabelFromSlug(slug) },
+    // voiceSpeed is never carried over: every new video starts at 1.0x (the user's rule, 2026-11-01).
     audio: carry?.audio
-      ? { ...carry.audio, music: { ...(carry.audio.music ?? { file: "bed", duck: true }), level: MUSIC_LEVEL }, sfxPreset: presetFor(carry?.theme ?? theme, carry.audio.sfxPreset) }
+      ? { ...withoutVoiceSpeed(carry.audio), music: { ...(carry.audio.music ?? { file: "bed", duck: true }), level: MUSIC_LEVEL }, sfxPreset: presetFor(carry?.theme ?? theme, carry.audio.sfxPreset) }
       : { voiceover: "voiceover.mp3", music: { file: "bed", level: MUSIC_LEVEL, duck: true }, sfxPreset: presetFor(theme) },
     coldOpen: {
       beats: [
@@ -149,7 +153,7 @@ export const templateShort = ({ slug, theme, scenes = 1, parent, title, carry, v
     audio: {
       voiceover: "voiceover.mp3",
       ...(music ? { music: { ...music, level: long ? long.musicLevel : MUSIC_LEVEL } } : {}),
-      ...(long ? { voiceSpeed: long.voiceSpeed } : {}),
+      ...(long && long.voiceSpeed !== 1 ? { voiceSpeed: long.voiceSpeed } : {}),
       sfxPreset: presetFor(carry?.theme ?? theme, carry?.audio?.sfxPreset),
       sfxOff: [],
       sfxExtra: [],

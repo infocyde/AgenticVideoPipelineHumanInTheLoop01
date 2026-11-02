@@ -86,6 +86,9 @@ const vars: Record<string, string> = {
   "font-display": `${q(theme!.fonts.display)}, sans-serif`, "font-mono": `${q(theme!.fonts.mono)}, monospace`, "font-body": `${q(theme!.fonts.body)}, sans-serif`,
   "text-shadow": theme!.effects.textShadow, "accent-glow": theme!.effects.accentGlow(40),
 };
+// Categorical colors (--series-1 … --series-8): the theme's own, else its other colors in a fixed order.
+const seriesFallback = [c.accent, c.highlight, m.hostileStroke, m.highlightStroke, c.text, c.dim, c.accentDeep, c.line];
+for (let i = 0; i < 8; i++) vars[`series-${i + 1}`] = theme!.series?.[i] ?? seriesFallback[i];
 const head = [
   `<base href="${pathToFileURL(srcDir).href}/">`,
   `<link rel="stylesheet" href="${fontsUrl}">`,

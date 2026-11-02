@@ -1,6 +1,6 @@
 // Theme ids, importable from Node scripts (the theme modules themselves load web fonts).
 // Keep in sync with the registry in index.ts; TypeScript enforces it.
-export const THEME_IDS = ["threat-brief", "clean-light", "after-dark", "military", "military-comparisons", "erotic", "frontier", "blackout", "dispatch"] as const;
+export const THEME_IDS = ["threat-brief", "clean-light", "after-dark", "military", "military-comparisons", "erotic", "frontier", "blackout", "dispatch", "car-comparisons"] as const;
 export type ThemeId = (typeof THEME_IDS)[number];
 
 /**
@@ -21,5 +21,6 @@ export const THEME_LAYOUT: Record<ThemeId, ThemeLayout> = {
   frontier: "spatial",
   blackout: "overlay",
   dispatch: "overlay",
+  "car-comparisons": "split",
 };
 export const layoutOf = (id: string): ThemeLayout => THEME_LAYOUT[id as ThemeId] ?? "overlay";

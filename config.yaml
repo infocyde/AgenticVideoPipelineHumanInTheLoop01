@@ -89,8 +89,8 @@ shorts:
     minSeconds: 60    # check warns below this...
     maxSeconds: 150   # ...and above this (2:30)
     musicLevel: 0.6   # audio.music.level in every new long Short (louder than the 0.45 episode default)
-    voiceSpeed: 1.1   # audio.voiceSpeed: npm run voice plays the take back this much faster (pitch kept), then aligns
-                      # At 1.1x a long Short holds about 2.85 words a second: ~170 words for 1:00, ~430 for 2:30 (1.2 until 2026-11-01)
+    voiceSpeed: 1.0   # audio.voiceSpeed: npm run voice plays the take back this much faster (pitch kept), then aligns
+                      # 1.0 from 2026-11-01 (viewers found 1.1-1.2x too fast): ~2.6 words a second, ~155 words for 1:00, ~390 for 2:30
     voiceEngine: qwen # long Shorts are voiced with local Qwen3-TTS (the user's choice, 2026-11-01), not voice.engine:
                       # the producer runs `npm run voice -- <slug> --engine qwen`. Local takes repeat for the same
                       # seed, so a re-voice needs --seed <n>. It runs on the GPU: never alongside compose, render
@@ -214,8 +214,16 @@ recon:
   ideas: 8          # at most this many ideas in the report
   min_accounts: 3   # a story needs posts from at least this many different accounts
 
+upload:
+  # Themes whose videos go to ANOTHER channel (the user's rule, 2026-11-01): Claude never uploads them. Enforced in
+  # code: npm run pick-file refuses their files (out/<slug>/, public/episodes/<slug>/), npm run upload-text still writes
+  # the title and description for you to post by hand but marks upload.json "doNotUpload" and never records a link,
+  # the youtube-upload skill stops before opening YouTube, and the auto run never uses these themes. A Short counts as
+  # its parent's theme, whatever theme it was given.
+  blocked_themes: [car-comparisons]
+
 auto_long_shorts:
-  # The scheduled auto run (scripts/auto/daily-run.ps1 via Task Scheduler, 06:00 and 18:00; install or remove with
+  # The scheduled auto run (scripts/auto/daily-run.ps1 via Task Scheduler, 05:00 and 17:00; install or remove with
   # scripts/auto/install-task.ps1 [-Remove]): recon, then the auto-long-shorts skill makes the best ideas from that
   # report into long Shorts end to end, with no handoffs, and uploads them. Run report: recon/runs/<date>-<HHmm>.md.
   min: 3             # aim for at least this many; fewer only when fewer ideas survive the similarity and fact checks

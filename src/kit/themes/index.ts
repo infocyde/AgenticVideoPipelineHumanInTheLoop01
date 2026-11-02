@@ -2,6 +2,7 @@
 // Keep the b-roll treatment (backdrop filter, tint, gradients, vignette) light: use fades and grayscale washes sparingly.
 import { afterDark } from "./after-dark";
 import { blackout } from "./blackout";
+import { carComparisons } from "./car-comparisons";
 import { cleanLight } from "./clean-light";
 import { dispatch } from "./dispatch";
 import { erotic } from "./erotic";
@@ -22,6 +23,7 @@ export const themes: Record<ThemeId, Theme> = {
   frontier,
   blackout,
   dispatch,
+  "car-comparisons": carComparisons,
 };
 export const DEFAULT_THEME: ThemeId = "threat-brief";
 

@@ -1,0 +1,100 @@
+<!doctype html>
+<!--
+  Car comparisons: VERDICT. The model against the one or two rivals the video calls a strong alternative worth a look:
+  the price difference, then the niche's three deciding numbers side by side, the leader of each in the accent color.
+  The tag is WORTH A LOOK on the alternative(s), or STILL THE ONE on the model when no rival qualifies (VERDICT below).
+  Never "better" or "beats" on screen.
+  Copy to episodes/<slug>/infographics/<name>.html, edit the data and the text, then:
+    npm run infographic -- <slug> <name>            (12 s MP4: rows reveal in ~2.5 s, the tag lands at ~2.8 s, then hold)
+    npm run infographic -- <slug> <name> --still
+  Theme variables only. Every figure must be in the script or the fact-check log.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<title>Verdict: 2027 RAV4</title>
+<meta name="sources" content="EXAMPLE: makers' pricing and spec pages, Oct 2026; fueleconomy.gov; IIHS">
+<style>
+  .safe { position: absolute; left: 200px; right: 200px; top: 110px; bottom: 110px; display: flex; flex-direction: column; }
+  .kicker { font-family: var(--font-mono); font-weight: 700; font-size: 30px; letter-spacing: 8px; text-transform: uppercase; color: var(--accent);
+            display: flex; align-items: center; gap: 20px; animation: rise 600ms cubic-bezier(.2,.8,.2,1) both; }
+  .kicker::before { content: ""; width: 80px; height: 4px; background: var(--accent); }
+  h1 { font-family: var(--font-display); font-weight: 800; font-size: 92px; line-height: .95; margin: 14px 0 24px; text-transform: uppercase; text-shadow: var(--text-shadow);
+       animation: rise 700ms 120ms cubic-bezier(.2,.8,.2,1) both; }
+  table { width: 100%; border-collapse: separate; border-spacing: 0 12px; flex: 1; }
+  th { text-align: left; vertical-align: top; padding: 0 22px 6px; position: relative; animation: rise 600ms 400ms cubic-bezier(.2,.8,.2,1) both; }
+  th .brand { font-family: var(--font-mono); font-weight: 700; font-size: 24px; letter-spacing: 4px; text-transform: uppercase; color: var(--dim); }
+  th .model { font-family: var(--font-display); font-weight: 800; font-size: 64px; line-height: 1; text-transform: uppercase; white-space: nowrap; }
+  th .trim { font-family: var(--font-body); font-weight: 800; font-size: 30px; color: var(--highlight); }
+  td { background: var(--panel); padding: 12px 22px; font-family: var(--font-display); font-weight: 800; font-size: 66px; line-height: 1; white-space: nowrap;
+       font-variant-numeric: tabular-nums; animation: rise 550ms cubic-bezier(.2,.8,.2,1) both; }
+  td.label { font-family: var(--font-mono); font-weight: 700; font-size: 26px; letter-spacing: 3px; text-transform: uppercase; color: var(--dim); white-space: normal; width: 300px; }
+  td.lead { color: var(--accent); }
+  td .delta { font-family: var(--font-mono); font-weight: 700; font-size: 30px; letter-spacing: 2px; margin-left: 14px; vertical-align: middle; }
+  .more { color: var(--hostile); } .less { color: var(--accent); } .same { color: var(--dim); }
+  .tag { display: inline-block; margin-top: 10px; font-family: var(--font-mono); font-weight: 700; font-size: 28px; letter-spacing: 4px;
+         color: var(--on-accent); background: var(--accent); padding: 8px 16px; box-shadow: var(--accent-glow); animation: stamp 420ms 2800ms cubic-bezier(.2,1.4,.4,1) both; }
+  .col-pick { box-shadow: inset 0 0 0 3px var(--accent); }
+  .source { font-family: var(--font-mono); font-size: 24px; letter-spacing: 3px; text-transform: uppercase; color: var(--dim); margin-top: 18px;
+            animation: fade 600ms 3000ms both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: none; } }
+  @keyframes stamp { from { opacity: 0; transform: scale(1.6); } to { opacity: 1; transform: none; } }
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+</style>
+</head>
+<body>
+<div class="safe">
+  <div class="kicker">The verdict</div>
+  <h1>A strong alternative</h1>
+  <table id="t"></table>
+  <div class="source">MSRP incl. destination · EPA · IIHS 2026 · EXAMPLE DATA</div>
+</div>
+<script>
+  // EXAMPLE DATA: replace with the episode's figures.
+  // VERDICT: "worth-a-look" (tag the `worth: true` rival(s)) or "still-the-one" (tag the subject; no rival qualified).
+  const VERDICT = "worth-a-look";
+  const CARS = [
+    { subject: true, brand: "Toyota", model: "RAV4", trim: "XLE", price: 34200 },
+    { brand: "Mazda", model: "CX-50", trim: "Preferred", price: 33900, worth: true },
+  ];
+  // The niche's three deciding numbers (niches.md), in the same order as in the segments. `values` follow CARS.
+  // better: "high" | "low" marks the leader in the accent color; leave it out for values that aren't ranked (e.g.
+  // a suspension type). Numbers are compared as numbers; shown as `show` when given.
+  const METRICS = [
+    { label: "Cargo, rear seats up", values: [37.5, 31.4], unit: " cu ft", better: "high" },
+    { label: "Ground clearance", values: [8.6, 8.6], unit: " in", better: "high" },
+    { label: "Torque", values: [163, 186], unit: " lb-ft", better: "high" },
+  ];
+  const usd = (n) => "$" + Math.round(Math.abs(n)).toLocaleString("en-US");
+  const base = CARS.find((c) => c.subject) ?? CARS[0];
+  const tagFor = (c) => (VERDICT === "still-the-one" ? (c.subject ? "STILL THE ONE" : "") : c.worth ? "WORTH A LOOK" : "");
+  const pick = (c) => !!tagFor(c);
+  const t = document.getElementById("t");
+  let html = `<tr><th></th>${CARS.map((c) => `<th><div class="brand">${c.brand}</div><div class="model">${c.model}</div><div class="trim">${c.trim}</div>${tagFor(c) ? `<div class="tag">${tagFor(c)}</div>` : ""}</th>`).join("")}</tr>`;
+  const rowsData = [
+    {
+      label: "Price",
+      cells: CARS.map((c) => {
+        if (c === base) return { html: usd(c.price) };
+        const d = c.price - base.price;
+        const delta = d === 0 ? `<span class="delta same">SAME</span>` : `<span class="delta ${d > 0 ? "more" : "less"}">${d > 0 ? "+" : "−"}${usd(d)}</span>`;
+        return { html: usd(c.price) + delta };
+      }),
+    },
+    ...METRICS.map((m) => {
+      const nums = m.values.map(Number);
+      const best = m.better ? (m.better === "high" ? Math.max(...nums) : Math.min(...nums)) : null;
+      const lead = best !== null && nums.filter((v) => v === best).length < nums.length; // a tie for all = no leader
+      return { label: m.label, cells: m.values.map((v, i) => ({ html: `${m.show?.[i] ?? v}${m.unit ?? ""}`, lead: lead && nums[i] === best })) };
+    }),
+  ];
+  rowsData.forEach((r, i) => {
+    const delay = 700 + i * 260;
+    html += `<tr><td class="label" style="animation-delay:${delay}ms">${r.label}</td>${r.cells
+      .map((c, j) => `<td class="${c.lead ? "lead" : ""}${pick(CARS[j]) ? " col-pick" : ""}" style="animation-delay:${delay + 60 * j}ms">${c.html}</td>`)
+      .join("")}</tr>`;
+  });
+  t.innerHTML = html;
+</script>
+</body>
+</html>

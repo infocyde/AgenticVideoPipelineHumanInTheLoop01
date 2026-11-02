@@ -31,6 +31,11 @@ export type Theme = {
     label: string;
     labelHalo: string;
   };
+  /**
+   * Optional categorical colors, e.g. one per trim level in car-comparisons: segment `chip` N draws in series[N-1],
+   * and infographics get them as --series-1 … --series-8. Themes without it fall back to their other colors.
+   */
+  series?: string[];
   /** Treatment of b-roll under the text. */
   backdrop: {
     filter: string;
@@ -73,6 +78,8 @@ export type Theme = {
     endCardNext: string;
     /** Split layout: counter over the stat rows when they run to more than one panel (default "PANEL"). */
     panelLabel?: string;
+    /** Split layout: word in the frame chip when a segment has several visuals, "■ FILE 01 · 1/3" (default "FILE"). */
+    frameLabel?: string;
   };
 };
 

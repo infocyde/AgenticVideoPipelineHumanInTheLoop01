@@ -30,6 +30,8 @@ public/temp/
 explainers/
 # Recon reports (the recon skill: video ideas from X)
 recon/
+# Daily YouTube analytics snapshots and comparisons (the vidanalysis skill)
+analytics/
 # Voice reference clips for npm run voice (personal recordings)
 voices/*
 !voices/README.md

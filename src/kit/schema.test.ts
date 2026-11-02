@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { episodeSchema, isMusicVideo, musicVideoSchema, timingSchema } from "./schema.ts";
+import { episodeSchema, isMusicVideo, musicVideoSchema, segmentSchema, timingSchema } from "./schema.ts";
 
 const minimal = { slug: "x-y", format: "music-video", title: "T", song: { title: "Empires", artist: "PTRA" }, shots: [{ visual: "a" }] };
 
@@ -38,4 +38,14 @@ test("timing accepts lines, beats and tempo", () => {
 
 test("news episodes reject the music-video format", () => {
   assert.equal(episodeSchema.safeParse({ format: "music-video" }).success, false);
+});
+
+test("segment chip takes a series color 1..8", () => {
+  const seg = { marker: "the base trim", region: "TRIM · $31,900", headline: "LE" };
+  assert.equal(segmentSchema.parse({ ...seg, chip: 1 }).chip, 1);
+  assert.equal(segmentSchema.parse({ ...seg, chip: 8 }).chip, 8);
+  assert.equal(segmentSchema.parse(seg).chip, undefined);
+  assert.equal(segmentSchema.safeParse({ ...seg, chip: 0 }).success, false);
+  assert.equal(segmentSchema.safeParse({ ...seg, chip: 9 }).success, false);
+  assert.equal(segmentSchema.safeParse({ ...seg, chip: 1.5 }).success, false);
 });

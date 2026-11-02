@@ -65,6 +65,13 @@ export const segmentSchema = z.object({
   region: z.string().min(1),
   headline: z.string().min(1).describe("6 words or fewer"),
   subhead: z.string().optional().describe("Optional second line under the headline, e.g. the product's name ('GeForce RTX 5090'); ≤ 32 chars. Shown by the frontier theme"),
+  chip: z
+    .number()
+    .int()
+    .min(1)
+    .max(8)
+    .optional()
+    .describe("Split layout: a square in the theme's series color N before the region, so a trim keeps one color through the video (car-comparisons)"),
   emphasis: z.literal("top").optional().describe("Alarm treatment, usually on #1"),
   emphasisLabel: z.string().optional().describe("Badge text for emphasis; defaults to the theme's (e.g. 'TOP THREAT')"),
   stats: z.array(statSchema).default([]).describe("Overlay themes show one at a time; split themes stack them into spec-sheet panels of 5"),
@@ -210,7 +217,7 @@ export const episodeSchema = z.object({
       .min(0.8)
       .max(1.5)
       .optional()
-      .describe("Speed-up applied by `npm run voice` to the voiced take (ffmpeg atempo, pitch kept) before align, e.g. 1.1 on long Shorts; recorded in voice.json. Default 1"),
+      .describe("Speed-up applied by `npm run voice` to the voiced take (ffmpeg atempo, pitch kept) before align; recorded in voice.json. Default 1 (every video since 2026-11-01)"),
     sfxPreset: z.enum(["intense", "calm", "tech", "none"]).default("intense").describe("Sound-effect preset (lib/sfx.ts); tech suits the frontier theme"),
     sfxOff: z
       .array(z.enum(SFX_EVENTS))

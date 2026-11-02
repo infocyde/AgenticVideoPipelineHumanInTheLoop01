@@ -34,7 +34,8 @@
             "erotic",
             "frontier",
             "blackout",
-            "dispatch"
+            "dispatch",
+            "car-comparisons"
           ]
         },
         "format": {
@@ -120,7 +121,7 @@
               ]
             },
             "voiceSpeed": {
-              "description": "Speed-up applied by `npm run voice` to the voiced take (ffmpeg atempo, pitch kept) before align, e.g. 1.1 on long Shorts; recorded in voice.json. Default 1",
+              "description": "Speed-up applied by `npm run voice` to the voiced take (ffmpeg atempo, pitch kept) before align; recorded in voice.json. Default 1 (every video since 2026-11-01)",
               "type": "number",
               "minimum": 0.8,
               "maximum": 1.5
@@ -335,6 +336,12 @@
                   "subhead": {
                     "description": "Optional second line under the headline, e.g. the product's name ('GeForce RTX 5090'); ≤ 32 chars. Shown by the frontier theme",
                     "type": "string"
+                  },
+                  "chip": {
+                    "description": "Split layout: a square in the theme's series color N before the region, so a trim keeps one color through the video (car-comparisons)",
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 8
                   },
                   "emphasis": {
                     "description": "Alarm treatment, usually on #1",
@@ -931,7 +938,8 @@
             "erotic",
             "frontier",
             "blackout",
-            "dispatch"
+            "dispatch",
+            "car-comparisons"
           ]
         },
         "song": {

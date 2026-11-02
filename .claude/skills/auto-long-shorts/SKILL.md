@@ -1,6 +1,6 @@
 ---
 name: auto-long-shorts
-description: Unattended batch, run by the scheduled auto run (scripts/auto/daily-run.ps1, 6:00 and 18:00) right after recon, or when the user says "auto long shorts" or "make long shorts from the recon report on auto". Picks the 3 best ideas from the latest recon report, makes each into a long Short end to end (similarity, research, fact-check, script, voice, media, render) and uploads them to YouTube as Private, with no user handoffs, then writes a run report.
+description: Unattended batch, run by the scheduled auto run (scripts/auto/daily-run.ps1, 5:00 and 17:00) right after recon, or when the user says "auto long shorts" or "make long shorts from the recon report on auto". Picks the 3 best ideas from the latest recon report, makes each into a long Short end to end (similarity, research, fact-check, script, voice, media, render) and uploads them to YouTube as Private, with no user handoffs, then writes a run report.
 ---
 
 # Auto long Shorts
@@ -30,15 +30,29 @@ Settings: `config.yaml` `auto_long_shorts:` (defaults: `min: 3`, `max: 3`, `min_
 
 ## 1. Pick the ideas (3)
 
-1. Take the report's **Ideas** in rank order (not "Almost" or "Clusters").
+1. **Only epic ideas** (the user's rule, 2026-11-01). The report's rank is a starting point, not the pick: judge
+   every candidate in **Ideas** and in the **Almost** line (Clusters too, if one stands out) by whether the user
+   and their viewers would find it remarkable. Use the channel's past videos as the guide (titles and `summary` in
+   `episodes/*/episode.json`, and the newest `recon/*-youtube-analysis.md` for what has done well). Epic means a
+   big first, a striking capability or number, a story with real stakes and a "wait, what?" hook. A near miss
+   that fits that taste beats a well-posted idea that doesn't.
+   - **What matters to the user** (2026-11-01): LLM breakthroughs; big military or geopolitical things happening
+     or about to happen; tech breakthroughs; shortages and price disruptions; surveillance tech; spying and
+     hacking stories; novel uses of AI and LLMs.
+   - **One-off geopolitical events** (a statement, a single strike, a diplomatic spat, a one-day incident) rank
+     lower unless they're huge and game-changing.
+   - **No epic idea, no Short:** if nothing clears the bar, make fewer than `min` (even zero) and say so in the
+     run report, naming the best candidates and why each fell short.
 2. **Similarity review** (new-episode section 0) for each against every video made, including this morning's run:
    skip / update / new. Skips go in the run report with the video they match.
 3. Drop an idea that can't stand on facts: a single unverified claim, a rumour with no reputable outlet, or an
    idea that would need footage of a private person. Note why.
 4. Keep the best **up to `max`**. If fewer than `min` survive, make only those (even zero) and say so: never pad the
-   batch with weak ideas.
+   batch with weak or merely solid ideas.
 5. Slugs: `<YYYY-MM-DD>-<short-topic>`. Series and theme: `dispatch` theme; brand "ON MILITARY" for war, defense
    and security stories, "ON TECH WATCH" for tech and business, otherwise the series the report's "Fits" line names.
+   Never a theme in `config.yaml` `upload.blocked_themes` (`car-comparisons`): those videos go to another channel and
+   are never uploaded by Claude.
 6. **Neutrality:** when Anthropic is a subject, the script attributes every claim, includes the risks and
    criticisms, and the upload gets the disclosure line (step 4).
 

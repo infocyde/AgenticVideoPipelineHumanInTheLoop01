@@ -35,6 +35,7 @@ You write one self-contained HTML page per graphic, and `npm run infographic` re
 | `--on-accent` | text on an accent fill |
 | `--hostile` `--ally` `--land` | map-style categories (opposing side / own side / neutral) |
 | `--accent-deep` | dark tint for large fills |
+| `--series-1` … `--series-8` | categorical colors (car-comparisons: one per trim, matching the segment `chip`); themes without their own fall back to accent, highlight, hostile, ally, text… |
 | `--font-display` | big numbers and headings |
 | `--font-mono` | kickers, labels, source lines (tracked uppercase) |
 | `--font-body` | row labels, short text |

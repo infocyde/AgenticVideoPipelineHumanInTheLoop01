@@ -356,6 +356,7 @@ export const runCheck = (slug: string): Issue[] => {
       long(`${w}.stats[${k}].value`, st.value, LIMITS.statValue);
       long(`${w}.stats[${k}].label`, st.label, LIMITS.statLabel);
     });
+    if (s.chip !== undefined && !split) warn(`${w}.chip`, `only split-layout themes draw the trim chip; ${ep.theme} ignores it`);
     if (split) {
       const max = LIMITS.splitPerPanel * LIMITS.splitPanels;
       if (s.stats.length > max) warn(`${w}.stats`, `${s.stats.length} stats; more than ${LIMITS.splitPanels} panels of ${LIMITS.splitPerPanel} is hard to follow`);

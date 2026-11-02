@@ -20,6 +20,11 @@ declined on 2026-10-29.
 
 ## Before you start
 
+0. **Not for this channel?** Videos in a theme listed in `config.yaml` `upload.blocked_themes` (`car-comparisons`;
+   a Short counts as its parent's theme) go to another channel, and you never upload them, even when asked to "upload
+   everything". `npm run upload-text` marks their `upload.json` `"doNotUpload": true` and `npm run pick-file` refuses
+   their files. Skip them, say which ones you skipped and why, and point the user to `out/<slug>/upload.json` for the
+   title and description to post by hand.
 1. The renders are approved and done: `out/<slug>/youtube.mp4`, and `out/<parent>/short<N>.mp4` (the same file as
    `out/<short>/youtube.mp4`) for each Short.
 2. `npm run credits -- <slug>` for the episode and each Short (it regenerates DESCRIPTION.md).

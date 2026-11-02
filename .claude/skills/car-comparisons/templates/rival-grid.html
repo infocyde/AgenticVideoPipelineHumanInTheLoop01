@@ -1,0 +1,114 @@
+<!doctype html>
+<!--
+  Car comparisons: RIVAL GRID. The model and its nearest rivals as cards, each at the trim and price it is compared at,
+  with the niche's two top numbers. Lays itself out for 3-7 cards in all (subject included):
+    3 → one row · 4 → 2×2 · 5 → 3 + 2 · 6 → 3 × 2 · 7 → 4 + 3 (short rows centered)
+  The subject card comes first, outlined in the accent color.
+  Optional photo per card: a still already in public/episodes/<slug>/images/ with its own credits.json entry (a PRESS
+  photo of that model is fine; the infographic's OWN WORK credit then names it in its notes). No photo → name-only card.
+  Copy to episodes/<slug>/infographics/<name>.html, edit DATA and the text, then:
+    npm run infographic -- <slug> <name>            (12 s MP4: cards deal in over ~2.5 s, then hold)
+    npm run infographic -- <slug> <name> --still
+  Theme variables only. Every price and number must be in the script or the fact-check log, same units for every car.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<title>2027 RAV4 and its rivals</title>
+<meta name="sources" content="EXAMPLE: makers' pricing pages, Oct 2026; fueleconomy.gov">
+<style>
+  .safe { position: absolute; left: 200px; right: 200px; top: 110px; bottom: 110px; display: flex; flex-direction: column; }
+  .kicker { font-family: var(--font-mono); font-weight: 700; font-size: 30px; letter-spacing: 8px; text-transform: uppercase; color: var(--accent);
+            display: flex; align-items: center; gap: 20px; animation: rise 600ms cubic-bezier(.2,.8,.2,1) both; }
+  .kicker::before { content: ""; width: 80px; height: 4px; background: var(--accent); }
+  h1 { font-family: var(--font-display); font-weight: 800; font-size: 92px; line-height: .95; margin: 14px 0 26px; text-transform: uppercase; text-shadow: var(--text-shadow);
+       animation: rise 700ms 120ms cubic-bezier(.2,.8,.2,1) both; }
+  .grid { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 22px; }
+  .row { display: flex; justify-content: center; gap: 22px; }
+  .card { width: var(--card-w); height: var(--card-h); background: var(--panel); border: 2px solid var(--line); display: flex; flex-direction: column;
+          overflow: hidden; position: relative; animation: deal 600ms cubic-bezier(.2,.8,.2,1) both; }
+  .card.subject { border-color: var(--accent); box-shadow: var(--accent-glow); }
+  .photo { flex: 0 0 var(--photo-h); background-size: cover; background-position: center; border-bottom: 1px solid var(--line); }
+  .body { flex: 1; padding: 14px 20px 16px; display: flex; flex-direction: column; min-height: 0; }
+  .brand { font-family: var(--font-mono); font-weight: 700; font-size: 24px; letter-spacing: 4px; text-transform: uppercase; color: var(--dim); }
+  .model { font-family: var(--font-display); font-weight: 800; font-size: var(--model); line-height: 1; text-transform: uppercase; white-space: nowrap; margin-top: 4px; }
+  .trim { font-family: var(--font-body); font-weight: 800; font-size: 32px; color: var(--highlight); margin-top: 6px; white-space: nowrap; }
+  .card.subject .trim { color: var(--accent); }
+  .metrics { margin-top: auto; display: flex; gap: 18px; }
+  .metric { flex: 1; min-width: 0; }
+  .metric .v { font-family: var(--font-display); font-weight: 800; font-size: var(--value); line-height: 1; white-space: nowrap; }
+  .metric .l { font-family: var(--font-mono); font-size: 20px; letter-spacing: 2px; text-transform: uppercase; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .flag { position: absolute; top: 0; right: 0; font-family: var(--font-mono); font-weight: 700; font-size: 22px; letter-spacing: 3px;
+          color: var(--on-accent); background: var(--accent); padding: 6px 12px; }
+  .source { font-family: var(--font-mono); font-size: 24px; letter-spacing: 3px; text-transform: uppercase; color: var(--dim); margin-top: 22px;
+            animation: fade 600ms 2800ms both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: none; } }
+  @keyframes deal { from { opacity: 0; transform: translateY(50px) scale(.94); } to { opacity: 1; transform: none; } }
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+</style>
+</head>
+<body>
+<div class="safe">
+  <div class="kicker">The rivals</div>
+  <h1>Who it's up against</h1>
+  <div class="grid" id="grid"></div>
+  <div class="source">MSRP incl. destination · EPA combined · Sources: makers, fueleconomy.gov · EXAMPLE DATA</div>
+</div>
+<script>
+  // EXAMPLE DATA: replace with the episode's figures. The subject first (`subject: true`). `trim` + `price` = the trim
+  // it is compared at (the same price point for everyone). `metrics`: the niche's two top numbers, same order and units
+  // on every card. `photo`: a file name in public/episodes/<slug>/images/ (optional).
+  const DATA = [
+    { subject: true, brand: "Toyota", model: "RAV4", trim: "XLE", price: 34200, metrics: [["39", "MPG comb."], ["8.6 in", "Clearance"]], flag: "NEW" },
+    { brand: "Honda", model: "CR-V", trim: "EX", price: 34500, metrics: [["30", "MPG comb."], ["7.8 in", "Clearance"]] },
+    { brand: "Mazda", model: "CX-50", trim: "Preferred", price: 33900, metrics: [["27", "MPG comb."], ["8.6 in", "Clearance"]] },
+    { brand: "Subaru", model: "Forester", trim: "Premium", price: 33600, metrics: [["29", "MPG comb."], ["8.7 in", "Clearance"]] },
+    { brand: "Hyundai", model: "Tucson", trim: "SEL", price: 33200, metrics: [["28", "MPG comb."], ["7.6 in", "Clearance"]] },
+  ];
+  const fmt = (n) => (typeof n === "number" ? "$" + Math.round(n).toLocaleString("en-US") : n);
+  const n = DATA.length;
+  const rows = { 1: [1], 2: [2], 3: [3], 4: [2, 2], 5: [3, 2], 6: [3, 3], 7: [4, 3] }[n] ?? [Math.ceil(n / 2), Math.floor(n / 2)];
+  const perRow = Math.max(...rows);
+  const W = 1520, H = 600, GAP = 22; // the grid's share of the safe area
+  const hasPhotos = DATA.some((d) => d.photo);
+  const cardW = Math.floor((W - (perRow - 1) * GAP) / perRow);
+  const cardH = Math.min(rows.length === 1 ? (hasPhotos ? 520 : 340) : 290, Math.floor((H - (rows.length - 1) * GAP) / rows.length));
+  const css = document.documentElement.style;
+  css.setProperty("--card-w", cardW + "px");
+  css.setProperty("--card-h", cardH + "px");
+  css.setProperty("--photo-h", hasPhotos ? Math.round(cardH * (rows.length === 1 ? 0.48 : 0.36)) + "px" : "0px");
+  css.setProperty("--model", (perRow >= 4 ? 52 : 64) + "px");
+  css.setProperty("--value", (perRow >= 4 ? 44 : 54) + "px");
+  // Photos live in public/episodes/<slug>/images/; this page sits in episodes/<slug>/infographics/.
+  const slug = decodeURIComponent(document.baseURI).replace(/\\/g, "/").split("/episodes/")[1]?.split("/")[0] ?? "";
+  const photoUrl = (f) => `../../../public/episodes/${slug}/images/${f}`;
+  const grid = document.getElementById("grid");
+  let k = 0;
+  rows.forEach((count) => {
+    const row = document.createElement("div");
+    row.className = "row";
+    DATA.slice(k, k + count).forEach((d, j) => {
+      const el = document.createElement("div");
+      el.className = "card" + (d.subject ? " subject" : "");
+      el.style.animationDelay = 450 + (k + j) * 200 + "ms";
+      el.innerHTML = `${hasPhotos ? `<div class="photo" style="${d.photo ? `background-image:url('${photoUrl(d.photo)}')` : ""}"></div>` : ""}
+        <div class="body">
+          <div class="brand">${d.brand}</div>
+          <div class="model">${d.model}</div>
+          <div class="trim">${d.trim} · ${fmt(d.price)}</div>
+          <div class="metrics">${d.metrics.map(([v, l]) => `<div class="metric"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("")}</div>
+        </div>${d.flag ? `<div class="flag">${d.flag}</div>` : ""}`;
+      row.appendChild(el);
+    });
+    k += count;
+    grid.appendChild(row);
+  });
+  // Shrink any model name that overflows its card.
+  document.querySelectorAll(".model").forEach((m) => {
+    const max = cardW - 40;
+    let size = parseFloat(getComputedStyle(m).fontSize);
+    while (m.scrollWidth > max && size > 30) m.style.fontSize = --size + "px";
+  });
+</script>
+</body>
+</html>

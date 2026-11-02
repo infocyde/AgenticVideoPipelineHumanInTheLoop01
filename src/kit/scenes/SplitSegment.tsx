@@ -216,7 +216,7 @@ export const SplitSegment: React.FC<{ s: ResolvedSegment; slam: boolean }> = ({ 
               padding: "4px 10px",
             }}
           >
-            <span style={{ color: colors.accent }}>■</span> FILE {pad(s.num)} · {visualIdx + 1}/{visuals.length}
+            <span style={{ color: colors.accent }}>■</span> {copy.frameLabel ?? "FILE"} {pad(s.num)} · {visualIdx + 1}/{visuals.length}
           </div>
         )}
       </div>
@@ -253,6 +253,20 @@ export const SplitSegment: React.FC<{ s: ResolvedSegment; slam: boolean }> = ({ 
           )}
         </div>
         <div style={{ marginTop: 16, fontFamily: fonts.mono, fontWeight: 700, fontSize: 24, letterSpacing: 5, color: colors.highlight }}>
+          {seg.chip !== undefined && (
+            <span
+              style={{
+                display: "inline-block",
+                width: 20,
+                height: 20,
+                marginRight: 14,
+                verticalAlign: "-2px",
+                borderRadius: 3,
+                background: theme.series?.[seg.chip - 1] ?? colors.accent,
+                opacity: badgeIn,
+              }}
+            />
+          )}
           {seg.region.slice(0, regionChars)}
         </div>
         <Headline text={seg.headline} width={col.width} wipe={headlineWipe} maxSize={76} minSize={44} maxLines={2} />

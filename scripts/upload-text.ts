@@ -10,6 +10,7 @@
 //        npm run upload-text -- <slug> --url <youtube url>   (records the uploaded video's link; Shorts read the parent's)
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { blockMessage, checkUpload } from "./lib/upload.ts";
 import { fail, ok, parseArgs, requireSlug, ROOT, warn } from "./lib/util.ts";
 
 const MAX = 5000;
@@ -24,7 +25,11 @@ const ep = existsSync(epFile) ? JSON.parse(readFileSync(epFile, "utf8")) : {};
 const isShort = ep.format === "short";
 const jsonFile = join(out(slug), "upload.json");
 const prev = existsSync(jsonFile) ? JSON.parse(readFileSync(jsonFile, "utf8")) : {};
-const url = str("url") ?? prev.url ?? "";
+// Another channel's video (config.yaml upload.blocked_themes): the text is still written, for the user to post by hand,
+// but marked doNotUpload, and no upload link is ever recorded for it.
+const block = checkUpload(slug);
+if (block.blocked && str("url")) fail(`not recording a link: ${blockMessage(slug, block)}`);
+const url = block.blocked ? "" : (str("url") ?? prev.url ?? "");
 
 // Everything below the "---" line, split into the title line and the rest.
 const body = readFileSync(descFile, "utf8").split(/^---$/m).slice(1).join("---").trim();
@@ -69,5 +74,9 @@ text = text.replace(/</g, "‹").replace(/>/g, "›");
 const n = [...text].length;
 if (n > MAX) warn(`description is ${n} characters, over YouTube's ${MAX}; trim it by hand in ${jsonFile.replace(ROOT, ".")}`);
 
-writeFileSync(jsonFile, JSON.stringify({ title: title.trim(), description: text, url }, null, 2) + "\n");
+const record = block.blocked
+  ? { title: title.trim(), description: text, doNotUpload: true, reason: blockMessage(slug, block) }
+  : { title: title.trim(), description: text, url };
+writeFileSync(jsonFile, JSON.stringify(record, null, 2) + "\n");
+if (block.blocked) warn(`DO NOT UPLOAD: ${blockMessage(slug, block)}. upload.json is for posting by hand.`);
 ok(`out/${slug}/upload.json  (title ${[...title.trim()].length}/100, description ${n}/${MAX}${url ? `, url ${url}` : ""})`);

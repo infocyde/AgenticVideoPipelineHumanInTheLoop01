@@ -1,4 +1,4 @@
-# Scheduled auto run (Task Scheduler "BriefKit auto long Shorts", 06:00 and 18:00).
+# Scheduled auto run (Task Scheduler "BriefKit auto long Shorts", 05:00 and 17:00).
 # Opens Claude Code interactively in its own window in this repo (browser extension on, auto permission mode, Opus at
 # high effort), with a first message that runs the recon skill and then the auto-long-shorts skill (3 long Shorts,
 # end to end, uploaded as Private). This script stays behind as the supervisor: it keeps the PC awake, waits until the

@@ -7,6 +7,7 @@
 // to the tab that was in front once the file is picked, unless --stay. Start it in the background, then click.
 import { existsSync, statSync } from "node:fs";
 import { resolve } from "node:path";
+import { blockMessage, checkUpload, slugFromPath } from "./lib/upload.ts";
 import { fail, info, parseArgs, ROOT, run, venvPython } from "./lib/util.ts";
 
 if (process.platform !== "win32") fail("pick-file drives the Windows Open dialog; it only runs on Windows");
@@ -16,6 +17,12 @@ const file = positional[0];
 if (!file) fail('usage: npm run pick-file -- <path> [--tab "<tab title start>"] [--stay] [--timeout 20]');
 const abs = resolve(ROOT, file);
 if (!existsSync(abs) || !statSync(abs).isFile()) fail(`no such file: ${abs}`);
+// Videos for another channel (config.yaml upload.blocked_themes) never go into an upload dialog.
+const fileSlug = slugFromPath(abs, ROOT);
+if (fileSlug) {
+  const block = checkUpload(fileSlug);
+  if (block.blocked) fail(`not picking ${abs}: ${blockMessage(fileSlug, block)}. Upload it to that channel yourself.`);
+}
 
 const py = venvPython();
 if (!existsSync(py)) fail("no .venv: run npm run setup:align first");

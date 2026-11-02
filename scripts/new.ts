@@ -1,5 +1,5 @@
 // Scaffold a new episode: episodes/<slug>/ (data) and public/episodes/<slug>/ (media), then sync.
-// Usage: npm run new -- <slug> [--format countdown|list|short|long-short] [--count N] [--theme threat-brief|clean-light|after-dark|military|military-comparisons|erotic|frontier|blackout|dispatch]
+// Usage: npm run new -- <slug> [--format countdown|list|short|long-short] [--count N] [--theme threat-brief|clean-light|after-dark|military|military-comparisons|erotic|frontier|blackout|dispatch|car-comparisons]
 //        npm run new -- <slug> --format music-video --song <path> [--title "…"] [--subtitle "…"] [--artist "…"] [--theme id]
 //   --format short: a standalone YouTube Short (vertical 9:16, its own article and facts); --count = scenes (1-3, default 1).
 //   --format long-short: a standalone long Short (format "short" with "long": true, 1-2.5 min; config.yaml shorts.long):
@@ -94,16 +94,21 @@ const theme = (flags.theme ?? (long ? longCfg.theme : "threat-brief")) as string
 if (!(THEME_IDS as readonly string[]).includes(theme)) fail(`unknown theme "${theme}". Available: ${THEME_IDS.join(", ")}`);
 
 // Carry brand/theme/audio from the latest episode of the same format (slugs sort by date); a Short falls back to the
-// latest episode of any format, so it looks like the channel.
+// latest episode of any format, so it looks like the channel. With --theme, an episode of the same format in that theme
+// comes first; a theme that belongs to another channel (config.yaml upload.blocked_themes) carries only from its own
+// episodes, so a car comparison never inherits this channel's brand.
 let carry: Partial<EpisodeInput> | undefined;
 const previous = previousSlugs();
-for (const pass of format === "short" ? ["same", "any"] : ["same"]) {
+const otherChannel = loadConfig().upload.blocked_themes.includes(theme);
+const passes = [...(flags.theme ? ["theme"] : []), ...(otherChannel ? [] : format === "short" ? ["same", "any"] : ["same"])];
+for (const pass of passes) {
   for (const prev of previous) {
     if (carry) break;
     try {
       const e = readJson<EpisodeInput>(paths(prev).episode);
       if (isMusicVideo(e)) continue; // no brand or narration settings to carry
-      if (pass === "any" || (e.format ?? "countdown") === format) {
+      const sameFormat = (e.format ?? "countdown") === format;
+      if (pass === "theme" ? sameFormat && (e.theme ?? "threat-brief") === theme : pass === "any" || sameFormat) {
         // A long Short keeps its own theme (shorts.long.theme) unless --theme names one.
         carry = { brand: e.brand, theme: flags.theme || long ? (theme as EpisodeInput["theme"]) : e.theme, audio: e.audio };
         info(`carrying brand, theme and audio settings over from ${prev}`);
