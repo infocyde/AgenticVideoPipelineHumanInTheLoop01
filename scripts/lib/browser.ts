@@ -19,12 +19,16 @@ const remotionChrome = (): string | undefined => {
   return undefined;
 };
 
+// Playwright adds --no-sandbox to every Chromium launch unless chromiumSandbox is true. shot and xpost load
+// remote pages, so keep the OS sandbox on: a renderer exploit then stays inside it. Never fall back to no sandbox.
+const SAFE = { chromiumSandbox: true } as const;
+
 export const launchBrowser = async (): Promise<Browser> => {
   const exe = remotionChrome();
   const tries: Array<() => Promise<Browser>> = [
-    ...(exe ? [() => chromium.launch({ executablePath: exe })] : []),
-    () => chromium.launch({ channel: "chrome" }),
-    () => chromium.launch({ channel: "msedge" }),
+    ...(exe ? [() => chromium.launch({ ...SAFE, executablePath: exe })] : []),
+    () => chromium.launch({ ...SAFE, channel: "chrome" }),
+    () => chromium.launch({ ...SAFE, channel: "msedge" }),
   ];
   for (const t of tries) {
     try {
@@ -38,7 +42,8 @@ export const launchBrowser = async (): Promise<Browser> => {
 
 /** A context whose pages can run callbacks compiled by tsx (esbuild's keepNames emits calls to `__name`). */
 export const newContext = async (browser: Browser, opts: BrowserContextOptions): Promise<BrowserContext> => {
-  const ctx = await browser.newContext(opts);
+  // No page may save files to disk (Playwright accepts downloads by default); captures only screenshot.
+  const ctx = await browser.newContext({ acceptDownloads: false, ...opts });
   await ctx.addInitScript("globalThis.__name = (fn) => fn;");
   return ctx;
 };

@@ -195,7 +195,7 @@ x_posts:
   #          it, credited "X POST" (images/ only, never the thumbnail). Risk you accept: screenshots of posts are
   #          shown as commentary, not under a CC license.
   #   false: posts on X are leads only; check errors on an X link in sources or an X POST credit.
-  enabled: false
+  enabled: true
 
 recon:
   # Video ideas from X (the recon skill; say "recon"). Claude reads these pages in your own browser (Brave, through
