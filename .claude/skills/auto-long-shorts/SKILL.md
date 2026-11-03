@@ -11,6 +11,10 @@ in CLAUDE.md still applies in full, and so do the new-episode skill (sections 0,
 skill and the CLAUDE.md "Agents" section. Nobody can answer a question during a run: never ask, decide by the rules
 below, and write what you decided into the run report.
 
+**Scheduled runs only build Shorts when `auto_long_shorts.enabled` is `true`** (`false` since 2026-11-03: the 05:00 and
+17:00 runs do recon only, and `daily-run.ps1` doesn't start this skill). When the user asks for it directly, run it
+anyway.
+
 Settings: `config.yaml` `auto_long_shorts:` (defaults: `min: 3`, `max: 3`, `min_free_gb: 25`, `max_agents: 3`,
 `visibility: private`).
 

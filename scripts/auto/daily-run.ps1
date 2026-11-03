@@ -1,7 +1,7 @@
 # Scheduled auto run (Task Scheduler "BriefKit auto long Shorts", 05:00 and 17:00).
 # Opens Claude Code interactively in its own window in this repo (browser extension on, auto permission mode, Opus at
-# high effort), with a first message that runs the recon skill and then the auto-long-shorts skill (3 long Shorts,
-# end to end, uploaded as Private). This script stays behind as the supervisor: it keeps the PC awake, waits until the
+# high effort), with a first message that runs the recon skill and then, when config.yaml auto_long_shorts.enabled is
+# true, the auto-long-shorts skill (3 long Shorts, end to end, uploaded as Private); false = recon only. This script stays behind as the supervisor: it keeps the PC awake, waits until the
 # run report says "Status: done" (or the window closes, or 10 hours pass), then closes the window.
 # Interactive, not `claude -p`: a print-mode session exits when its turn ends and kills the background agents that
 # produce the Shorts (seen 2026-11-01 00:39).
@@ -47,7 +47,31 @@ try {
     Start-Sleep -Seconds 30
   }
 
+  # config.yaml auto_long_shorts.enabled (default true when missing): false = recon only, no Shorts are built.
+  $build = $true
+  $inBlock = $false
+  foreach ($line in Get-Content (Join-Path $repo "config.yaml")) {
+    if ($line -match '^auto_long_shorts:') { $inBlock = $true; continue }
+    if ($inBlock -and $line -match '^\S') { break }
+    if ($inBlock -and $line -match '^\s+enabled:\s*(true|false)\b') { $build = $Matches[1] -eq 'true'; break }
+  }
+  if (-not $build -and $SkipRecon) { Note "auto_long_shorts.enabled is false and -SkipRecon was given: nothing to do"; exit 0 }
+  Note ("mode: " + $(if ($build) { "recon + long Shorts" } else { "recon only (auto_long_shorts.enabled: false)" }))
+
   $step1 = if ($SkipRecon) { "1. Skip recon this time: use the newest recon report in recon/ (manual rerun)." } else { "1. Run the recon skill (read-only on X)." }
+  if (-not $build) {
+  @"
+Scheduled recon run $stamp, started by scripts/auto/daily-run.ps1. Nobody is watching this window.
+
+1. Run the recon skill (read-only on X).
+2. Do NOT run the auto-long-shorts skill and make no videos: config.yaml auto_long_shorts.enabled is false (recon only).
+3. Write the run report recon/runs/$stamp.md: the recon report's path and its top ideas, one line each.
+
+Never ask a question: there is no one to answer. On a blocking problem (browser not connected, an X login or
+CAPTCHA page), write it in the run report and stop. The last line of the run report must be "Status: done" (or
+"Status: stopped: <reason>"); this window is closed once it is there.
+"@ | Set-Content -Path $promptFile -Encoding utf8
+  } else {
   @"
 Scheduled auto run $stamp, started by scripts/auto/daily-run.ps1. Nobody is watching this window.
 
@@ -61,6 +85,7 @@ before rendering the next; never save the uploads for the end. Keep agents few: 
 (config.yaml) running at once, nested ones included; queue the rest. The last line of the run report must be
 "Status: done" (or "Status: stopped: <reason>"); this window is closed once it is there.
 "@ | Set-Content -Path $promptFile -Encoding utf8
+  }
 
   $claude = Join-Path $env:USERPROFILE ".local\bin\claude.exe"
   $first = "Scheduled auto run: read recon/runs/$stamp.prompt.txt and do exactly what it says."

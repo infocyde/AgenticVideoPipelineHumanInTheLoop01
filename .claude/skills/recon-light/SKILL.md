@@ -1,6 +1,6 @@
 ---
 name: recon-light
-description: Use when the user says "recon light", "light recon", "quick recon" or asks for a quick look at what's on X. A fast, small version of recon - reads the last 50 posts on each of the user's X lists and the top 20 trends, in the user's own signed-in browser (Brave, through the Claude browser extension), read-only, and writes one markdown file with the top 5 things the user might be interested in, and shows the same list in chat. No trend dives.
+description: Use when the user says "recon light", "light recon", "quick recon" or asks for a quick look at what's on X. A fast, small version of recon - reads the last 100 posts on each of the user's X lists and the top 40 trends, in the user's own signed-in browser (Brave, through the Claude browser extension), read-only, and writes one markdown file with the top 5 things the user might be interested in, and shows the same list in chat. No trend dives.
 ---
 
 # Recon light
@@ -15,8 +15,8 @@ Read `config.yaml` `recon_light:` (list URLs come from `recon: lists`). Defaults
 
 | Key | Default | What it does |
 |---|---|---|
-| `posts_per_list` | 50 | read the newest this many posts on each list in `recon: lists`, no time window |
-| `trends` | 20 | read the first this many trends on `https://x.com/explore/tabs/trending` |
+| `posts_per_list` | 100 | read the newest this many posts on each list in `recon: lists`, no time window |
+| `trends` | 40 | read the first this many trends on `https://x.com/explore/tabs/trending` |
 | `picks` | 5 | items in the file |
 | `model` | `haiku` | who runs it: `haiku`, `sonnet` or `opus` (an agent on the latest of that model), or `main` (this session) |
 
@@ -33,13 +33,13 @@ Follow the **Browser** section of the `recon` skill exactly (`.claude/skills/rec
 
 ## Procedure
 
-### 1. Lists: last 50 posts each
+### 1. Lists: last `posts_per_list` posts each (100)
 
 For each URL in `recon: lists`: `navigate`, then read with the `javascript_tool` snippet from the recon skill (step 1), scroll about a screen, read again, de-duplicating by post link, until you have `posts_per_list` posts. Pinned posts don't count. No time cutoff; if the list runs out first, use what's there. Keep link, author, badge, time, text, linked article, engagement.
 
-### 2. Trending: top 20
+### 2. Trending: top `trends` (40)
 
-`navigate` to `https://x.com/explore/tabs/trending` and `get_page_text`. Take the first `trends` entries in page order: name, category, post count. Don't open any trend (no dives) and don't read the News tab. X's own summaries are leads, not facts.
+`navigate` to `https://x.com/explore/tabs/trending` and `get_page_text`. Take the first `trends` entries in page order: name, category, post count. If the page shows fewer than `trends`, scroll down about a screen and read again (de-duplicating by name) until you have them or the list ends; stop at `trends`, never past it. Don't open any trend (no dives) and don't read the News tab. X's own summaries are leads, not facts.
 
 ### 3. Pick the top 5
 

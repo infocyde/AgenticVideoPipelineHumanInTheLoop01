@@ -219,8 +219,8 @@ recon_light:
   # Quick recon (the recon-light skill; say "recon light"): the newest posts on each list in recon: lists plus the top
   # of the trending tab, read-only in your browser, and the whole output is one file, recon/light/<date>-<HHmm>.md,
   # with the top few things you might be interested in, shown in chat too. No trend dives, no News tab.
-  posts_per_list: 50  # newest posts read on each list (no time window)
-  trends: 20          # first this many trends on x.com/explore/tabs/trending
+  posts_per_list: 100 # newest posts read on each list (no time window; 50 until 2026-11-03)
+  trends: 40          # first this many trends (20 until 2026-11-03) on x.com/explore/tabs/trending
   picks: 5            # items in the file (fewer if fewer are worth it)
   model: haiku        # model that does the reading and writing, in its own agent: haiku, sonnet or opus (latest of
                       # each), or main to do it in the current session on whatever model that runs. A change applies
@@ -252,7 +252,9 @@ auto_long_shorts:
   # The scheduled auto run (scripts/auto/daily-run.ps1 via Task Scheduler, 05:00 and 17:00; install or remove with
   # scripts/auto/install-task.ps1 [-Remove]): recon, then the auto-long-shorts skill makes the best ideas from that
   # report into long Shorts end to end, with no handoffs, and uploads them. Run report: recon/runs/<date>-<HHmm>.md.
-  min: 3             # aim for at least this many; fewer only when fewer ideas survive the similarity and fact checks
+  enabled: false     # true: the scheduled run does recon, then builds and uploads long Shorts. false: the scheduled run
+                     # does recon only (the user's choice, 2026-11-03); the skill still runs when the user asks for it
+  min: 3            # aim for at least this many; fewer only when fewer ideas survive the similarity and fact checks
   max: 3             # never more than this many per run (3 per session since 2026-11-01; was 7)
   min_free_gb: 25    # C: must have this much free space or the run stops before producing anything
   max_agents: 3      # background agents running at once, nested ones included; the rest wait in a queue (since
