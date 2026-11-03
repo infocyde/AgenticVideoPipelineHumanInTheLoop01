@@ -35,7 +35,8 @@
             "frontier",
             "blackout",
             "dispatch",
-            "car-comparisons"
+            "car-comparisons",
+            "asked-claude"
           ]
         },
         "format": {
@@ -939,7 +940,8 @@
             "frontier",
             "blackout",
             "dispatch",
-            "car-comparisons"
+            "car-comparisons",
+            "asked-claude"
           ]
         },
         "song": {

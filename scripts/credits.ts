@@ -6,6 +6,7 @@ import { isStableAudio, licenseLabel, musicVideoCredits, parseCredits, usedCredi
 import { parseLyrics } from "../src/kit/lib/lyrics.ts";
 import { FPS } from "../src/kit/lib/timing.ts";
 import type { Credit } from "../src/kit/schema.ts";
+import { aboutBlock } from "./lib/askedClaude.ts";
 import { LIBRARY } from "./lib/assets.ts";
 import { loadFromDisk } from "./lib/episode.ts";
 import { isMusicVideoSlug, loadMusicVideoFromDisk } from "./lib/musicVideo.ts";
@@ -90,7 +91,7 @@ ${title}
 
 ${ep.summary ?? "<1–2 sentence summary: what this episode covers. Only claims from the source article.>"}
 
-${
+${aboutBlock(ep.theme, d.p.src)}${
   isShort
     ? ep.parent
       ? `Full video: <link to ${ep.parent} on YouTube>\n\n#Shorts`
@@ -99,7 +100,7 @@ ${
 }
 
 SOURCES
-${ep.sources.length ? ep.sources.map((s) => `- ${s.title}: ${s.url}`).join("\n") : "- <add sources to episode.json>"}
+${ep.sources.length ? ep.sources.map((s) => `- ${s.title}: ${s.url}`).join("\n") : ep.theme === "asked-claude" ? "- None: this is Claude's opinion from its training. Nothing was looked up or fact-checked for it." : "- <add sources to episode.json>"}
 
 CREDITS
 Footage & images:

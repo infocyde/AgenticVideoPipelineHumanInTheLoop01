@@ -53,7 +53,7 @@ Articles are often AI-generated research reports, so check them before you scrip
 3. Rewrite with the results:
    - Replace wrong figures with verified ones.
    - Cut anything unverifiable.
-   - Attribute contested or official claims ("the HUR says", "Moscow claims").
+   - Attribute contested or official claims ("the HUR says", "Moscow claims"). Adversary state media (Xinhua, Global Times, RT, TASS, PressTV, KCNA) are official claims of that government, never neutral confirmation of a figure (CLAUDE.md rule 9).
    - Give ranges where estimates conflict.
    - Add a line to the script saying where the figures come from, if they're mostly official claims.
 4. Put every source the script now relies on in `episode.json` `sources`. Drop unreliable references from the article.
@@ -72,6 +72,7 @@ Shape (the scaffolded file shows it):
 - **No colons and no abrupt fragment sentences** in any narration (episodes, Shorts, explainers). A bare fragment such as *"First, the test."* followed by a new sentence reads choppily, and the voice engine voices it as its own tiny sentence and can chop it off mid-word (it did on 2026-10-21). Fold such openings into a full, flowing sentence: *"In the first test, Anthropic's red team gave it…"*, *"For comparison, …"*, *"Released on October seventh, it costs…"*. The kit's `Number one.` segment markers are the one exception, because the number slam needs them.
 - After voicing, run the voice check (step 3c). A cut inside a word can't be fixed with a fade, so reword the line and voice it again.
 - **Every claim must be in the article or in the step 1b fact-check log.** List anything else you added (context, definitions) and ask the user to approve or cut it.
+- **One standard for every side** (CLAUDE.md rule 9). The US and its allies get the same words, the same weight for official claims, and the same caveats as their adversaries. Don't excuse an adversary's act or soften it into "tensions" or "a response", and don't hang moral asides on US actions that the same story about China, Russia or Iran wouldn't get. Watch for this especially when the article (often AI-written) carries that slant: fix the framing, keep the facts. Before the approval stop, run the swap test on the script, the `summary` and the on-screen text (would a sentence change with the countries reversed?), rewrite what fails, and log it in `notes.md` under "One standard". Shorts and long Shorts (sections 8 and 8b) follow this too.
 - Write with cues in mind: each stat you plan to show should be spoken with a distinctive word ("kiwifruit", "ninety", "halted"), and each b-roll cut should land on a distinctive phrase.
 
 Optionally run `npm run align -- <slug> --estimate` and draft `episode.json` against the estimated timing, so the user can preview the layout before recording.
@@ -205,6 +206,7 @@ YouTube Shorts are vertical (9:16, 1080×1920) and each one is its own small epi
 - Structure: a hook line in the first 2 s (no "welcome", no throat-clearing); a title line; 1–3 scenes, each opening with a distinctive marker inside a full sentence ("In the first test, Anthropic's red team…", "For comparison, …", never a bare "First, the test."); one outro line; a CTA ("Subscribe for the full briefing.").
 - **Facts only from the parent's article and its fact-check log** (or the standalone Short's own fact-check), CLAUDE.md rule 2. Reuse the episode's checked wording wherever you can.
 - Same ear rules as the main script: spell out numbers, no symbols, no colons or abrupt fragment sentences.
+- Same framing rule as the main script: one standard for every side (CLAUDE.md rule 9), swap test included. A short hook is where a one-sided word slips in most easily.
 
 **episode.json**: `summary` (1–2 sentences: the Short's one idea and its key fact; the description adds a link line to the full video and `#Shorts`), `coldOpen.beats` (1 hook beat: stamp ≤ 16 chars over a strong visual), `coldOpen.title` (kicker = brand, `big` ≤ 4 chars such as "#1" or "VS", `small` ≤ 2 short lines), `segments` (1–3 items or text sections, each with stats and 1–3 visuals; a `map` shows full-height first, then the b-roll), `outro` (1–2 lines + `cta`). `sourcesCard` and `creditsCard` stay `false`: on Shorts the sources and credits go in the description. File-footage `note`s and AI-image notes apply as usual.
 

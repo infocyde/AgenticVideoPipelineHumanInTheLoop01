@@ -107,6 +107,8 @@ Close your tab. Then give the user the list in chat, best first, at most `ideas`
    You: <reposted | quoted: "their words"> <link>   (only on stories with the user's mark; always a long-Short candidate)
 ```
 
+**Write the blurbs with one standard for every side** (CLAUDE.md rule 9). Headlines and "Why" lines judge the US and its allies by the same standard as their adversaries. Don't pick up a post's or trend summary's framing that excuses an adversary ("responds to US provocation") or holds the US to a saintly bar. Say what happened in neutral words, and attribute state-media or official claims ("per Chinese state media", "the Pentagon says").
+
 Before the list, one line: what was read (lists, posts, time window, trends). After it, one line for stories that almost made it, so the user can ask for them.
 
 **Save a copy** to `recon/<YYYY-MM-DD>.md` (`-2`, `-3` for a second run the same day): the same list plus, under it, every cluster you formed with its post links and account counts. `recon/` is local and git-ignored; later runs read it to skip ideas the user has already seen.

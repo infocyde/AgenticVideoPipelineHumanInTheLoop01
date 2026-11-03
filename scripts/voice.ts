@@ -81,12 +81,25 @@ function listClips() {
 }
 
 // --- settings for this run: config.yaml, then command-line overrides
-const engine = (str("engine") ?? v.engine) as "chatterbox" | "kokoro" | "qwen" | "qwen-cloud" | "elevenlabs";
+// An Asked Claude episode (theme asked-claude) speaks in Claude's own voice, config.yaml asked_claude.voice, unless
+// --engine / --reference say otherwise.
+const askedClaude = (() => {
+  const s = parseArgs().positional[0];
+  if (flags.sample || !s || !existsSync(paths(s).episode)) return false;
+  try {
+    return readJson<EpisodeInput>(paths(s).episode).theme === "asked-claude";
+  } catch {
+    return false;
+  }
+})();
+const acVoice = loadConfig().asked_claude.voice;
+const engine = (str("engine") ?? (askedClaude ? acVoice.engine : v.engine)) as "chatterbox" | "kokoro" | "qwen" | "qwen-cloud" | "elevenlabs";
 if (!["chatterbox", "kokoro", "qwen", "qwen-cloud", "elevenlabs"].includes(engine)) fail(`--engine must be chatterbox, kokoro, qwen, qwen-cloud or elevenlabs`);
 const cloud = engine === "qwen-cloud";
 const eleven = engine === "elevenlabs";
 const model = (str("model") ?? v.chatterbox.model) as "turbo" | "standard";
-const refArg = str("reference") === "none" ? "" : (str("reference") ?? refDefault); // --reference none: the standard model's built-in voice
+const refArg = str("reference") === "none" ? "" : (str("reference") ?? (askedClaude ? acVoice.reference : refDefault)); // --reference none: the standard model's built-in voice
+if (askedClaude) info(`Asked Claude episode: Claude's voice (config.yaml asked_claude.voice: ${engine}${engine !== "kokoro" && engine !== "elevenlabs" ? `, ${refArg}` : ""})`);
 const reference = engine !== "kokoro" && !eleven && refArg ? resolve(ROOT, refArg) : "";
 const qwenSize = (str("size") ?? v.qwen.size) as "1.7B" | "0.6B";
 const num = (k: string, d: number) => (str(k) === undefined ? d : Number(str(k)));

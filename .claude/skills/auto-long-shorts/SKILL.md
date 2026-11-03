@@ -61,6 +61,10 @@ Settings: `config.yaml` `auto_long_shorts:` (defaults: `min: 3`, `max: 3`, `min_
    are never uploaded by Claude.
 6. **Neutrality:** when Anthropic is a subject, the script attributes every claim, includes the risks and
    criticisms, and the upload gets the disclosure line (step 4).
+7. **One standard for every side** (CLAUDE.md rule 9, the user's rule, 2026-11-02): the US and its allies are judged
+   by the same standard as their adversaries, with no excuses for one side and a saintly bar for the other. The
+   writer applies it, and review (step 2) enforces it with the swap test. Recon blurbs are leads, so their framing
+   doesn't carry into the script.
 
 ## 2. Produce (subagents, queued, at most `max_agents` at once)
 
@@ -92,7 +96,10 @@ high). The default config gives, per Short:
    figure (table in `notes.md`: claim, what sources show, what the video says); `voiceover.txt` per section 8b; the
    `summary`. No colons, no fragment sentences, a viewer question before the CTA.
 2. **Review** (opus): if the main session is opus, do it yourself: read `notes.md`, `article.md`, `voiceover.txt`;
-   fix overreach, unattributed claims, missing caveats, ear problems. This replaces the user's script approval, so
+   fix overreach, unattributed claims, missing caveats, one-sided framing (the swap test of CLAUDE.md rule 9 on the
+   script, `summary` and on-screen text: softened adversary acts, state media taken as fact, moral asides on US
+   actions that an adversary's equivalent wouldn't get; logged in `notes.md` under "One standard"), ear problems.
+   This replaces the user's script approval, so
    be strict: when a figure isn't sourced, cut it.
 3. **Production agent** (opus), started after review, which runs the **media** step (sonnet agent) in parallel:
    voice with **ElevenLabs** (`config.yaml` `auto_long_shorts.voiceEngine: elevenlabs`, the user's choice 2026-11-02:

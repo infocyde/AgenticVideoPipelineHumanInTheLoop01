@@ -3,8 +3,9 @@
 import type { EpisodeInput, MusicVideoInput } from "../../src/kit/schema.ts";
 
 type Preset = NonNullable<EpisodeInput["audio"]>["sfxPreset"];
-/** The frontier theme has its own sound preset; it replaces the default "intense" (a deliberate calm/none is kept). */
-const presetFor = (theme: string, carried?: Preset): Preset => (theme === "frontier" && (!carried || carried === "intense") ? "tech" : carried ?? "intense");
+/** Frontier (tech) and Asked Claude (calm) have their own sound presets; they replace the default "intense" (a deliberate choice is kept). */
+const presetFor = (theme: string, carried?: Preset): Preset =>
+  (theme === "frontier" || theme === "asked-claude") && (!carried || carried === "intense") ? (theme === "frontier" ? "tech" : "calm") : carried ?? "intense";
 
 // Music bed level for every new episode and Short (the user's standing setting; carried episodes are raised to it too).
 const MUSIC_LEVEL = 0.45;
@@ -223,4 +224,90 @@ export const NOTES_TEMPLATE = (slug: string) => `# ${slug}: producer notes
 - Claims flagged as beyond the article:
 - Footage substitutions (shown with a \`note\` tag):
 - Things to verify by ear:
+`;
+
+// ---- Asked Claude (theme asked-claude, the asked-claude skill): Claude answers one question with its own opinion ----
+
+export type AskedClaudeOpts = {
+  slug: string;
+  /** Reasons (numbered segments) between the short answer and the case against; 1-8, default 3. */
+  count: number;
+  /** Brand and audio from the latest Asked Claude episode, if any (never from another theme). */
+  carry?: Partial<EpisodeInput>;
+  /** config.yaml asked_claude.brand, used when nothing is carried. */
+  brand: { name: string; tagline: string };
+};
+
+/**
+ * Placeholder Asked Claude episode (list format, 16:9) with the format's shape: the question, the short answer, the
+ * reasons, the best case against, where Claude lands, and an outro inviting pushback. Every line is replaced.
+ */
+export const templateAskedClaude = ({ slug, count, carry, brand }: AskedClaudeOpts) => {
+  const n = Math.max(1, Math.min(8, count));
+  const script = [
+    "Someone asked me a question I keep coming back to. Is this a placeholder question worth answering? Here's my honest take.",
+    "The short answer is yes, and this line says it in one breath.",
+    ...Array.from({ length: n }, (_, i) => `Reason ${numberWord(i + 1)}. Placeholder reason ${numberWord(i + 1)} goes here, with the fact that supports it.`),
+    "Where I could be wrong. The strongest case against my view goes here, put as well as its best advocates would put it.",
+    "So here's where I land. The bottom line goes here, with what I'd actually do.",
+    "That's my take. What's yours? Tell me where you'd push back, and subscribe for the next question.",
+  ].join("\n\n");
+
+  const episode: EpisodeInput = {
+    $schema: "../episode.schema.json",
+    slug,
+    title: "Asked Claude: placeholder question?",
+    summary: "Claude, an AI, gives its own answer to one question: placeholder. Replace with 1-2 sentences.",
+    theme: "asked-claude",
+    format: "list",
+    aspect: "16:9",
+    brand: { ...(carry?.brand ?? brand), dateLabel: dateLabelFromSlug(slug) },
+    audio: carry?.audio
+      ? { ...withoutVoiceSpeed(carry.audio), music: { ...(carry.audio.music ?? { file: "bed", duck: true }), level: MUSIC_LEVEL } }
+      : { voiceover: "voiceover.mp3", music: { file: "bed", level: MUSIC_LEVEL, duck: true }, sfxPreset: "calm" },
+    coldOpen: {
+      beats: [{ cue: "Someone asked me", stamp: "SOMEONE ASKED", sub: "Is this a placeholder question worth answering?" }],
+      title: { cue: "Here's my honest take", bigCue: "honest take", kicker: "ASKED CLAUDE", big: "?", small: "Place\nholder" },
+    },
+    segments: [
+      { kind: "text", marker: "The short answer", label: "MY SHORT ANSWER", heading: "Yes, in one line", body: "The answer in a sentence or two, as plainly as it can be said." },
+      ...Array.from({ length: n }, (_, i) => ({
+        marker: `Reason ${numberWord(i + 1)}`,
+        region: "WHY I THINK SO",
+        headline: `Placeholder reason ${cap(numberWord(i + 1))}`,
+        stats: [{ value: "00%", label: "A fact Claude is sure of from training", cue: "with the fact" }],
+        visuals: [],
+      })),
+      { kind: "text", marker: "Where I could be wrong", label: "WHERE I COULD BE WRONG", heading: "The best case against my view", body: "The strongest opposing argument, stated fairly." },
+      { kind: "text", marker: "So here's where I land", label: "WHERE I LAND", heading: "The bottom line goes here" },
+    ],
+    outro: {
+      cue: "That's my take",
+      lines: [
+        { text: "That's my", accent: "take" },
+        { text: "What's", accent: "yours?", cue: "What's yours" },
+      ],
+      cta: { cue: "subscribe" },
+      // No sources card: Claude answers from its training, with nothing looked up (the user's rule, 2026-11-02).
+      sourcesCard: false,
+      creditsCard: { seconds: 8 },
+    },
+    sources: [],
+  };
+  return { episode, script };
+};
+
+export const ASKED_CLAUDE_NOTES_TEMPLATE = (slug: string) => `# ${slug}: producer notes (Asked Claude)
+
+No web search and no fact-check: Claude answers from its training (the user's rule, 2026-11-02).
+
+- The question (verbatim, and who asked it):
+- Similarity verdict (skip / update / new) and why:
+- My position, in one sentence, before writing the script:
+- Steelman: the strongest case against it:
+- What I'm unsure about (said on screen):
+- Facts used (only ones Claude is confident of from training; anything time-sensitive said as "as of my training"):
+- Swap test (rule 9) when the question touches countries or sides:
+- Visuals (made, not sourced: text pages, infographics, explainers, AI stills with their note):
+- Voice check:
 `;

@@ -1,6 +1,7 @@
 // Theme registry. To add a theme, create a file like threat-brief.ts and list it here (and in ids.ts).
 // Keep the b-roll treatment (backdrop filter, tint, gradients, vignette) light: use fades and grayscale washes sparingly.
 import { afterDark } from "./after-dark";
+import { askedClaude } from "./asked-claude";
 import { blackout } from "./blackout";
 import { carComparisons } from "./car-comparisons";
 import { cleanLight } from "./clean-light";
@@ -24,6 +25,7 @@ export const themes: Record<ThemeId, Theme> = {
   blackout,
   dispatch,
   "car-comparisons": carComparisons,
+  "asked-claude": askedClaude,
 };
 export const DEFAULT_THEME: ThemeId = "threat-brief";
 

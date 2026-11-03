@@ -1,5 +1,6 @@
 // Scaffold a new episode: episodes/<slug>/ (data) and public/episodes/<slug>/ (media), then sync.
-// Usage: npm run new -- <slug> [--format countdown|list|short|long-short] [--count N] [--theme threat-brief|clean-light|after-dark|military|military-comparisons|erotic|frontier|blackout|dispatch|car-comparisons]
+// Usage: npm run new -- <slug> [--format countdown|list|short|long-short] [--count N] [--theme threat-brief|clean-light|after-dark|military|military-comparisons|erotic|frontier|blackout|dispatch|car-comparisons|asked-claude]
+//        npm run new -- <slug> --format asked-claude [--count N]   # Claude answers a question with its own opinion (asked-claude skill)
 //        npm run new -- <slug> --format music-video --song <path> [--title "…"] [--subtitle "…"] [--artist "…"] [--theme id]
 //   --format short: a standalone YouTube Short (vertical 9:16, its own article and facts); --count = scenes (1-3, default 1).
 //   --format long-short: a standalone long Short (format "short" with "long": true, 1-2.5 min; config.yaml shorts.long):
@@ -7,6 +8,9 @@
 //     shorts.long.musicLevel, voice sped up by shorts.long.voiceSpeed.
 //   --format music-video: a song cut to licensed shots (music-video skill). The song is copied in as song.<ext>; the title
 //     comes from the file name ("Artist - Title (Mix).wav") unless given; the artist carries over from the last music video.
+//   --format asked-claude: an "Asked Claude" episode (list, theme asked-claude): the question, the short answer, --count
+//     reasons (1-8, default 3), the best case against, where Claude lands. Brand from config.yaml asked_claude.brand (or the
+//     latest Asked Claude episode), calm sounds, Claude's own voice (asked_claude.voice). No length limit.
 //   For Shorts cut from an existing episode, use npm run short -- <episode> instead.
 // Brand, theme and audio settings carry over from the most recent episode of the same format, if any.
 import { execFileSync } from "node:child_process";
@@ -17,7 +21,7 @@ import { type EpisodeInput, isMusicVideo, type MusicVideoInput } from "../src/ki
 import { THEME_IDS } from "../src/kit/themes/ids.ts";
 import { scanAssets } from "./lib/assets.ts";
 import { songFileName, titleFromFile } from "./lib/musicVideo.ts";
-import { ARTICLE_PLACEHOLDER, dateLabelFromSlug, MUSIC_VIDEO_NOTES_TEMPLATE, NOTES_TEMPLATE, templateEpisode, templateMusicVideo, templateShort } from "./lib/template.ts";
+import { ARTICLE_PLACEHOLDER, ASKED_CLAUDE_NOTES_TEMPLATE, dateLabelFromSlug, MUSIC_VIDEO_NOTES_TEMPLATE, NOTES_TEMPLATE, templateAskedClaude, templateEpisode, templateMusicVideo, templateShort } from "./lib/template.ts";
 import { loadConfig } from "./lib/config.ts";
 import { fail, info, ok, parseArgs, paths, readJson, requireSlug, ROOT } from "./lib/util.ts";
 import { sync } from "./sync.ts";
@@ -81,11 +85,50 @@ Next (the music-video skill has the full procedure):
   process.exit(0);
 }
 
+// Asked Claude (the asked-claude skill): its own shape, brand and voice. Brand and audio carry over only from an earlier
+// Asked Claude episode, never from another theme's.
+if (flags.format === "asked-claude" || (flags.theme === "asked-claude" && (flags.format === undefined || flags.format === "list"))) {
+  const count = flags.count ? Number(flags.count) : 3;
+  if (!Number.isInteger(count) || count < 1 || count > 8) fail("--count must be a whole number from 1 to 8 (reasons in the answer)");
+  let carry: Partial<EpisodeInput> | undefined;
+  for (const prev of previousSlugs()) {
+    try {
+      const e = readJson<EpisodeInput>(paths(prev).episode);
+      if (!isMusicVideo(e) && e.theme === "asked-claude" && e.format !== "short") {
+        carry = { brand: e.brand, audio: e.audio };
+        info(`carrying brand and audio settings over from ${prev}`);
+        break;
+      }
+    } catch {
+      /* ignore unreadable episodes */
+    }
+  }
+  const { episode, script } = templateAskedClaude({ slug, count, carry, brand: loadConfig().asked_claude.brand });
+  mkdirSync(p.src, { recursive: true });
+  for (const d of ["clips", "images"]) mkdirSync(join(p.pub, d), { recursive: true });
+  writeFileSync(p.episode, JSON.stringify(episode, null, 2) + "\n");
+  writeFileSync(p.script, script + "\n");
+  writeFileSync(p.article, ARTICLE_PLACEHOLDER);
+  writeFileSync(join(p.src, "notes.md"), ASKED_CLAUDE_NOTES_TEMPLATE(slug));
+  writeFileSync(p.credits, "[]\n");
+  writeFileSync(p.timing, JSON.stringify(estimateTiming(script), null, 1) + "\n");
+  scanAssets(slug);
+  sync();
+  ok(`created episodes/${slug}/ and public/episodes/${slug}/ (Asked Claude, list, ${count} reason${count > 1 ? "s" : ""}, theme asked-claude)`);
+  console.log(`
+Next (the asked-claude skill has the full procedure):
+  1. Write the question and the research into episodes/${slug}/article.md, fact-check it, log it in notes.md
+  2. Write episodes/${slug}/voiceover.txt (Claude's answer), then: npm run align -- ${slug} --estimate
+  3. Voice it: npm run voice -- ${slug}  (Claude's own voice, config.yaml asked_claude.voice)
+  4. Fill episodes/${slug}/episode.json, add media, then: npm run assets -- ${slug} && npm run check -- ${slug}`);
+  process.exit(0);
+}
+
 // A long Short is a Short with "long": true (its own layout, length, music level and voice speed).
 const long = flags.format === "long-short";
 const longCfg = loadConfig().shorts.long;
 const format = (long ? "short" : flags.format ?? "countdown") as "countdown" | "list" | "short";
-if (!["countdown", "list", "short"].includes(format)) fail(`--format must be "countdown", "list", "short", "long-short" or "music-video", not "${format}"`);
+if (!["countdown", "list", "short"].includes(format)) fail(`--format must be "countdown", "list", "short", "long-short", "music-video" or "asked-claude", not "${format}"`);
 const count = flags.count ? Number(flags.count) : long ? longCfg.scenes : format === "countdown" ? 10 : format === "list" ? 5 : 1;
 const [minCount, maxCount] = long ? [2, 10] : format === "short" ? [1, 3] : [1, 20];
 if (!Number.isInteger(count) || count < minCount || count > maxCount)

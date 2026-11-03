@@ -1,11 +1,13 @@
 // Skin registry: themes that bring their own scenes (see types.ts). A theme without a skin uses the shared scenes.
 import { useEpisode } from "../context";
 import type { ThemeId } from "../themes/ids";
+import { askedClaudeSkin } from "./asked-claude";
 import { frontierSkin } from "./frontier";
 import type { Skin } from "./types";
 
 const skins: Partial<Record<ThemeId, Skin>> = {
   frontier: frontierSkin,
+  "asked-claude": askedClaudeSkin,
 };
 
 const NONE: Skin = {};

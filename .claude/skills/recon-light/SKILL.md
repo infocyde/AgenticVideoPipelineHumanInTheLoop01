@@ -71,6 +71,8 @@ Posts: <1-3 links> (★ = official or well-known account)
 
 Nothing else in the file: no clusters, no near misses, no full trend list.
 
+Headlines and blurbs follow **one standard for every side** (CLAUDE.md rule 9; the recon skill's step 4 explains it): no wording that excuses an adversary or holds the US to a saintly bar, and state-media or official claims are attributed. Neutral words, same as full recon.
+
 ### 5. Show it
 
 In chat, show the file's contents as written (the same markdown, nothing added or cut), then one line with the file's path. When an agent ran it, the main session does this after reading the file.

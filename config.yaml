@@ -234,6 +234,20 @@ upload:
   # its parent's theme, whatever theme it was given.
   blocked_themes: [car-comparisons]
 
+asked_claude:
+  # "Asked Claude" (the asked-claude skill; npm run new -- <slug> --format asked-claude): Claude answers a question with
+  # its own opinion, in its own look (theme asked-claude) and its own voice. No length limit: as long as the answer needs.
+  voice:
+    # npm run voice uses these for any episode in theme asked-claude (and Shorts cut from one), instead of voice.engine
+    # and voice.reference; --engine / --reference still override one run.
+    engine: qwen-cloud              # same Qwen3-TTS clone as the channel default, run on Replicate
+    reference: voices/asked_claude.wav  # chosen by Claude 2026-11-02: VCTK speaker p294 (CSTR, University of Edinburgh,
+                                    # CC BY 4.0, a corpus recorded for building TTS voices). Credit and changes:
+                                    # voices/asked_claude_LICENSE.txt. Alternates: voices/vctk_p343.wav, voices/vctk_p311.wav
+  brand:                            # written into each new Asked Claude episode (never carried from other themes)
+    name: ASKED CLAUDE
+    tagline: AN AI'S OPINION
+
 auto_long_shorts:
   # The scheduled auto run (scripts/auto/daily-run.ps1 via Task Scheduler, 05:00 and 17:00; install or remove with
   # scripts/auto/install-task.ps1 [-Remove]): recon, then the auto-long-shorts skill makes the best ideas from that

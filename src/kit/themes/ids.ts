@@ -1,6 +1,6 @@
 // Theme ids, importable from Node scripts (the theme modules themselves load web fonts).
 // Keep in sync with the registry in index.ts; TypeScript enforces it.
-export const THEME_IDS = ["threat-brief", "clean-light", "after-dark", "military", "military-comparisons", "erotic", "frontier", "blackout", "dispatch", "car-comparisons"] as const;
+export const THEME_IDS = ["threat-brief", "clean-light", "after-dark", "military", "military-comparisons", "erotic", "frontier", "blackout", "dispatch", "car-comparisons", "asked-claude"] as const;
 export type ThemeId = (typeof THEME_IDS)[number];
 
 /**
@@ -8,7 +8,8 @@ export type ThemeId = (typeof THEME_IDS)[number];
  * - "overlay": full-bleed b-roll, text block over it on the left, locator map card on the right.
  * - "split": b-roll framed on the left, headline and a building spec sheet of stats on the right, map card over the left.
  * - "spatial": the theme brings its own scenes (src/kit/skins/<id>/); for frontier, a floating media window on the
- *   right, number, region and headline on the left, stats as a row of up to 3 metric tiles under the window.
+ *   right, number, region and headline on the left, stats as a row of up to 3 metric tiles under the window; for
+ *   asked-claude, a framed print on the right, a serif text column on the left, stats as a short list of facts.
  */
 export type ThemeLayout = "overlay" | "split" | "spatial";
 export const THEME_LAYOUT: Record<ThemeId, ThemeLayout> = {
@@ -22,5 +23,6 @@ export const THEME_LAYOUT: Record<ThemeId, ThemeLayout> = {
   blackout: "overlay",
   dispatch: "overlay",
   "car-comparisons": "split",
+  "asked-claude": "spatial",
 };
 export const layoutOf = (id: string): ThemeLayout => THEME_LAYOUT[id as ThemeId] ?? "overlay";

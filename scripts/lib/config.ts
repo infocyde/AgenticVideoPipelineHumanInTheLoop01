@@ -89,6 +89,25 @@ export const configSchema = z.object({
       enabled: z.boolean().default(false), // posts by official / well-known accounts may be cited and shown (npm run xpost)
     })
     .prefault({}),
+  asked_claude: z
+    .object({
+      // The voice of every Asked Claude video (theme asked-claude, and Shorts cut from one): npm run voice uses it unless
+      // --engine / --reference say otherwise.
+      voice: z
+        .object({
+          engine: z.enum(["chatterbox", "kokoro", "qwen", "qwen-cloud", "elevenlabs"]).default("qwen-cloud"),
+          reference: z.string().default("voices/asked_claude.wav"),
+        })
+        .prefault({}),
+      // Brand written into a new Asked Claude episode (never carried over from another theme's episodes).
+      brand: z
+        .object({
+          name: z.string().default("ASKED CLAUDE"),
+          tagline: z.string().default("AN AI'S OPINION"),
+        })
+        .prefault({}),
+    })
+    .prefault({}),
   upload: z
     .object({
       // Themes whose videos go to another channel: Claude never uploads them (scripts/lib/upload.ts).

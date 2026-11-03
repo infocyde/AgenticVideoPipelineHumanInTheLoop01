@@ -78,3 +78,33 @@ Each has a Whisper transcript next to it (`.txt`, checked word for word against 
 - **Turbo** (default): understands tags such as `[chuckle]`, `[sigh]` or `[cough]`. Keep them out of episode scripts: `voiceover.txt` is also the caption text, so a tag would show up on screen. They're fine in `--sample` tests.
 - **Standard** (`model: standard`): `exaggeration` (0.25 flat to 1.0 dramatic; 0.5 is neutral) and `cfg_weight` (lower is slower and more deliberate; try 0.3 with exaggeration 0.7 for a punchy trailer read). Slower than Turbo, and it has a built-in default voice if you leave `reference` empty.
 - **Mispronounced words:** respell them in `voiceover.txt` the way they sound ("Shahed" as "Sha-hed"), since that file is what gets spoken. Captions show the same text, so prefer respellings that still read normally.
+
+## Claude's voice for "Asked Claude" (added 2026-11-02)
+
+`voices/asked_claude.wav` (17.0 s, 48 kHz mono, transcript `asked_claude.txt`) is the voice of the Asked Claude format,
+chosen by Claude. `config.yaml` `asked_claude.voice` makes `npm run voice` use it, through Qwen3-TTS on Replicate, for
+every episode in theme `asked-claude`. It's the same clip as `vctk_p294.wav`. Two alternates from the same audition sit
+beside it: `vctk_p343.wav` (a lower female voice, which came out flatter when cloned) and `vctk_p311.wav` (male; the
+clone added question lifts mid-sentence).
+
+**Why this voice:** Claude wanted a warm, unhurried, mid-range voice, neither an announcer nor a deep "AI" voice. p294's
+clone kept a 184 Hz median pitch with the widest natural movement of the three, and Whisper heard every word.
+
+**Licensing chain**
+
+1. **Source voice:** CSTR VCTK Corpus (version 0.92), Junichi Yamagishi, Christophe Veaux, Kirsten MacDonald, University of
+   Edinburgh, Centre for Speech Technology Research, 2019, https://doi.org/10.7488/ds/2645 . **CC BY 4.0** (the corpus's
+   `license_text.txt`, saved in `out/voice-experiment/raw/vctk/`). It was recorded for building text-to-speech voices,
+   so cloning it is the use it was made for (unlike the voices this file says never to clone). Speaker p294: female,
+   33, American English (San Francisco), microphone 1. The FLACs came from the Hugging Face parquet repack
+   `sanchit-gandhi/vctk` (same data) and are in `out/voice-experiment/raw/vctk/p294/`.
+2. **Changes** (CC BY asks you to say so): utterances 006, 007 and 010 (the rainbow passage) joined with 0.35 s gaps,
+   high-passed at 70 Hz, lightly denoised, loudness-normalized to -20 LUFS. No upsampling needed (the source is 48 kHz).
+3. **Model:** Qwen3-TTS (Apache-2.0); no restriction on the audio it generates.
+4. **Credit in every video that uses it:** `npm run credits` writes it into the description automatically (above the
+   credits list, so it survives trimming): "Narration: AI-generated voice (Qwen3-TTS) cloned from VCTK speaker p294,
+   CSTR VCTK Corpus (… University of Edinburgh, 2019), CC BY 4.0, https://doi.org/10.7488/ds/2645 . Modified." The
+   credits are in `scripts/lib/askedClaude.ts`. Set YouTube's altered or synthetic content disclosure.
+
+The clips are local only, like everything in this folder. If they're lost, remake them from
+`voices/asked_claude_LICENSE.txt` (the same three utterances, the same filters).

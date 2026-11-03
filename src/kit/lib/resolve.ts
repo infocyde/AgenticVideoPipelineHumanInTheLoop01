@@ -175,7 +175,8 @@ export const resolveEpisode = (ep: Episode, timing: Timing, assets: AssetManifes
     if (b.visual) {
       asset = resolveVisual(assets, b.visual);
       if (!asset) err(`coldOpen.beats[${i}].visual`, `visual ${quote(b.visual)} not found in clips/ or images/ (run \`npm run assets -- ${ep.slug}\` after adding files)`);
-    } else if (!b.map) {
+    } else if (!b.map && ep.theme !== "asked-claude") {
+      // (Asked Claude: a beat without a visual is the question alone on the page, by design.)
       issues.push({ level: "warning", where: `coldOpen.beats[${i}]`, msg: "beat has neither a visual nor map: 'all-pins'; it shows a plain background" });
     }
     beats.push({ beat: b, start, end, asset });

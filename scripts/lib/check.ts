@@ -36,6 +36,7 @@ export const LIMITS = {
   statLabel: 42,
   stamp: 16,
   beatSub: 40,
+  askedQuestion: 140, // asked-claude: the question typed out in the cold open (a beat's sub)
   everyFront: 22,
   outroLine: 26, // text + accent, lines before the last (130px)
   outroLast: 18, // last line (190px)
@@ -334,6 +335,8 @@ export const runCheck = (slug: string): Issue[] => {
   };
   const layout = layoutOf(ep.theme);
   const split = layout === "split";
+  // Asked Claude: a section with no visual is a designed layout (the text alone, larger), and maps are optional.
+  const asked = ep.theme === "asked-claude";
   const lastItem = ep.segments.reduce((acc, s, i) => (isTextSection(s) ? acc : i), -1);
   ep.segments.forEach((s, i) => {
     const w = `segments[${i}]`;
@@ -344,7 +347,7 @@ export const runCheck = (slug: string): Issue[] => {
       long(`${w}.heading`, s.heading, LIMITS.sectionHeadingChars);
       if (s.body) long(`${w}.body`, s.body, LIMITS.sectionBody);
       s.visuals.forEach((v, k) => v.note && long(`${w}.visuals[${k}].note`, v.note, LIMITS.note));
-      if (!s.visuals.length) warn(`${w}.visuals`, `no visuals; the section shows its text over the world map (1–${LIMITS.sectionVisuals} visuals read best)`);
+      if (!s.visuals.length && !asked) warn(`${w}.visuals`, `no visuals; the section shows its text over the world map (1–${LIMITS.sectionVisuals} visuals read best)`);
       return;
     }
     const words = s.headline.split(/\s+/).filter(Boolean).length;
@@ -361,6 +364,8 @@ export const runCheck = (slug: string): Issue[] => {
       const max = LIMITS.splitPerPanel * LIMITS.splitPanels;
       if (s.stats.length > max) warn(`${w}.stats`, `${s.stats.length} stats; more than ${LIMITS.splitPanels} panels of ${LIMITS.splitPerPanel} is hard to follow`);
       if (s.stats.length === 0) warn(`${w}.stats`, "no stats; the spec column will be just the headline");
+    } else if (asked) {
+      if (s.stats.length > 4) warn(`${w}.stats`, `${s.stats.length} stats; the page keeps the latest 3 facts, so more than 4 is hard to follow`);
     } else if (layout === "spatial") {
       if (s.stats.length > LIMITS.spatialStats) warn(`${w}.stats`, `${s.stats.length} stats; the metric tiles show 3 at a time and slide on, so more than ${LIMITS.spatialStats} is hard to follow`);
       if (s.stats.length === 0) warn(`${w}.stats`, "no stats; the row of metric tiles under the window stays empty");
@@ -369,15 +374,20 @@ export const runCheck = (slug: string): Issue[] => {
       if (s.stats.length === 0) warn(`${w}.stats`, "no stats; the left column will be just the headline");
     }
     s.visuals.forEach((v, k) => v.note && long(`${w}.visuals[${k}].note`, v.note, LIMITS.note));
-    if (!s.visuals.length) warn(`${w}.visuals`, "no visuals; the segment shows its map full-screen");
-    if (!s.map) warn(`${w}.map`, "no map; the locator card is hidden and the all-fronts map skips this segment");
+    if (asked) {
+      if (!s.visuals.length && !s.map) warn(`${w}.visuals`, "no visual and no map; the reason's text sits alone on the page (fine for an argument, but a picture helps)");
+    } else {
+      if (!s.visuals.length) warn(`${w}.visuals`, "no visuals; the segment shows its map full-screen");
+      if (!s.map) warn(`${w}.map`, "no map; the locator card is hidden and the all-fronts map skips this segment");
+    }
     if (s.emphasis !== "top" && ep.format === "countdown" && i === lastItem) warn(`${w}.emphasis`, 'the #1 segment usually gets emphasis: "top"');
   });
   ep.coldOpen.beats.forEach((b, i) => {
     const w = `coldOpen.beats[${i}]`;
     if (b.map) long(`${w}.stamp`, `${b.stamp} ${b.accent ?? ""}`.trim(), LIMITS.everyFront);
     else long(`${w}.stamp`, b.stamp, LIMITS.stamp);
-    if (b.sub) long(`${w}.sub`, b.sub, LIMITS.beatSub);
+    // Asked Claude sets the question itself as the beat's sub, in a wide typed line (up to 4 lines of serif).
+    if (b.sub) long(`${w}.sub`, b.sub, ep.theme === "asked-claude" ? LIMITS.askedQuestion : LIMITS.beatSub);
     if (b.accent && !b.map) warn(`${w}.accent`, "accent is only drawn on map beats");
   });
   long("coldOpen.title.big", ep.coldOpen.title.big, LIMITS.titleBig);
@@ -474,10 +484,12 @@ export const runCheck = (slug: string): Issue[] => {
   issues.push(...xpostIssues(epCredits.entries, ep.sources, proofDirs, loadConfig().x_posts.enabled, thumbs));
 
   // --- source material ---
-  if (!existsSync(p.article) || readFileSync(p.article, "utf8").replace(/<!--[\s\S]*?-->/g, "").trim().length < 200) {
+  // Asked Claude is Claude's opinion from its training, with no article and no web research (the user's rule, 2026-11-02).
+  const opinion = ep.theme === "asked-claude";
+  if (!opinion && (!existsSync(p.article) || readFileSync(p.article, "utf8").replace(/<!--[\s\S]*?-->/g, "").trim().length < 200)) {
     err("article.md", "episodes/<slug>/article.md is empty; save the source article there (it is the fact-check reference)");
   }
-  if (!ep.sources.length && !ep.outro.sourcesCard) warn("sources", "no sources listed; they go into the YouTube description");
+  if (!opinion && !ep.sources.length && !ep.outro.sourcesCard) warn("sources", "no sources listed; they go into the YouTube description");
   if (!ep.summary) warn("summary", "no summary: write 1–2 sentences (facts from the article) for the top of the YouTube description; npm run credits puts it there");
 
   return issues;
