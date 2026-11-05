@@ -142,7 +142,7 @@ Run `npm run check -- <slug>`. Asset and license errors are expected at this poi
 
 List the visuals `episode.json` needs and what each should show. Then dispatch **parallel subagents** with the prompts in [asset-prompts.md](asset-prompts.md):
 
-- **A. Clips and images** (always), split across 2–3 agents if there are more than ~8 shots.
+- **A. Clips and images** (always), split across 2–3 agents if there are more than ~8 shots: never more than three, and no two on the same shot (CLAUDE.md, "Agents").
 - **B. Sound effects and music** only when `check` reports a sound missing from `public/library/`, or the user asks for a new bed (with `music_gen.enabled: true` the bed is composed in step 3b instead of sourced). For a one-off effect the library lacks (a sonar ping, a heavier stamp, a radio blip), synthesizing it with `npm run sfx -- <slug> <name> --sound … | --recipe` is usually faster than sourcing it, and it needs no license check (`OWN WORK`).
 
 When `youtube.search_youtube` is on, Creative Commons YouTube clips are another source, pulled only with `npm run youtube -- <slug> clip` (the **youtube** skill); the kit tags them on screen. A federal agency channel's own footage is PD with a stated basis. Never as the thumbnail.

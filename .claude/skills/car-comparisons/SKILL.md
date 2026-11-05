@@ -26,6 +26,9 @@ to copy from. At handoff, tell the user the files are ready to post on the other
 2. **Scaffold:** `npm run new -- <slug> --format list --count <trims + rivals> --theme car-comparisons`. The brand
    carries over only from earlier car videos. **On the first one, ask the user for the other channel's brand name**
    (`brand.name`, `brand.tagline`) and use it from then on.
+   **Ask which voice** for each car video (the user's rule, 2026-11-03), at the latest at script approval: the default
+   (`config.yaml` `voice:`, the Collin clone) or a named voice such as VCTK p294 (`voices/vctk_p294.wav`). Pass a
+   non-default one with `npm run voice -- <slug> --reference voices/<name>.wav`, and log it in `notes.md`.
 3. **Pick the niche** from `niches.md` (sedan, crossover, overlander, family SUV) and log it in `notes.md` with one
    line on why. Tell the user if a car sits between two niches.
 4. **Pick the trims** the video covers: every trim on the trim ladder, and a segment for each one that matters (2–5).

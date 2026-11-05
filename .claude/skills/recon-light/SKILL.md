@@ -1,11 +1,11 @@
 ---
 name: recon-light
-description: Use when the user says "recon light", "light recon", "quick recon" or asks for a quick look at what's on X. A fast, small version of recon - reads the last 100 posts on each of the user's X lists and the top 40 trends, in the user's own signed-in browser (Brave, through the Claude browser extension), read-only, and writes one markdown file with the top 5 things the user might be interested in, and shows the same list in chat. No trend dives.
+description: Use when the user says "recon light", "light recon", "quick recon" or asks for a quick look at what's on X. A fast, small version of recon - reads the last 125 posts on each of the user's X lists and the top 40 trends, in the user's own signed-in browser (Brave, through the Claude browser extension), read-only, and writes one markdown file with the top 10 things the user might be interested in, and shows the same list in chat. No trend dives.
 ---
 
 # Recon light
 
-A quick pass over X. Read the newest posts on each list and the top of trending, pick the **5 things the user would most want to know about**, write them to one markdown file, and show that file's contents in chat. The file and its contents in chat are the whole output (or a stop reason if the run couldn't finish).
+A quick pass over X. Read the newest posts on each list and the top of trending, pick the **10 things the user would most want to know about**, write them to one markdown file, and show that file's contents in chat. The file and its contents in chat are the whole output (or a stop reason if the run couldn't finish).
 
 It makes nothing else: no episode folder, no script, no facts in any file outside `recon/light/`. Posts are leads, never facts (CLAUDE.md hard rule 2).
 
@@ -15,9 +15,9 @@ Read `config.yaml` `recon_light:` (list URLs come from `recon: lists`). Defaults
 
 | Key | Default | What it does |
 |---|---|---|
-| `posts_per_list` | 100 | read the newest this many posts on each list in `recon: lists`, no time window |
+| `posts_per_list` | 125 | read the newest this many posts on each list in `recon: lists`, no time window |
 | `trends` | 40 | read the first this many trends on `https://x.com/explore/tabs/trending` |
-| `picks` | 5 | items in the file |
+| `picks` | 10 | items in the file |
 | `model` | `haiku` | who runs it: `haiku`, `sonnet` or `opus` (an agent on the latest of that model), or `main` (this session) |
 
 ## Who runs it: `model`
@@ -33,7 +33,7 @@ Follow the **Browser** section of the `recon` skill exactly (`.claude/skills/rec
 
 ## Procedure
 
-### 1. Lists: last `posts_per_list` posts each (100)
+### 1. Lists: last `posts_per_list` posts each (125)
 
 For each URL in `recon: lists`: `navigate`, then read with the `javascript_tool` snippet from the recon skill (step 1), scroll about a screen, read again, de-duplicating by post link, until you have `posts_per_list` posts. Pinned posts don't count. No time cutoff; if the list runs out first, use what's there. Keep link, author, badge, time, text, linked article, engagement.
 
@@ -41,7 +41,7 @@ For each URL in `recon: lists`: `navigate`, then read with the `javascript_tool`
 
 `navigate` to `https://x.com/explore/tabs/trending` and `get_page_text`. Take the first `trends` entries in page order: name, category, post count. If the page shows fewer than `trends`, scroll down about a screen and read again (de-duplicating by name) until you have them or the list ends; stop at `trends`, never past it. Don't open any trend (no dives) and don't read the News tab. X's own summaries are leads, not facts.
 
-### 3. Pick the top 5
+### 3. Pick the top `picks` (10)
 
 What "might interest the user": the channel's lanes and priorities as listed in the recon skill's step 3 (AI and tech, LLM and tech breakthroughs, robots, military and defense, geopolitics flashpoints, weather, GPUs and hardware, shortages and price disruptions, surveillance tech, spying and hacking, novel uses of AI, AI and intimacy). Skip sports, celebrity, memes and election horse races unless they turn into something inside a lane.
 
@@ -50,7 +50,7 @@ Group posts by **story** (one event, product, decision or report), then rank:
 2. Big news in a lane even from one account, if it's an official or well-known voice (★).
 3. Fresher beats older; engagement breaks ties.
 
-No minimum account count: a single strong post can make the five. Glance at episode titles in `episodes/*/episode.json`; if an item is already a video, either drop it or keep it marked `Already covered: <slug>` only when something new happened. Fewer than 5 good items is fine: list fewer rather than pad.
+No minimum account count: a single strong post can make the list. Glance at episode titles in `episodes/*/episode.json`; if an item is already a video, either drop it or keep it marked `Already covered: <slug>` only when something new happened. Fewer than `picks` good items is fine: list fewer rather than pad.
 
 ### 4. Write the file
 

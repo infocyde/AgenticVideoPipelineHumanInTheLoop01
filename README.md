@@ -37,7 +37,7 @@ Then paste the article and say *"let's start a new episode"*.
 
 You don't need the commands, slugs or file paths in the rest of this README. Claude picks the slug, runs the `npm` commands, and finds the right episode from context. Say what you want:
 
-- *"Recon"* (Claude reads your X lists and what's trending on X in your own Brave, read-only, and brings back a ranked list of video ideas, each with a blurb on why; the scheduled twice-a-day run is off since 2026-11-03) or *"recon light"* (a quick peek: the top 5 things on your lists and trending, on Haiku, in a few minutes). Run them from the Claude Code CLI; setup is under [Recon: Claude in your browser](#recon-claude-in-your-browser)
+- *"Recon"* (Claude reads your X lists and what's trending on X in your own Brave, read-only, and brings back a ranked list of video ideas, each with a blurb on why; the scheduled twice-a-day run is off since 2026-11-03) or *"recon light"* (a quick peek: the top 10 things on your lists and trending, on Haiku, in a few minutes). Run them from the Claude Code CLI; setup is under [Recon: Claude in your browser](#recon-claude-in-your-browser)
 - *"Let's start a new episode"* (then paste the article)
 - *"Make it the top 5, about 5 minutes, same look as the last one"*
 - *"Verify those facts on the web and update the sources"*
@@ -117,7 +117,7 @@ If it doesn't connect:
 
 When it runs, Claude only reads. It never likes, posts, follows or replies, and it stops and asks you whenever X shows a login page or a CAPTCHA. Settings are in `config.yaml` `recon:`, the procedure is in `.claude/skills/recon/SKILL.md`, and each run's report is saved in `recon/<date>.md`.
 
-For a quick look, say *"recon light"*: Claude reads the last 100 posts on each list and the top 40 trends (no trend dives, no News tab) and writes one file, `recon/light/<date>-<HHmm>.md`, with the top 5 things you might be interested in, and shows you the same list in chat. A Haiku agent does the reading by default; set `config.yaml` `recon_light.model` to `sonnet`, `opus` or `main` (this session) to change it. Its files sit in `recon/light/`, apart from the full reports, so the full recon's "already seen" check and the auto run never read them. The procedure is in `.claude/skills/recon-light/SKILL.md`.
+For a quick look, say *"recon light"*: Claude reads the last 125 posts on each list and the top 40 trends (no trend dives, no News tab) and writes one file, `recon/light/<date>-<HHmm>.md`, with the top 10 things you might be interested in, and shows you the same list in chat. A Haiku agent does the reading by default; set `config.yaml` `recon_light.model` to `sonnet`, `opus` or `main` (this session) to change it. Its files sit in `recon/light/`, apart from the full reports, so the full recon's "already seen" check and the auto run never read them. The procedure is in `.claude/skills/recon-light/SKILL.md`.
 
 ### config.yaml at a glance
 
@@ -130,7 +130,7 @@ For a quick look, say *"recon light"*: Claude reads the last 100 posts on each l
 | `youtube:` | YouTube as a research source and clip source (`npm run youtube`, no API key). `search_youtube`: Claude searches YouTube and reads transcripts during the fact-check and asset steps (off: no YouTube unless you ask). `use_video_as_citation`: a video can be a cited source (off: videos are leads only, and a fact from one needs a non-YouTube source that confirms it). | both on |
 | `x_posts:` | Posts on X as sources (`npm run xpost`): official or well-known accounts only, archived with a screenshot, optionally shown on screen (credited `X POST`). Off: posts are leads only. | off |
 | `recon:` | Video ideas from X (the recon skill): the `lists` and `trending` pages Claude reads in your browser, how far back (`hours_back`), and how many ideas to report. | your two lists, 48 h, 8 ideas |
-| `recon_light:` | Quick recon (the recon-light skill): posts per list, how many trends, how many picks, and the `model` that runs it. | 100 posts, 40 trends, 5 picks, haiku |
+| `recon_light:` | Quick recon (the recon-light skill): posts per list, how many trends, how many picks, and the `model` that runs it. | 125 posts, 40 trends, 10 picks, haiku |
 | `image_gen:` | Where AI stills come from: `local_render`, `cloud_render` or `mixed` (local, with FLUX 3 for `--detail high`). Local steps, CFG, size and negative prompt live under `local:`. | mixed |
 
 ### Using Stable Audio 3 legally

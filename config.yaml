@@ -219,9 +219,9 @@ recon_light:
   # Quick recon (the recon-light skill; say "recon light"): the newest posts on each list in recon: lists plus the top
   # of the trending tab, read-only in your browser, and the whole output is one file, recon/light/<date>-<HHmm>.md,
   # with the top few things you might be interested in, shown in chat too. No trend dives, no News tab.
-  posts_per_list: 100 # newest posts read on each list (no time window; 50 until 2026-11-03)
+  posts_per_list: 125 # newest posts read on each list (no time window; 100 until 2026-11-04)
   trends: 40          # first this many trends (20 until 2026-11-03) on x.com/explore/tabs/trending
-  picks: 5            # items in the file (fewer if fewer are worth it)
+  picks: 10           # items in the file (fewer if fewer are worth it; 5 until 2026-11-04)
   model: haiku        # model that does the reading and writing, in its own agent: haiku, sonnet or opus (latest of
                       # each), or main to do it in the current session on whatever model that runs. A change applies
                       # to the next run.
