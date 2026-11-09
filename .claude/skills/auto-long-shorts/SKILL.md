@@ -55,8 +55,8 @@ Settings: `config.yaml` `auto_long_shorts:` (defaults: `min: 3`, `max: 3`, `min_
      run report, naming the best candidates and why each fell short.
 2. **Similarity review** (new-episode section 0) for each against every video made, including this morning's run:
    skip / update / new. Skips go in the run report with the video they match.
-3. Drop an idea that can't stand on facts: a single unverified claim, a rumour with no reputable outlet, or an
-   idea that would need footage of a private person. Note why.
+3. Drop an idea that can't stand on facts: a single unverified claim or a rumour with no reputable outlet. Note
+   why. (A story about people is fine: show them in licensed photos, CLAUDE.md "Show the people involved".)
 4. Keep the best **up to `max`**. If fewer than `min` survive, make only those (even zero) and say so: never pad the
    batch with weak or merely solid ideas.
 5. Slugs: `<YYYY-MM-DD>-<short-topic>`. Series and theme: `dispatch` theme; brand "ON MILITARY" for war, defense

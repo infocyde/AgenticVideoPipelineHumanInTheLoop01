@@ -152,9 +152,10 @@ The **find-media** skill (`.claude/skills/find-media/`) has the license gate, ev
 When they report back:
 
 1. Review their tables. Every file needs a normalized `credits.json` entry with an allowed license.
-2. Footage that isn't of the event described (a different place, year or weapon) gets a `note` on that visual: `"FILE FOOTAGE · <place>, <year>"`. Record it in `notes.md`.
-3. If a shot couldn't be found, or the only licensed footage is a poor stand-in: for a beat about a number or a comparison, make an infographic with the **infographic** skill (`npm run infographic`). For a document or reference page (an infobox, an official notice), screenshot it with `npm run shot` (PD/CC pages only). Otherwise generate a still of the right subject with the **generate-image** skill (`npm run generate`), reuse another asset, or drop it (the segment falls back to its map). Generated images always get `"note": "AI-GENERATED ILLUSTRATION"`.
-4. Run `npm run assets -- <slug>`, then `npm run check -- <slug>` until it reports **0 errors**. Look at the warnings too.
+2. **Show the people involved** (the user's rule, 2026-11-09). When a segment is about named people, each of them should be on screen in a licensed photo (CLAUDE.md, "Where things are"). Check the agents searched for every named person; for any shown only through a stand-in, search Commons yourself before accepting it, and log "no licensed photo found" in `notes.md`.
+3. Footage that isn't of the event described (a different place, year or weapon) gets a `note` on that visual: `"FILE FOOTAGE · <place>, <year>"`. Record it in `notes.md`.
+4. If a shot couldn't be found, or the only licensed footage is a poor stand-in: for a beat about a number or a comparison, make an infographic with the **infographic** skill (`npm run infographic`). For a document or reference page (an infobox, an official notice), screenshot it with `npm run shot` (PD/CC pages only). Otherwise generate a still of the right subject with the **generate-image** skill (`npm run generate`), reuse another asset, or drop it (the segment falls back to its map). Generated images always get `"note": "AI-GENERATED ILLUSTRATION"`.
+5. Run `npm run assets -- <slug>`, then `npm run check -- <slug>` until it reports **0 errors**. Look at the warnings too.
 
 ## 6. Preview, then render
 
