@@ -76,4 +76,4 @@ No text, no logos, no identifiable people.
    A cold-open beat takes the same `note`. For a thumbnail background, set `"thumbnail": { "visual": "<name>" }`; no on-screen note is needed there.
 3. Record it in `notes.md`. In the handoff, tell the user which visuals are AI-generated, and remind them to tick YouTube's **"altered or synthetic content"** box when uploading if any of them look realistic. `check` warns about this too, and `npm run credits` lists the images under "AI-generated illustrations" in `DESCRIPTION.md`.
 
-Only stills can be generated (both are image models). A generated still works as b-roll: the Backdrop gives it a slow Ken Burns move.
+Both engines make stills. A generated still works as b-roll: the Backdrop gives it a slow Ken Burns move. To animate one, use it as a prop for a Grok clip (the **grok-imagine** skill). Grok Imagine also makes stills, four at a time at no API cost (the **grok-imagine-image** skill): good for b-roll and clip keyframes, but 1280×720 upscaled, so keep FLUX 3 `--detail high` for hero stills and thumbnail backgrounds.

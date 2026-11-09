@@ -1042,6 +1042,50 @@
               "note": {
                 "description": "On-screen tag; required ('AI-GENERATED ILLUSTRATION') for AI stills, otherwise leave it out",
                 "type": "string"
+              },
+              "motion": {
+                "description": "Camera move for the whole shot: zoom-in, zoom-out, push-in (fast), pull-out (fast), pan-left, pan-right, tilt-up, tilt-down, roll, shake, whip-left, whip-right, rack-focus. Without it, a still gets the kit's slow drift and a clip plays as shot",
+                "type": "string",
+                "enum": [
+                  "zoom-in",
+                  "zoom-out",
+                  "push-in",
+                  "pull-out",
+                  "pan-left",
+                  "pan-right",
+                  "tilt-up",
+                  "tilt-down",
+                  "roll",
+                  "shake",
+                  "whip-left",
+                  "whip-right",
+                  "rack-focus"
+                ]
+              },
+              "focus": {
+                "description": "Point a zoom heads for, as [x, y] fractions of the frame (0,0 is top left), e.g. a surfer at [0.7, 0.6]. Needs `motion`",
+                "type": "array",
+                "prefixItems": [
+                  {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  }
+                ],
+                "items": false,
+                "minItems": 2,
+                "maxItems": 2
+              },
+              "crop": {
+                "description": "Tightens the framing: 1.6 shows a part of the picture 1.6x closer, around `focus`, so a reused still reads as a new shot. Needs `motion`",
+                "type": "number",
+                "minimum": 1,
+                "maximum": 2.5
               }
             },
             "required": [

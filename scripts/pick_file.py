@@ -6,10 +6,13 @@ types the full path into the File name box and invokes the Open button, so the b
 from disk. It drives the dialog through UI Automation, not the mouse: nothing moves on screen and it doesn't
 matter where the dialog is.
 
-Usage: python pick_file.py <absolute path> [--timeout 20] [--tab "<title start>" [--stay]]
+With --save it fills the browser's Save dialog instead, for a page's download when the browser asks where to save (the
+grok-imagine skill), and waits for the file to arrive at that path.
+
+Usage: python pick_file.py <absolute path> [--timeout 20] [--tab "<title start>" [--stay]] [--save]
 --tab brings that browser tab to the front first (browsers only open a file chooser for the visible tab) and switches
 back to the tab that was in front once the file is picked, unless --stay.
-Exit codes: 0 picked, 2 no dialog found before the timeout, 3 the dialog didn't accept the file.
+Exit codes: 0 picked or saved, 2 no dialog found before the timeout, 3 the dialog didn't accept the file.
 """
 
 import argparse
@@ -47,8 +50,11 @@ def control(w, control_type: str, auto_id: str):
     return None
 
 
-def find_dialogs():
-    """Open-file dialogs (class #32770 with a File name box) owned by a browser. UI Automation lists them as
+OPEN_BOX, SAVE_BOX = "1148", "1001"  # automation ids of the File name box in Windows' Open and Save dialogs
+
+
+def find_dialogs(box: str = OPEN_BOX):
+    """File dialogs (class #32770 with this File name box) owned by a browser. UI Automation lists them as
     top-level windows or as children of the browser window (Brave's "<site> wants to open"), so look in both."""
     desktop = Desktop(backend="uia")
     candidates = []
@@ -65,7 +71,7 @@ def find_dialogs():
     found = []
     for w in candidates:
         try:
-            if control(w, "Edit", "1148"):
+            if control(w, "Edit", box):
                 found.append(w)
         except Exception:
             continue
@@ -99,6 +105,7 @@ def main() -> int:
     ap.add_argument("--timeout", type=float, default=20)
     ap.add_argument("--tab", help="bring the tab whose title starts with this to the front first")
     ap.add_argument("--stay", action="store_true", help="leave that tab in front afterwards")
+    ap.add_argument("--save", action="store_true", help="fill the browser's Save dialog instead: the path is where the file goes")
     args = ap.parse_args()
     path = os.path.abspath(args.path)
 
@@ -111,7 +118,7 @@ def main() -> int:
             return 2
         print(f'"{args.tab}" tab is in front; click the page\'s file button now', flush=True)
     try:
-        return pick(path, args.timeout)
+        return save(path, args.timeout) if args.save else pick(path, args.timeout)
     finally:
         if previous is not None and not args.stay:
             # Switching tabs the instant the dialog closes loses the file (tested in Brave): let the page take it first.
@@ -159,6 +166,39 @@ def pick(path: str, timeout: float) -> int:
             return 0
         time.sleep(0.2)
     print(f'the "{title}" dialog is still open after pressing Open; check it on screen', file=sys.stderr)
+    return 3
+
+
+def save(path: str, timeout: float) -> int:
+    """Fill the browser's Save dialog (a page's download, when the browser asks where to save) and wait for the file."""
+    deadline = time.time() + timeout
+    dialogs = []
+    while time.time() < deadline:
+        dialogs = find_dialogs(SAVE_BOX)
+        if dialogs:
+            break
+        time.sleep(0.3)
+    if not dialogs:
+        print(f"no browser Save dialog appeared within {timeout:g} s", file=sys.stderr)
+        return 2
+    if len(dialogs) > 1:
+        print(f"{len(dialogs)} browser Save dialogs are open; close the extras and retry", file=sys.stderr)
+        return 3
+
+    dlg = dialogs[0]
+    title = dlg.window_text()
+    time.sleep(1)  # as with Open: the box is listed before it is ready to take input
+    control(dlg, "Edit", SAVE_BOX).set_edit_text(path)
+    control(dlg, "Button", "1").invoke()
+
+    # The browser writes a temporary file while the dialog is up, and moves it into place once it closes.
+    end = time.time() + 30
+    while time.time() < end:
+        if not find_dialogs(SAVE_BOX) and os.path.isfile(path) and os.path.getsize(path) > 0:
+            print(f'saved {path} from "{title}"')
+            return 0
+        time.sleep(0.3)
+    print(f'{path} did not appear after pressing Save in "{title}"; check it on screen', file=sys.stderr)
     return 3
 
 

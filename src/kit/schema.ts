@@ -1,6 +1,7 @@
 // The episode.json schema: the single source of truth for what an episode can say.
 // Components, `npm run check` and the generated JSON Schema (episodes/episode.schema.json) all derive from this.
 import { z } from "zod";
+import { SHOT_MOTIONS } from "./lib/shotMotion";
 import { THEME_IDS } from "./themes/ids";
 
 /** Scene events the sfx presets hang sounds on (see lib/sfx.ts for what each one is). */
@@ -294,8 +295,12 @@ export const shotSchema = z
     transition: z.enum(["cut", "flash", "glitch"]).default("cut").describe("How the shot arrives: a hard cut (default), a white flash, or a glitch"),
     subtitles: z.boolean().optional().describe("false hides the lyric subtitles during this shot, e.g. over an explainer's own text"),
     note: z.string().optional().describe("On-screen tag; required ('AI-GENERATED ILLUSTRATION') for AI stills, otherwise leave it out"),
+    motion: z.enum(SHOT_MOTIONS).optional().describe("Camera move for the whole shot: zoom-in, zoom-out, push-in (fast), pull-out (fast), pan-left, pan-right, tilt-up, tilt-down, roll, shake, whip-left, whip-right, rack-focus. Without it, a still gets the kit's slow drift and a clip plays as shot"),
+    focus: z.tuple([z.number().min(0).max(1), z.number().min(0).max(1)]).optional().describe("Point a zoom heads for, as [x, y] fractions of the frame (0,0 is top left), e.g. a surfer at [0.7, 0.6]. Needs `motion`"),
+    crop: z.number().min(1).max(2.5).optional().describe("Tightens the framing: 1.6 shows a part of the picture 1.6x closer, around `focus`, so a reused still reads as a new shot. Needs `motion`"),
   })
-  .refine((s) => s.cue === undefined || s.beat === undefined, { message: "a shot cuts on a cue or a beat, not both", path: ["beat"] });
+  .refine((s) => s.cue === undefined || s.beat === undefined, { message: "a shot cuts on a cue or a beat, not both", path: ["beat"] })
+  .refine((s) => s.motion !== undefined || (s.focus === undefined && s.crop === undefined), { message: "focus and crop need a motion", path: ["motion"] });
 
 export const musicVideoSchema = z.object({
   $schema: z.string().optional(),

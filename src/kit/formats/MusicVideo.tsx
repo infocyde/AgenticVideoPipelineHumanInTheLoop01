@@ -8,6 +8,7 @@ import { SourceTag } from "../components/SourceTag";
 import { clamp } from "../context";
 import { MUSIC_VIDEO_ROLL, pagedCreditColumns } from "../lib/credits";
 import { clipPlayback, type ResolvedShot } from "../lib/resolveMusicVideo";
+import { shotMotion } from "../lib/shotMotion";
 import { FPS, toFrame } from "../lib/timing";
 import { tagChannel } from "../lib/youtube";
 import { useMusicVideo } from "../musicVideoContext";
@@ -35,6 +36,21 @@ const ShotLayer: React.FC<{ s: ResolvedShot }> = ({ s }) => {
     const { rate, loopFrames } = clipPlayback(s.asset.duration, s.in, slot);
     const video = <OffthreadVideo src={staticFile(s.asset.file)} muted playbackRate={rate} trimBefore={toFrame(s.in)} style={media} />;
     picture = loopFrames ? <Loop durationInFrames={loopFrames}>{video}</Loop> : video;
+  }
+  if (s.shot.motion) {
+    const m = shotMotion(s.shot.motion, frame / slot, { frame, focus: s.shot.focus, crop: s.shot.crop });
+    const plain = s.asset?.kind === "image" ? <Img src={staticFile(s.asset.file)} style={media} /> : picture;
+    picture = (
+      <AbsoluteFill
+        style={{
+          transform: `translate(${m.x}px, ${m.y}px) scale(${m.scale}) rotate(${m.rotate}deg)`,
+          transformOrigin: `${m.origin[0] * 100}% ${m.origin[1] * 100}%`,
+          filter: m.blur > 0 ? `blur(${m.blur}px)` : undefined,
+        }}
+      >
+        {plain}
+      </AbsoluteFill>
+    );
   }
   const t = s.shot.transition;
   const channel = tagChannel(s.asset);

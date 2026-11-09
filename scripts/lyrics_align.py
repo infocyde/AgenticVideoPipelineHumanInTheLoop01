@@ -1,6 +1,6 @@
 """Match a song's lyric sheet to what Whisper hears on its vocal stem (npm run lyrics; music videos).
 
-Like align.py, but for singing: the sheet's words get the times of the heard words they match (difflib), and every
+Like align.py, but for singing: the sheet's words get the times of the heard words they match (match_opcodes), and every
 stretch where the two disagree is reported, so the producer can show the user where the recording departs from the
 sheet. Unmatched sheet words get no time here; scripts/lyrics.ts places them inside their own lyric line.
 The transcription is cached (keyed by model and stem mtime), so re-running after editing lyrics.txt is quick.
@@ -9,7 +9,6 @@ Usage (normally via `npm run lyrics -- <slug>`):
   .venv/Scripts/python -I scripts/lyrics_align.py <vocals.wav> <words.json> <out.json> <heard.txt> <cache.json> [model] [device] [language]
   words.json: the sheet's words in order (a JSON array of strings); an empty array only transcribes.
 """
-import difflib
 import json
 import os
 import sys
@@ -18,9 +17,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # -I leaves the script's folder off sys.path
 from align import expand, load_audio, norm  # noqa: E402
 
+# Word-matching scores: a heard word on its sheet word beats any shift that would lose it.
+MATCH, MISMATCH, GAP = 2, -1, -1
+
 
 def transcribe(audio: Path, model_name: str, device: str, language: str | None, cache: Path) -> dict:
-    key = f"v2|{model_name}|{device}|{language}|{os.path.getmtime(audio)}"
+    key = f"v3|{model_name}|{device}|{language}|{os.path.getmtime(audio)}"
     if cache.exists():
         c = json.loads(cache.read_text(encoding="utf-8"))
         if c.get("key") == key:
@@ -30,8 +32,10 @@ def transcribe(audio: Path, model_name: str, device: str, language: str | None, 
 
     print(f"transcribing {audio.name} with {model_name} on {device} (several minutes on CPU)...", flush=True)
     model = WhisperModel(model_name, device=device, compute_type="int8" if device == "cpu" else "float16")
+    # No VAD filter: it takes singing for non-speech (it dropped 3/4 of the words on Ride the Biggest Waves, 2026-11-06).
+    # The stem is vocals only, so what it would remove is what we want to hear.
     segments, info = model.transcribe(
-        load_audio(audio), word_timestamps=True, condition_on_previous_text=False, vad_filter=True, language=language
+        load_audio(audio), word_timestamps=True, condition_on_previous_text=False, vad_filter=False, language=language
     )
     heard, lines, wi = [], [], 0
     for seg in segments:
@@ -63,6 +67,50 @@ def raw_text(heard: list[dict]) -> str:
     return " ".join(out)
 
 
+def match_opcodes(a: list[str], b: list[str]) -> list[tuple[str, int, int, int, int]]:
+    """How sheet tokens `a` pair with heard tokens `b`, as (tag, i1, i2, j1, j2) ranges in order.
+
+    Global alignment (Needleman-Wunsch), not difflib: difflib fixes the longest clean run first, so a well-heard second
+    chorus pairs with the sheet's first chorus and leaves the rest of the song with nothing to pair against.
+    """
+    n, m = len(a), len(b)
+    score = [[0] * (m + 1) for _ in range(n + 1)]
+    for i in range(1, n + 1):
+        score[i][0] = i * GAP
+    for j in range(1, m + 1):
+        score[0][j] = j * GAP
+    for i in range(1, n + 1):
+        for j in range(1, m + 1):
+            pair = MATCH if a[i - 1] == b[j - 1] else MISMATCH
+            score[i][j] = max(score[i - 1][j - 1] + pair, score[i - 1][j] + GAP, score[i][j - 1] + GAP)
+
+    # Walk back from the end, then group the steps into ranges.
+    steps: list[tuple[bool, int, int]] = []  # (equal, i, j) at the start of each step
+    i, j = n, m
+    while i or j:
+        if i and j and score[i][j] == score[i - 1][j - 1] + (MATCH if a[i - 1] == b[j - 1] else MISMATCH):
+            i, j = i - 1, j - 1
+            steps.append((a[i] == b[j], i, j))
+        elif i and score[i][j] == score[i - 1][j] + GAP:
+            i -= 1
+            steps.append((False, i, j))
+        else:
+            j -= 1
+            steps.append((False, i, j))
+    steps.reverse()
+
+    ops: list[tuple[str, int, int, int, int]] = []
+    k = 0
+    while k < len(steps):
+        equal, i1, j1 = steps[k]
+        while k < len(steps) and steps[k][0] == equal:
+            k += 1
+        i2, j2 = (steps[k][1], steps[k][2]) if k < len(steps) else (n, m)
+        tag = "equal" if equal else "replace" if i2 > i1 and j2 > j1 else "delete" if i2 > i1 else "insert"
+        ops.append((tag, i1, i2, j1, j2))
+    return ops
+
+
 def main() -> None:
     if len(sys.argv) < 6:
         sys.exit(__doc__)
@@ -80,7 +128,7 @@ def main() -> None:
     b = [h["w"] for h in heard]
     times: list = [None] * len(a)
     diffs = []
-    for tag, i1, i2, j1, j2 in difflib.SequenceMatcher(None, a, b, autojunk=False).get_opcodes():
+    for tag, i1, i2, j1, j2 in match_opcodes(a, b):
         if tag == "equal":
             for k in range(i2 - i1):
                 h = heard[j1 + k]

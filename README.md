@@ -454,6 +454,8 @@ Say *"upload them to YouTube"* after the render and Claude runs the `youtube-upl
 | `npm run setup:image [--from <folder>]` | One-time: stable-diffusion.cpp + Z-Image Turbo GGUF into `models/image/` |
 | `npm run generate -- <slug> <name> --prompt "..." [--detail high] [--engine local\|cloud] [--seed N] [--force]` | Last-resort AI still (local Z-Image Turbo or FLUX 3, per `image_gen.mode`), with credit and provenance |
 | `npm run stock -- <slug> search "<q>" \| get <site>:<id> <name> \| import <file> <name> --site … --page <url> --author "…"` | Music videos only: Pixabay/Pexels search and download, or import a Coverr/Pexels browser download; STOCK credit (stock-media skill) |
+| `npm run grok -- <slug> import <name> --post <url> --prompt "..." [--resolution 480p\|720p] [--props first:a.jpg,ref:b.jpg,last:c.jpg]` / `frames <name>` | AI video clips from Grok Imagine, made in your browser (grok-imagine skill): import the saved clip without audio, credited AI-GENERATED with its post link; `frames` grabs its first and last frames to start the next clip |
+| `npm run grok -- <slug> still <name> --post <url> --prompt "..." [--aspect 16:9] [--props a.jpg]` | AI stills from Grok Imagine's Image mode (grok-imagine-image skill): fetches a plain generation's public copy (or uses an edit saved with `pick-file --save`), fills 1920×1080 or 1080×1920, credits it AI-GENERATED with its post link |
 | `npm run shot -- <slug> <name> --url <url> [--selector "<css>"] [--license PD] [--highlight "..."]` | Screenshot part of a web page as a still, with credit |
 | `npm run xpost -- <slug> <post url> --basis "<why>" [--still <name>] [--no-media] [--light]` | A post on X as a source: archive it, optionally an on-screen still credited X POST (`x_posts.enabled` only) |
 | `npm run infographic -- <slug> <name> [--seconds 12] [--still]` | Render `episodes/<slug>/infographics/<name>.html` as a themed clip or still, with credit |
@@ -470,8 +472,8 @@ Say *"upload them to YouTube"* after the render and Claude runs the `youtube-upl
 | `npm run master -- <slug>` | Re-master an existing render |
 | `npm run thumb -- <slug>` | Thumbnail still |
 | `npm run credits -- <slug>` | YouTube description |
-| `npm run upload-text -- <slug> [--url <link>]` | Title and a ≤ 5,000-character description for the upload (`upload.json`; when it is too long the credits are dropped first, then the sources shortened); `--url` records the uploaded link, which the Shorts' descriptions use |
-| `npm run pick-file -- <path> --tab "<tab title>" [--stay]` | Windows: brings that browser tab forward, fills its Open dialog with the file and presses Open (pywinauto in `.venv`), so a video of any size goes into YouTube Studio's upload dialog |
+| `npm run upload-text -- <slug> [--url <link>]` | Title and a ≤ 5,000-character description for the upload (`upload.json`; when it is too long the credits are dropped first, then episodes keep only the key links in `episodes/<slug>/key-links.txt` and Shorts shorten their sources); `--url` records the uploaded link, which the Shorts' descriptions use |
+| `npm run pick-file -- <path> --tab "<tab title>" [--stay] [--save]` | Windows: brings that browser tab forward, fills its Open dialog with the file and presses Open (pywinauto in `.venv`), so a video of any size goes into YouTube Studio's upload dialog. `--save` fills the browser's Save dialog instead, so a page's download lands at `<path>` (Grok clips) |
 | `npm run kill` | Stop leftover render processes from this repo |
 | `npm run typecheck` | `tsc --noEmit` |
 
@@ -482,7 +484,7 @@ Errors block rendering:
 - Schema problems in `episode.json` (wrong field, wrong type, bad theme id).
 - A marker, stat, visual, beat, outro or CTA cue that isn't spoken where it should be: missing, out of order, or outside its segment. Nothing falls back silently. In Studio, unresolved cues also show as a red panel over the video.
 - A visual named in `episode.json` that isn't in `clips/` or `images/`.
-- A media file with no credits entry, or a license other than PD, CC0, CC BY or CC BY-SA. `AI-GENERATED` is accepted only for `npm run generate` stills (with their provenance record and an on-screen note) and `npm run compose` music beds.
+- A media file with no credits entry, or a license other than PD, CC0, CC BY or CC BY-SA. `AI-GENERATED` is accepted only for `npm run generate` and `npm run grok -- … still` stills (with their provenance record and an on-screen note), `npm run compose` music beds and `npm run grok` clips (with an on-screen note).
 - A YouTube clip that isn't CC BY or PD, is PD without its basis in `notes`, has no channel as author, isn't in `clips/`, has a missing or stale channel tag in `assets.json` (run `npm run assets`), or is the thumbnail. (A warning if the episode has YouTube clips while `youtube.search_youtube` is false.)
 - Estimated timing, a voiceover/timing duration mismatch, or a `voiceover.txt` edited since alignment.
 - A stale `assets.json`, a missing sound from the sfx preset, or a missing music file.

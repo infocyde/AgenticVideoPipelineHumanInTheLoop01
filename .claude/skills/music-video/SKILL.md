@@ -47,7 +47,7 @@ There are three stops where you wait for the user: **the lyrics differences**, *
    It prints the **song map** (sections, plus instrumentals with their beat ranges) and writes `lyrics-diff.txt`.
 3. **Stop.** Show the user the places where the singing differs from the sheet. Whisper also mishears sung words, so tell them which differences look like real departures (a repeated line, an ad-lib, a cut line) and which look like mishearings. Captions show what was sung (CLAUDE.md rule 5): correct `lyrics.txt` to the audio as they decide, re-run `npm run lyrics`, and log it.
 
-A low "heard" rate is normal for heavy or operatic vocals; forced alignment places the rest. What matters is that the preview shows each line on its words.
+A low "heard" rate is normal for heavy or operatic vocals; forced alignment places the rest. What matters is that the preview shows each line on its words. Before showing the diff, list each line's start and duration from `timing.json`: repeated choruses should take about the same time, and no short line should run 5 s or more. A line that's off goes to the user as a timing problem, not a lyric difference.
 
 ## 3. Shot plan
 
@@ -77,7 +77,7 @@ Read the lyrics and the song map, then write the plan as a table:
 
 **Stock sites first.** When `config.yaml` has `licensing.stock_media: music-video`, search Pixabay, Pexels and Coverr before anything else for each shot, with `npm run stock` and the **stock-media** skill. That works best for generic and atmospheric shots (weather, cities, crowds, money, machines, abstract motion). Coverr, and Pexels while it issues no API keys, need the user's browser downloads: collect their page URLs in one list for the user. Then fill the rest:
 
-Use the find-media subagents with the prompts in `.claude/skills/new-episode/asset-prompts.md` and the **find-media** skill, driven by the plan, with the usual license gate (CLAUDE.md rule 3) and a `credits.json` entry for every file. Then explainers, and AI stills last. Differences from news episodes:
+Use the find-media subagents with the prompts in `.claude/skills/new-episode/asset-prompts.md` and the **find-media** skill, driven by the plan, with the usual license gate (CLAUDE.md rule 3) and a `credits.json` entry for every file. Then explainers, and AI stills last; an AI still can be brought to life, or two joined, as a Grok clip (the **grok-imagine** skill, `"note": "AI-GENERATED FOOTAGE"`). On a few strong lines, a Grok clip can show a made-up character singing the line, placed so the mouthing lands on it (that skill's "lyric blurbs" section); mark those shots in the shot plan. Differences from news episodes:
 - **YouTube.** The **youtube** skill can supply facts for an explainer and CC BY clips (`npm run youtube -- <slug> clip`). The channel tag shows on those clips.
 - **No FILE FOOTAGE notes.** A music video doesn't claim a clip shows a specific event; the credits roll and the description carry the sourcing.
 - **Stock clips** the site marks as AI need `"note": "AI-GENERATED FOOTAGE"`. A stock file can't be the thumbnail.
@@ -119,6 +119,7 @@ The song is the only audio, so the explainer's score isn't used.
 - **Cues.** Cues follow the usual rules (case- and accent-insensitive; the last word may be a prefix). They are searched **in order**, after the previous shot's word and time, so a chorus cue finds the next chorus.
 - **Beats.** Beats are indexes into the beat list. The song map prints the range for each instrumental.
 - **Transitions.** `transition` is `cut` (default), `flash` or `glitch`; use glitch and flash sparingly, on hits.
+- **Camera moves.** `motion` sets a move for the whole shot: `zoom-in`, `zoom-out`, `push-in`, `pull-out` (the fast ones), `pan-left`, `pan-right`, `tilt-up`, `tilt-down`, `roll`, `shake`, `whip-left`, `whip-right`, `rack-focus`. `focus` (`[x, y]`, 0–1) is the point a zoom heads for, and `crop` (1–2.5) tightens the framing around it, so one still can serve several shots as different framings. Without `motion`, a still gets the kit's slow drift and a clip plays as shot. No edge ever shows, whatever the move (`src/kit/lib/shotMotion.ts`).
 - **Subtitles.** `"subtitles": false` on a shot hides them over an explainer's own text.
 - **Credits roll.** The roll pages itself (14 rows a column). If the song ends in a long instrumental, start it on a cue or beat so the video doesn't end in silence.
 

@@ -1,7 +1,7 @@
 // Music videos: time the lyric sheet to the song and find its beats, writing public/episodes/<slug>/timing.json.
 // Usage: npm run lyrics -- <slug> [--force] [--model medium] [--device cpu|cuda] [--language auto|en|…] [--aligner mms|whisper]
 //   1. Demucs splits the vocal stem out of the mix (episodes/<slug>/stems/, cached; --force redoes it)
-//   2. Whisper transcribes the stem (.venv, cached) and difflib matches the sheet's words to it (scripts/lyrics_align.py)
+//   2. Whisper transcribes the stem (.venv, cached, no VAD filter) and the sheet's words are matched to it in order (scripts/lyrics_align.py)
 //   3. sheet words Whisper missed are placed inside their own lyric line (src/kit/lib/placeUnmatched.ts)
 //   4. (--aligner mms, the default) forced alignment refines every word on the vocal stem (scripts/lyrics_fa.py)
 //   5. librosa finds the beats (scripts/beats.py), for shots that cut on the beat in instrumentals

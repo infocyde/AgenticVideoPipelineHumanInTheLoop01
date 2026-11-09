@@ -1,10 +1,11 @@
 // YouTube upload text from out/<slug>/DESCRIPTION.md: the title and a description YouTube accepts (≤ 5,000 characters,
-// no angle brackets). Episodes keep summary, chapters, sources and credits when they fit. When they don't, the credits
-// go first (one line points to the video's credits roll, which has the full list; the user's rule since 2026-10-31),
-// then, if it is still too long, the sources shrink to "Outlet (date): link" while they fit, with the rest named on
-// one "Also:" line (the video's sources card has every title). Shorts (episodic, standalone and long) keep their
-// credits when everything fits; when it doesn't, the credits are dropped whole (the user's rule, 2026-10-31), and only
-// then do the sources shrink the same way. Episodic Shorts also get the parent video's link.
+// no angle brackets). Episodes keep summary, chapters, sources and credits when they fit. When they don't (the user's
+// rule, 2026-11-06), the credits go and a closing line says the full references and credits are at the end of the video.
+// If it is still too long, the sources become KEY LINKS: the producer's picks from episodes/<slug>/key-links.txt
+// ("Title | URL", one per line), or, without that file, the first sources that fit. Shorts (episodic, standalone and
+// long) have no end cards: they keep their credits when everything fits; when it doesn't, the credits are dropped whole
+// (the user's rule, 2026-10-31), and only then do the sources shrink to "Outlet (date): link" while they fit, the rest
+// on one "Also:" line. Episodic Shorts also get the parent video's link.
 // Writes out/<slug>/upload.json { title, description, url } for the youtube-upload skill.
 // Usage: npm run upload-text -- <slug>                 (run npm run credits first)
 //        npm run upload-text -- <slug> --url <youtube url>   (records the uploaded video's link; Shorts read the parent's)
@@ -44,31 +45,51 @@ text = text.replace(/\n*Full video: <[^>]*>\n*/, "\n\n"); // a standalone Short'
 const [top] = text.split(/\nCREDITS\n/);
 
 if ([...text].length > MAX) {
-  // 1. Drop the credits. Episodes point to their credits roll; Shorts have none, so theirs go without a pointer.
-  text = isShort ? top.trim() : `${top.trim()}\n\nCREDITS: the full list, with licenses and links, is in the credits at the end of the video.`;
-  // 2. Still too long: shrink the sources to "Outlet (date): link" while they fit, the rest on one "Also:" line.
-  const s0 = text.search(/^SOURCES$/m);
+  // 1. Drop the credits. Episodes point to their end cards; Shorts have none, so theirs go without a pointer.
+  const END_LINE = "The full list of references and credits is at the end of the video.";
+  text = isShort ? top.trim() : `${top.trim()}\n\n${END_LINE}`;
+  // 2. Still too long: fewer links.
+  const s0 = top.search(/^SOURCES$/m);
   if ([...text].length > MAX && s0 >= 0) {
-    const c1 = text.indexOf("\n\nCREDITS", s0);
-    const c0 = c1 >= 0 ? c1 : text.length;
-    const head = text.slice(0, s0), tail = text.slice(c0);
-    const items = text.slice(s0, c0).split("\n").filter((l) => l.startsWith("- ")).map((l) => {
+    const head = top.slice(0, s0);
+    const items = top.slice(s0).split("\n").filter((l) => l.startsWith("- ")).map((l) => {
       const m = l.match(/^- (.*?): (https?:\/\/\S+)$/);
       const t = m ? m[1] : l.slice(2);
       const date = t.match(/\(([^()]*\d{4}[^()]*)\)\s*$/)?.[1];
       return { short: date && t.includes(":") ? `${t.split(":")[0].trim()} (${date})` : t, url: m?.[2] ?? "" };
     });
-    const build = (k: number) => {
-      const linked = items.slice(0, k).map((it) => `- ${it.short}${it.url ? `: ${it.url}` : ""}`);
-      const rest = items.slice(k).map((it) => it.short);
-      if (rest.length) linked.push(`- Also: ${rest.join("; ")}`);
-      return `${head}SOURCES${isShort ? "" : " (full titles in the sources card at the end of the video)"}\n${linked.join("\n")}${tail}`;
-    };
-    let k = items.length;
-    while (k > 0 && [...build(k)].length > MAX - 50) k--;
-    text = build(k);
-    warn(`credits dropped and sources shortened to fit: links kept for ${k}/${items.length} sources`);
-  } else warn(isShort ? "credits dropped to fit (Shorts rule)" : "credits dropped to fit (the credits roll in the video has them)");
+    if (isShort) {
+      // Shorts: "Outlet (date): link" while they fit, the rest on one "Also:" line.
+      const build = (k: number) => {
+        const linked = items.slice(0, k).map((it) => `- ${it.short}${it.url ? `: ${it.url}` : ""}`);
+        const rest = items.slice(k).map((it) => it.short);
+        if (rest.length) linked.push(`- Also: ${rest.join("; ")}`);
+        return `${head}SOURCES\n${linked.join("\n")}`;
+      };
+      let k = items.length;
+      while (k > 0 && [...build(k)].length > MAX - 50) k--;
+      text = build(k);
+      warn(`credits dropped and sources shortened to fit: links kept for ${k}/${items.length} sources`);
+    } else {
+      // Episodes: KEY LINKS, the producer's picks when there are any; the end cards have the rest.
+      const pickFile = join(ROOT, "episodes", slug, "key-links.txt");
+      const picks = existsSync(pickFile)
+        ? readFileSync(pickFile, "utf8").split(/\r?\n/).map((l) => l.trim()).filter((l) => l && !l.startsWith("#")).map((l) => {
+            const [t, u] = l.split(/\s+\|\s+/);
+            if (!u || !/^https?:\/\//.test(u)) fail(`episodes/${slug}/key-links.txt: "${l}" isn't "Title | URL"`);
+            if (!items.some((it) => it.url === u)) warn(`key link isn't in the episode's sources: ${u}`);
+            return { short: t, url: u };
+          })
+        : [];
+      const links = picks.length ? picks : items.filter((it) => it.url);
+      const build = (k: number) => `${head}KEY LINKS\n${links.slice(0, k).map((it) => `- ${it.short}: ${it.url}`).join("\n")}\n\n${END_LINE}`;
+      let k = links.length;
+      while (k > 0 && [...build(k)].length > MAX - 50) k--;
+      text = build(k);
+      if (picks.length) warn(`credits dropped to fit; ${k}/${links.length} key links from key-links.txt`);
+      else warn(`credits dropped to fit; the first ${k} of ${items.length} sources kept as key links. Pick the most important ones in episodes/${slug}/key-links.txt ("Title | URL", one per line) and run this again.`);
+    }
+  } else warn(isShort ? "credits dropped to fit (Shorts rule)" : "credits dropped to fit (the end cards have them)");
 }
 text = text.replace(/</g, "‹").replace(/>/g, "›");
 const n = [...text].length;

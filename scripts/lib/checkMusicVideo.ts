@@ -4,7 +4,8 @@ import { lyricWords, parseLyrics } from "../../src/kit/lib/lyrics.ts";
 import { thumbnailVisual } from "../../src/kit/lib/resolveMusicVideo.ts";
 import type { Issue } from "../../src/kit/lib/resolve.ts";
 import { assetsSchema, type Timing } from "../../src/kit/schema.ts";
-import { aiStock, creditCoverageIssues, generatedStills, pressIssues, staleAssetIssues, stockIssues, xpostIssues, youtubeIssues } from "./check.ts";
+import { aiStock, creditCoverageIssues, generatedClips, generatedStills, pressIssues, staleAssetIssues, stockIssues, xpostIssues, youtubeIssues } from "./check.ts";
+import { AI_FOOTAGE_NOTE } from "./grok.ts";
 import { loadConfig } from "./config.ts";
 import { loadMusicVideoFromDisk } from "./musicVideo.ts";
 
@@ -79,8 +80,14 @@ export const runMusicVideoCheck = (slug: string): Issue[] => {
     usesAi.push(s.visual);
     if (!/AI-GENERATED/i.test(s.note ?? "")) err(`shots[${i}]`, `"${s.visual}" is AI-generated stock: add "note": "AI-GENERATED FOOTAGE" so viewers know`);
   });
+  const grokClips = generatedClips(epCredits.entries);
+  ep.shots.forEach((s, i) => {
+    if (!grokClips.has(s.visual)) return;
+    usesAi.push(s.visual);
+    if (!/AI-GENERATED/i.test(s.note ?? "")) err(`shots[${i}]`, `"${s.visual}" is AI-generated: add "note": "${AI_FOOTAGE_NOTE}" so viewers know`);
+  });
   const thumb = thumbnailVisual(ep);
-  if (generated.has(thumb)) usesAi.push(thumb);
+  if (generated.has(thumb) || grokClips.has(thumb)) usesAi.push(thumb);
   if (usesAi.length) {
     warn("AI imagery", `uses AI-generated images (${[...new Set(usesAi)].join(", ")}). If any look realistic, tick YouTube's "altered or synthetic content" box when uploading.`);
   }

@@ -9,6 +9,8 @@ import { sfxCues } from "../../src/kit/lib/sfx.ts";
 import { norm } from "../../src/kit/lib/timing.ts";
 import { isYouTubeUrl } from "../../src/kit/lib/youtube.ts";
 import { AI_LICENSE, type AssetManifest, assetsSchema, type Credit, creditSchema, isTextSection, LICENSES, OWN_LICENSE, PRESS_LICENSE, STOCK_LICENSE, XPOST_LICENSE } from "../../src/kit/schema.ts";
+import { AI_FOOTAGE_NOTE, GROK_PROVIDER } from "./grok.ts";
+import { lipsyncClip } from "./lipsync.ts";
 import { layoutOf } from "../../src/kit/themes/ids.ts";
 import { AUDIO_EXT, IMAGE_EXT, LIBRARY, listMedia, VIDEO_EXT } from "./assets.ts";
 import { loadFromDisk, scriptWords, zodIssues } from "./episode.ts";
@@ -86,9 +88,17 @@ export const loadCredits = (file: string, where: string): Credits => {
   return { entries, issues };
 };
 
+const grokClip = (c: Credit) => c.file.startsWith("clips/") && c.generator?.provider === GROK_PROVIDER;
+/** AI clips: Grok clips (npm run grok) and clips lip-synced from them (npm run lipsync). */
+const aiClip = (c: Credit) => grokClip(c) || lipsyncClip(c);
+
+/** Where AI-GENERATED is accepted: stills (npm run generate), composed beds (npm run compose), Grok clips (npm run grok), lip-synced clips (npm run lipsync). */
+export const aiCreditAllowed = (c: Credit) =>
+  c.file.startsWith("images/") || (c.file.startsWith("music/") && c.generator?.provider === "local" && /stable-audio-3/.test(c.generator.model)) || aiClip(c);
+
 /**
  * Every media file in the episode (clips, images, sfx, music, plus `extraFiles` such as a music video's song) and every
- * library file it uses needs an allowed-license credit; AI-GENERATED is only for generated stills and composed beds.
+ * library file it uses needs an allowed-license credit; AI-GENERATED is only for the media `aiCreditAllowed` names.
  * Shared by news episodes and music videos. Also returns the parsed episode credits for the checks that follow.
  */
 export const creditCoverageIssues = (slug: string, usedLib: Set<string>, extraFiles: string[] = []) => {
@@ -118,10 +128,9 @@ export const creditCoverageIssues = (slug: string, usedLib: Set<string>, extraFi
     .filter((c) => !existsSync(join(p.pub, c.file)))
     .forEach((c) => issues.push({ level: "warning", where: "credits.json", msg: `${c.file} is credited but not on disk` }));
 
-  const composed = (c: Credit) => c.file.startsWith("music/") && c.generator?.provider === "local" && /stable-audio-3/.test(c.generator.model);
   epCredits.entries
-    .filter((c) => c.license === AI_LICENSE && !c.file.startsWith("images/") && !composed(c))
-    .forEach((c) => err("credits.json", `${c.file}: ${AI_LICENSE} is only allowed for images/ made by \`npm run generate\` and music/ made by \`npm run compose\``));
+    .filter((c) => c.license === AI_LICENSE && !aiCreditAllowed(c))
+    .forEach((c) => err("credits.json", `${c.file}: ${AI_LICENSE} is only allowed for images/ made by \`npm run generate\`, music/ made by \`npm run compose\` and clips/ made by \`npm run grok\``));
   libCredits.entries.filter((c) => c.license === AI_LICENSE).forEach((c) => err("library/credits.json", `${c.file}: ${AI_LICENSE} isn't allowed in the shared library`));
   return { epCredits, issues };
 };
@@ -129,6 +138,10 @@ export const creditCoverageIssues = (slug: string, usedLib: Set<string>, extraFi
 /** Basenames of the episode's AI-generated stills (npm run generate), which must carry an on-screen note. */
 export const generatedStills = (entries: Credit[]) =>
   new Set(entries.filter((c) => c.license === AI_LICENSE && c.file.startsWith("images/")).map((c) => c.file.replace(/^images\//, "").replace(/\.[^.]+$/, "")));
+
+/** Basenames of the episode's AI clips (npm run grok, npm run lipsync), which must carry an on-screen note. */
+export const generatedClips = (entries: Credit[]) =>
+  new Set(entries.filter((c) => c.license === AI_LICENSE && aiClip(c)).map((c) => c.file.replace(/^clips\//, "").replace(/\.[^.]+$/, "")));
 
 /** The thumbnail's visual, or every visual when it has variants. */
 type Thumbs = string | string[];
@@ -469,8 +482,21 @@ export const runCheck = (slug: string): Issue[] => {
     usesAi.push(b.visual);
     if (!b.note) err(`coldOpen.beats[${i}]`, `"${b.visual}" is AI-generated: add "note": "AI-GENERATED ILLUSTRATION" so viewers know`);
   });
+  const grokClips = generatedClips(epCredits.entries);
+  ep.segments.forEach((s, i) =>
+    s.visuals.forEach((v, k) => {
+      if (!grokClips.has(v.name)) return;
+      usesAi.push(v.name);
+      if (!/AI-GENERATED/i.test(v.note ?? "")) err(`segments[${i}].visuals[${k}]`, `"${v.name}" is AI-generated: add "note": "${AI_FOOTAGE_NOTE}" so viewers know`);
+    }),
+  );
+  ep.coldOpen.beats.forEach((b, i) => {
+    if (!b.visual || !grokClips.has(b.visual)) return;
+    usesAi.push(b.visual);
+    if (!/AI-GENERATED/i.test(b.note ?? "")) err(`coldOpen.beats[${i}]`, `"${b.visual}" is AI-generated: add "note": "${AI_FOOTAGE_NOTE}" so viewers know`);
+  });
   const thumbs = [ep.thumbnail?.visual, ...(ep.thumbnail?.variants ?? []).map((v) => v.visual)].filter((v): v is string => !!v);
-  thumbs.forEach((v) => generated.has(v) && usesAi.push(v));
+  thumbs.forEach((v) => (generated.has(v) || grokClips.has(v)) && usesAi.push(v));
   if (usesAi.length) {
     warn("AI imagery", `uses AI-generated images (${[...new Set(usesAi)].join(", ")}). If any look realistic, tick YouTube's "altered or synthetic content" box when uploading.`);
   }

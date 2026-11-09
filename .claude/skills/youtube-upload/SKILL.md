@@ -30,12 +30,16 @@ declined on 2026-10-29.
 2. `npm run credits -- <slug>` for the episode and each Short (it regenerates DESCRIPTION.md).
 3. `npm run upload-text -- <slug>`: writes `out/<slug>/upload.json` with the title and a description YouTube accepts
    (≤ 5,000 characters, no angle brackets). Episodes keep summary, chapters, sources and credits when they fit.
-   **When the text is too long, the credits go first** (the user's rule, 2026-10-31, project-wide): they're replaced by
-   one line pointing to the video's credits roll, which has the full list. If it is still too long, the sources shrink
-   to "Outlet (date): link" while they fit, with the rest named on one "Also:" line (the video's sources card has every
-   title). **Shorts** (episodic, standalone and long; the user's rule, 2026-10-31) keep summary, sources and credits
+   **When an episode's text is too long** (the user's rule, 2026-11-06, every episode): the credits go, and a closing
+   line says "The full list of references and credits is at the end of the video." If it is still too long, the sources
+   become **KEY LINKS**, the most important ones only. Before uploading, write them to `episodes/<slug>/key-links.txt`
+   (`Title | URL`, one per line, about 12–16, drawn from `sources`: the ones behind the video's biggest claims, from each
+   side of the argument) and run `upload-text` again; it warns when it had to fall back to the first sources that fit.
+   The file survives `--url`, so never trim the description by hand.
+   **Shorts** (episodic, standalone and long; the user's rule, 2026-10-31) keep summary, sources and credits
    when they fit; when they don't, **the credits are dropped whole**, with no pointer line (a Short has no credits
-   roll), and only then do the sources shrink the same way. Episodic Shorts also get the parent's link once it's
+   roll), and only then do the sources shrink to "Outlet (date): link" while they fit, with the rest named on one
+   "Also:" line. Episodic Shorts also get the parent's link once it's
    recorded; standalone Shorts have no "Full video" line. If you paste a description by hand, follow the same order:
    cut the credits before anything else. A line you add by hand (e.g. a disclosure) goes in `upload.json` after
    `upload-text`, which rewrites the description each time.
@@ -96,5 +100,5 @@ find, javascript_tool). Start from `tabs_context_mcp`, work in the group's own t
 - Never upload anything the user didn't ask for, and never change other videos on the channel.
 - Never click "Publish anyway" past the checks warning without the user's say-so.
 - A YouTube description holds 5,000 characters and rejects `<` and `>`; `upload-text` handles both (credits
-  dropped first, then sources shortened) and warns if it still can't fit. A title holds 100 characters.
+  dropped first, then key links in place of the full sources) and warns if it still can't fit. A title holds 100 characters.
 - If the extension or Studio stops responding after two or three tries, stop and tell the user what's done.
