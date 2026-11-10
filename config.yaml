@@ -214,6 +214,8 @@ recon:
   trend_dives: 5    # at most this many trends opened to see what they're about
   ideas: 8          # at most this many ideas in the report
   min_accounts: 3   # a story needs posts from at least this many different accounts
+  youtube: true     # also check YouTube (Studio Trends tab + search suggestions): what people search and watch (2026-11-09)
+  youtube_topics: 8 # at most this many Studio topic pages opened (one per candidate story)
 
 recon_light:
   # Quick recon (the recon-light skill; say "recon light"): the newest posts on each list in recon: lists plus the top
@@ -222,6 +224,8 @@ recon_light:
   posts_per_list: 125 # newest posts read on each list (no time window; 100 until 2026-11-04)
   trends: 40          # first this many trends (20 until 2026-11-03) on x.com/explore/tabs/trending
   picks: 10           # items in the file (fewer if fewer are worth it; 5 until 2026-11-04)
+  youtube: true       # quick YouTube check: what people search and watch, on every pick (2026-11-09)
+  youtube_topics: 10  # Studio topic pages opened: one per pick, so every pick is checked (5 until 2026-11-09)
   model: haiku        # model that does the reading and writing, in its own agent: haiku, sonnet or opus (latest of
                       # each), or main to do it in the current session on whatever model that runs. A change applies
                       # to the next run.

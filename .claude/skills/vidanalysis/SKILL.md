@@ -95,7 +95,8 @@ Read this run's JSON, **the last report's JSON and `.md` only**. Write `analytic
 6. **Monetization denial risk**: score this report with the rubric below, show the factor table next to the last report's scores, and give the rating (and whether it went up, down or held). Then eligibility progress (from the Earn page), this report vs the last. Any policy notice, restriction or "limited" mark on a video goes at the very top of the log, not here.
 7. **What to change**: at most 3 concrete suggestions (cadence, same-story spacing, topic, length, retention), each tied to a number above. Say how sure you are. Never suggest anything that breaks CLAUDE.md (facts, licenses, handoffs).
 8. **Open questions for next run**: specific, checkable, with the video ids to look at.
-9. **Status line**: the last line, `Status: done` (or `Status: stopped: <reason>`).
+9. **In plain English** (the user's rule, 2026-11-09): the last section before the status line, titled `## In plain English: three things to try`. Three suggestions to boost engagement, drawn from this report, written so a 9th grader gets them: everyday words, short sentences, no video ids, no percentages, no jargon (CTR, AVD, impressions, "ceiling", "feed test"; say "people clicked", "people kept watching"). One or two sentences each: what to do, then why, in words. They may restate "What to change" more simply, and they follow the same rules (nothing that breaks CLAUDE.md).
+10. **Status line**: the last line, `Status: done` (or `Status: stopped: <reason>`).
 
 ### Monetization denial risk rubric
 
