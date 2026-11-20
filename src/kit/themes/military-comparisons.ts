@@ -48,20 +48,20 @@ export const militaryComparisons: Theme = {
     labelHalo: "rgba(5,8,10,0.9)",
   },
   backdrop: {
-    filter: "grayscale(0.4) contrast(1.12) brightness(1.06) saturate(1)",
-    tintOpacity: 0.22,
+    // Light grade (the user, 2026-11-19: "too dim by a lot"; was grayscale 0.4, tint 0.22, side gradient 0.86 to 72%).
+    filter: "grayscale(0.1) contrast(1.05) brightness(1.1) saturate(1.05)",
+    tintOpacity: 0.08,
     tintBlend: "multiply",
-    sideGradient:
-      "linear-gradient(90deg, rgba(7,11,14,0.86) 0%, rgba(7,11,14,0.52) 42%, rgba(7,11,14,0.08) 72%, rgba(7,11,14,0.16) 100%)",
-    bottomGradient: "linear-gradient(0deg, rgba(7,11,14,0.75) 0%, transparent 30%)",
+    sideGradient: "linear-gradient(90deg, rgba(7,11,14,0.5) 0%, rgba(7,11,14,0.22) 32%, rgba(7,11,14,0) 55%)",
+    bottomGradient: "linear-gradient(0deg, rgba(7,11,14,0.5) 0%, transparent 20%)",
   },
   effects: {
     accentGlow: (size) => `0 0 ${Math.round(size)}px ${alpha(orange, size >= 80 ? 0.42 : size >= 50 ? 0.38 : 0.32)}`,
     textShadow: "0 6px 30px rgba(3,5,7,0.9)",
     captionShadow: "0 4px 18px rgba(0,0,0,0.95), 0 0 2px #000",
-    vignette: "radial-gradient(ellipse at center, transparent 62%, rgba(3,6,8,0.5) 100%)",
-    grainOpacity: 0.08,
-    scanlineOpacity: 0.22,
+    vignette: "radial-gradient(ellipse at center, transparent 72%, rgba(3,6,8,0.28) 100%)",
+    grainOpacity: 0.06,
+    scanlineOpacity: 0.1,
     glitchColors: [alpha(orange, 0.5), alpha(cyan, 0.4)],
     flash: "#eef4f6",
     outroScrim: "radial-gradient(ellipse at center, rgba(10,15,19,0.25) 0%, rgba(10,15,19,0.9) 75%)",

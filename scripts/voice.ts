@@ -14,6 +14,10 @@
 //   npm run voice -- --record [name] [--seconds 25] [--device "Mic name"] [--no-play]
 //                     record your voice from the mic into voices/<name>.wav (default narrator), check it, play a cloned sample
 //   --force       replace an existing voiceover.mp3 (kept as voiceover.prev.mp3), or re-record an existing voices/<name>.wav
+//   Sentence cache (every engine but elevenlabs): each sentence's take is kept in out/<slug>/voice-cache/, keyed by its text
+//   and the voice settings, so a re-run (--force) voices only new or edited sentences and splices them in.
+//   --redo "words|other words"  a new take of just the sentences containing those words (e.g. a cut-off ending)
+//   --fresh       ignore the cache and voice every sentence again
 //   --ignore-off  voice one episode while config.yaml has voice.enabled: false (still never overwrites without --force)
 // An episode's audio.voiceSpeed (default 1) plays the finished take back that much faster, pitch kept, before
 // align, so captions and cues follow the sped-up audio. It's recorded in voice.json; check warns if the two differ.
@@ -231,7 +235,7 @@ if (testOut) {
   mkdirSync(work, { recursive: true });
   const t0 = new Date();
   info(`start ${t0.toLocaleTimeString()}: voicing episodes/${slug}/voiceover.txt with ${label} (test take; ${voName}, timing.json and voice.json are not touched)`);
-  const tmp = synth(p.script, join(work, "take.mp3"), work, tempo);
+  const tmp = synth(p.script, join(work, "take.mp3"), work, tempo, cacheArgs(p.out));
   mkdirSync(join(dest, ".."), { recursive: true });
   renameSync(tmp, dest);
   const t1 = new Date();
@@ -249,7 +253,7 @@ if (existsSync(out) && !flags.force) fail(`public/episodes/${slug}/${voName} alr
 const work = join(p.out, "voice");
 mkdirSync(work, { recursive: true });
 info(`voicing episodes/${slug}/voiceover.txt with ${label}${speedNote}…`);
-const tmpMp3 = synth(p.script, join(work, "voiceover.mp3"), work, tempo);
+const tmpMp3 = synth(p.script, join(work, "voiceover.mp3"), work, tempo, cacheArgs(p.out));
 if (existsSync(out)) renameSync(out, out.replace(/\.mp3$/, ".prev.mp3"));
 mkdirSync(p.pub, { recursive: true });
 renameSync(tmpMp3, out);
@@ -272,10 +276,17 @@ Fix it by respelling the word in voiceover.txt for the ear (it is also the capti
 }
 
 /** Run voice.py on a text file, return the MP3 path. `tempo` ≠ 1 speeds the take up (ffmpeg atempo keeps the pitch). */
-function synth(textFile: string, mp3: string, dir: string, tempo = 1): string {
+/** Sentence-cache arguments for voice.py: the episode's cache folder, plus --redo fragments and --fresh. */
+function cacheArgs(outDir: string) {
+  const redo = (str("redo") ?? "").split("|").map((s) => s.trim()).filter(Boolean);
+  if (flags.redo !== undefined && !redo.length) fail('--redo needs the words of the sentences to voice again, e.g. --redo "made it urgent|in April"');
+  return { cache_dir: join(outDir, "voice-cache"), redo, fresh: !!flags.fresh };
+}
+
+function synth(textFile: string, mp3: string, dir: string, tempo = 1, cache: Record<string, unknown> = {}): string {
   const args = join(dir, "voice-args.json");
   const wav = mp3.replace(/\.mp3$/, ".wav");
-  writeFileSync(args, JSON.stringify({ ...settings, text: textFile, out: wav }));
+  writeFileSync(args, JSON.stringify({ ...settings, ...cache, text: textFile, out: wav }));
   const python = settings.engine === "qwen" || (cloud && !existsSync(py)) ? venvPy(".venv-qwen") : py;
   const env = {
     ...process.env,

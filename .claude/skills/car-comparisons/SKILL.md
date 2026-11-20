@@ -133,7 +133,7 @@ discusses). The infographic's own `OWN WORK` credit names the photos it uses in 
 - Car photos are framed in the split layout's 16:9 window: pick 3/4 front shots with the whole car in frame.
 - Each segment's first visual is its car. Text sections open on a photo and bring the infographic in second.
 - **Music:** an upbeat bed (the user, 2026-11-01), composed with `npm run compose` (compose-music skill) for the video
-  and each of its Shorts: bright and driving, about 115-125 BPM, level 0.45.
+  and each of its Shorts: bright and driving, about 115-125 BPM, level 0.6.
 
 ## 7. Before preview
 

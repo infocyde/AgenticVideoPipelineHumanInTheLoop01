@@ -89,3 +89,57 @@ To check before adopting: Resemble Enhance's license (likely MIT, unconfirmed), 
    - **Test:** upscale one existing Qwen episode voiceover and blind A/B it on a phone and on headphones. If the user can't reliably pick the upscaled one on the phone, drop it.
    - **If kept:** an opt-in setting in `config.yaml` (e.g. `voice.enhance: false` by default), applied in `scripts/voice.ts` after voicing and before align. Then run `voice-check` as usual, and add an alignment re-check (same duration, same word times) to `check`.
 3. **The combination:** step 1 regardless; step 2 only if the A/B passes.
+
+## Excalidraw diagrams as b-roll (2026-11-17)
+
+**Idea:** a skill that makes hand-drawn, whiteboard-style diagrams (flows, org charts, "how the attack worked", cause and effect, simple maps) with the official Excalidraw CLI, as stills or draw-on clips. Analysis only; nothing installed or changed.
+
+### The tool
+
+- **`@excalidraw/cli` 1.0.0**, Excalidraw's own CLI ([excalidraw/cli](https://github.com/excalidraw/cli), docs at [plus.excalidraw.com/docs/cli](https://plus.excalidraw.com/docs/cli)), MIT, published on npm 2026-11-17. No GitHub release notes yet, about 14 commits. Several unofficial packages have similar names; only `excalidraw/cli` is official.
+- **Runtime:** Node 22 or newer (this PC: 22.17.0), one dependency, `playwright-core` 1.63. It downloads no browser: it drives the installed Chrome or Edge (the same ones `scripts/lib/browser.ts` uses), or Firefox (about 5 s a render instead of under 1 s). Override with `--browser-path`.
+- **Offline, no account:** `render` and `mermaid` run locally and upload nothing. Network use: a daily update check (off with `EXCALIDRAW_NO_UPDATE_NOTIFIER=1`) and a one-time download of a CJK font when a drawing has Chinese, Japanese or Korean text (`--fonts-url` for a local copy). The workspace commands (`scenes`, `collections`, `login`…) need an Excalidraw+ API key and aren't needed.
+- **Commands that matter:**
+  - `excalidraw render <file|-> --out x.png|x.svg`, with `--scale` (up to 16), `--theme light|dark`, `--transparent`, `--frame-id <id>`, `--all-frames` (one image per frame, in order), `--padding`. Prints JSON with the path and size; `--out -` writes the image to stdout.
+  - `excalidraw mermaid flow.mmd --out flow.excalidraw|flow.svg`: Mermaid to an editable drawing (flowchart, sequence, class, ER, state, Gantt, quadrant, timeline).
+- **Limits:** PNG or SVG only, no PDF, no animation or video. No command for editing a local drawing: the `.excalidraw` JSON is written by us. Images must be embedded, not linked.
+
+### How it would fit
+
+A third kind of drawn b-roll beside `infographic` (themed charts) and `explainer` (styled canvas animation). What it adds:
+
+- A whiteboard look that suits asked-claude, AI and tech, and cyber stories. It may clash with the military and threat-brief themes.
+- A source file the user can open and adjust by hand in excalidraw.com or the desktop app before the render, which neither existing skill offers.
+- Fast feedback: under a second a render, so render → look at the PNG → fix works well.
+
+### Pipeline
+
+1. **Writing the drawing (the hard part).** Raw Excalidraw JSON is verbose (seeds, versions, arrow bindings, stored text sizes). Two ways in: Mermaid → `excalidraw mermaid` for flows, timelines and sequences (cheapest), or a small helper in the skill folder that expands a short layout spec (boxes, arrows, labels, colors) into full elements.
+2. **Size:** put a 1920×1080 frame (1200×850 for long Shorts) in the drawing and render with `--frame-id`, so the output is exactly the slot size.
+3. **Theme:** copy the episode theme's colors (accent, highlight, hostile, ally) into stroke and fill colors. For dark themes, a `--transparent` render on a theme-colored panel probably beats `--theme dark` (which inverts colors).
+4. **Still output:** PNG to `public/episodes/<slug>/images/`, credited `OWN WORK`, then `npm run assets`; the kit's Ken Burns drift gives it movement.
+5. **Draw-on animation (optional):** render SVG, embed it in an infographic HTML page, draw the strokes on with `window.bkSeek` (stroke-dashoffset), and render with `npm run infographic`, which also writes the credit. Needs a test: the sketchy strokes are SVG paths, so drawing them on should work, but text and filled shapes would fade in instead.
+
+### Rules that would apply
+
+- Building the skill (and a `scripts/excalidraw.ts` wrapper) is kit development, like the infographic skill: it needs the user's go-ahead, not part of making an episode (CLAUDE.md rule 1). A minimal version needs no new script: `npx`, a manual `credits.json` entry and `npm run assets`.
+- Rules 2 and 3: every label and number from the script or fact-check; drawings credited `OWN WORK`. Shapes from Excalidraw's community libraries carry their own licenses: leave them out or check each one.
+- Pin `@excalidraw/cli@1.0.0` as a dev dependency rather than a global install (a `package.json` change, the user's call).
+
+### Effort
+
+| Version | What it includes | Rough time |
+| --- | --- | --- |
+| Minimal | Skill doc, Mermaid route, `npx` render, manual credit | ~1–2 h |
+| Standard | Plus a wrapper script (frame sizing, theme colors, credits and assets), the layout helper, 3–4 reference drawings | ~half a day |
+| With animation | Plus SVG draw-on through the infographic renderer, tested on a long Short | ~+2–4 h |
+
+### Risks
+
+- A day-old 1.0: flags may change. Pin the version.
+- **Bound text:** it's not documented whether `render` re-measures text inside shapes. If not, generated JSON must size text correctly or labels overflow their boxes. Test this first.
+- The hand-drawn style can clash with the harder themes; use it where the subject fits.
+
+### Plan when it's picked up
+
+Build the standard version, prove it on one diagram in a real episode, then decide whether the draw-on animation is worth adding.

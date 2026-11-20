@@ -7,8 +7,16 @@ voice.py --voices      list Kokoro voices
 
 The script is spoken sentence by sentence (paragraph breaks get a longer pause), one fixed seed per sentence, so a
 re-run with the same settings and text gives the same take, and a long script never hits a model's length limit.
+
+Sentence cache (args cache_dir, every engine but elevenlabs): each sentence's raw take is kept under a key made of its
+exact text and the voice settings (engine, model, reference clip contents, seed, speed…), not its position. A re-run
+reuses every sentence whose key is cached and voices only new or edited ones (the model isn't even loaded when nothing
+is missing). args redo: ["fragment", …] voices a new take of the sentences containing a fragment (fresh seed; the old
+take is kept as <key>.prev.npz). args fresh: ignore the cache and voice everything.
 """
+import hashlib
 import json
+import os
 import re
 import sys
 import time
@@ -65,6 +73,77 @@ def trim(wav, sr, thresh=0.003):
 
 
 CLOUD_MODEL = "qwen/qwen3-tts"  # official Replicate model (Alibaba Qwen, Apache-2.0); voice_clone mode
+
+# Bump when the way a sentence is generated changes, so old cached takes stop matching
+# (2: local qwen gets the trailing " ..." ending fix, 2026-11-19).
+CACHE_VERSION = 2
+REDO_SEED_STEP = 100003  # a redone sentence's seed moves this far per redo, so local engines give a different take
+
+
+def _file_sha1(path):
+    h = hashlib.sha1()
+    with open(path, "rb") as f:
+        for block in iter(lambda: f.read(1 << 20), b""):
+            h.update(block)
+    return h.hexdigest()
+
+
+class SentenceCache:
+    """Raw per-sentence takes on disk, keyed by text + voice settings (see the module docstring)."""
+
+    SETTINGS = ("engine", "model", "qwen_size", "language", "voice", "speed", "exaggeration", "cfg_weight", "ref_text", "seed")
+
+    def __init__(self, a):
+        self.dir = a.get("cache_dir")
+        if self.dir:
+            os.makedirs(self.dir, exist_ok=True)
+        ident = {k: a.get(k) for k in self.SETTINGS}
+        ref = a.get("reference")
+        ident["reference"] = _file_sha1(ref) if ref and os.path.exists(ref) else ref
+        ident["v"] = CACHE_VERSION
+        self.ident = ident
+
+    def key(self, s):
+        return hashlib.sha1(json.dumps({**self.ident, "text": s}, sort_keys=True).encode("utf-8")).hexdigest()[:24]
+
+    def _path(self, k, prev=False):
+        return os.path.join(self.dir, f"{k}{'.prev' if prev else ''}.npz")
+
+    def load(self, k):
+        """(raw, sr, takes) or None."""
+        if not self.dir or not os.path.exists(self._path(k)):
+            return None
+        with np.load(self._path(k)) as z:
+            return z["raw"].astype(np.float32), int(z["sr"]), int(z["takes"])
+
+    def save(self, k, raw, sr, takes, keep_prev=False):
+        if not self.dir:
+            return
+        if keep_prev and os.path.exists(self._path(k)):
+            os.replace(self._path(k), self._path(k, prev=True))
+        np.savez(self._path(k), raw=np.asarray(raw, dtype=np.float32).reshape(-1), sr=np.int64(sr), takes=np.int64(takes))
+
+
+def plan(a, chunks, cache):
+    """Which sentences come from the cache and which must be voiced: (cached {i: (raw, sr)}, todo [i], takes {i: n})."""
+    redo = [r.strip().lower() for r in (a.get("redo") or []) if r.strip()]
+    hit_redo = set()
+    cached, todo, takes = {}, [], {}
+    for i, (s, _) in enumerate(chunks):
+        k = cache.key(s)
+        got = cache.load(k)
+        is_redo = [r for r in redo if r in s.lower()]
+        hit_redo.update(is_redo)
+        if got and not a.get("fresh") and not is_redo:
+            cached[i] = (got[0], got[1])
+        else:
+            todo.append(i)
+            # a redo always moves to the next take, cached or not (with nothing cached, take 0 would repeat the old take)
+            takes[i] = ((got[2] if got else 0) + 1) if is_redo else 0
+    for r in redo:
+        if r not in hit_redo:
+            print(f"! --redo \"{r}\" matched no sentence", flush=True)
+    return cached, todo, takes
 
 
 def cloud_takes(a, chunks):
@@ -281,10 +360,27 @@ def main():
     if not chunks:
         sys.exit("voiceover.txt is empty")
 
+    cache = SentenceCache(a) if a["engine"] != "elevenlabs" else SentenceCache({})  # elevenlabs stitches neighbours: no cache
+    cached, todo, takes = plan(a, chunks, cache) if cache.dir else ({}, list(range(len(chunks))), {i: 0 for i in range(len(chunks))})
+    if cache.dir:
+        print(f"  sentence cache: {len(cached)} of {len(chunks)} reused, {len(todo)} to voice", flush=True)
+
+    def store(i, raw, sr):
+        cache.save(cache.key(chunks[i][0]), raw, sr, takes[i], keep_prev=takes[i] > 0)
+
     if a["engine"] == "qwen-cloud":
         t1 = time.time()
-        print(f"  {len(chunks)} sentences to Replicate ({CLOUD_MODEL}, voice_clone), {a.get('cloud_concurrency') or 8} at a time", flush=True)
-        raws, sr, stats = cloud_takes(a, chunks)
+        raws = [None] * len(chunks)
+        sr = next((v[1] for v in cached.values()), None)
+        stats = {"gpu_seconds": 0}
+        for i, (raw, _) in cached.items():
+            raws[i] = raw
+        if todo:
+            print(f"  {len(todo)} sentences to Replicate ({CLOUD_MODEL}, voice_clone), {a.get('cloud_concurrency') or 8} at a time", flush=True)
+            new, sr, stats = cloud_takes(a, [chunks[i] for i in todo])
+            for i, raw in zip(todo, new):
+                raws[i] = raw
+                store(i, raw, sr)
         audio, spoken = assemble(raws, chunks, sr, a["pause"])
         sf.write(a["out"], audio, sr, subtype="PCM_16")
         took = time.time() - t1
@@ -303,6 +399,14 @@ def main():
         took = time.time() - t1
         print(f"  {len(audio) / sr:.1f}s of audio in {took:.0f}s ({spoken / max(took, 1e-6):.1f}x realtime); "
               f"ElevenLabs billed {stats['characters']} characters", flush=True)
+        return
+
+    if not todo:  # every sentence is cached: no model to load
+        t1 = time.time()
+        sr = next(iter(cached.values()))[1]
+        audio, spoken = assemble([cached[i][0] for i in range(len(chunks))], chunks, sr, a["pause"])
+        sf.write(a["out"], audio, sr, subtype="PCM_16")
+        print(f"  {len(audio) / sr:.1f}s of audio, all from the sentence cache ({time.time() - t1:.0f}s)", flush=True)
         return
 
     import torch
@@ -341,7 +445,9 @@ def main():
             torch.manual_seed(seed)
             if device == "cuda":
                 torch.cuda.manual_seed_all(seed)
-            wavs, rate = model.generate_voice_clone(text=s, language=a["language"], voice_clone_prompt=prompt)
+            # Trailing ellipsis, as for qwen-cloud: lets the model finish the last word into silence instead of stopping
+            # mid-decay (2026-11-19: a local take had 24 harsh stops without it).
+            wavs, rate = model.generate_voice_clone(text=s + " ...", language=a["language"], voice_clone_prompt=prompt)
             box["sr"] = rate
             w = wavs[0]
             return w.detach().float().cpu().numpy() if hasattr(w, "detach") else np.asarray(w, dtype=np.float32)
@@ -368,20 +474,21 @@ def main():
             w = gen(s)
             return w.squeeze(0).detach().cpu().numpy()
 
-    print(f"  model loaded in {time.time() - t0:.0f}s on {device}; {len(chunks)} sentences", flush=True)
-    pieces, spoken = [], 0.0
+    print(f"  model loaded in {time.time() - t0:.0f}s on {device}; {len(todo)} of {len(chunks)} sentences to voice", flush=True)
+    raws = [None] * len(chunks)
+    for i, (raw, _) in cached.items():
+        raws[i] = raw
     t1 = time.time()
-    for i, (s, pause_mult) in enumerate(chunks):
-        raw = say(s, a["seed"] + i)
+    for n, i in enumerate(todo):
+        # The seed stays tied to the sentence's position (as before the cache), so a first cached run reproduces earlier
+        # takes; a redo moves it by REDO_SEED_STEP per redo for a different take.
+        raw = say(chunks[i][0], a["seed"] + i + REDO_SEED_STEP * takes[i])
         sr = box.get("sr", sr)
-        w = trim(np.asarray(raw).reshape(-1), sr).astype(np.float32)
-        spoken += len(w) / sr
-        pieces += [w, np.zeros(int(sr * a["pause"] * pause_mult), dtype=np.float32)]
-        print(f"\r  sentence {i + 1}/{len(chunks)}", end="", flush=True)
+        raws[i] = np.asarray(raw, dtype=np.float32).reshape(-1)
+        store(i, raws[i], sr)
+        print(f"\r  sentence {n + 1}/{len(todo)}", end="", flush=True)
     print(flush=True)
-    audio = np.concatenate(pieces[:-1])
-    peak = float(np.max(np.abs(audio))) or 1.0
-    audio = audio / peak * 0.89  # -1 dBFS; the render's master stage sets the final loudness
+    audio, spoken = assemble(raws, chunks, sr, a["pause"])  # -1 dBFS; the render's master stage sets the final loudness
     sf.write(a["out"], audio, sr, subtype="PCM_16")
     took = time.time() - t1
     print(f"  {len(audio) / sr:.1f}s of audio in {took:.0f}s ({spoken / max(took, 1e-6):.1f}x realtime)", flush=True)

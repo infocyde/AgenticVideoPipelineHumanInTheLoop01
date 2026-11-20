@@ -25,7 +25,7 @@ Read `config.yaml` `recon:` first. If the block is missing, use these defaults:
 
 ## The browser: the user's Brave, read-only
 
-Recon needs the user's signed-in X session, so it runs through **Claude in Chrome** (the Claude browser extension, here installed in Brave). Load the `anthropic-skills:chrome-browser` skill first and follow it: one ToolSearch for the tools (`tabs_context_mcp`, `tabs_create_mcp`, `navigate`, `get_page_text`, `read_page`, `find`, `computer`, `javascript_tool`, `tabs_close_mcp`), `tabs_context_mcp` first, then work in a **new tab** and close it at the end.
+Recon needs the user's signed-in X session, so it runs through **Claude in Chrome** (the Claude browser extension, here installed in Brave). Load the `anthropic-skills:chrome-browser` skill first and follow it: one ToolSearch for the tools (`tabs_context_mcp`, `tabs_create_mcp`, `navigate`, `get_page_text`, `read_page`, `find`, `computer`, `javascript_tool`, `browser_batch`, `tabs_close_mcp`), `tabs_context_mcp` first, then work in a **new tab** and close it at the end.
 
 **If the extension isn't connected** (no `mcp__claude-in-chrome__*` tools, or "Browser extension is not connected"), stop and tell the user. Don't fall back to Playwright or `npm run shot`: they aren't signed in to X and lists need a login. The fix, in order: the Claude extension installed in Brave (v1.0.36+), signed in to the same claude.ai account as Claude Code; `/chrome` → "Enabled by default"; restart Brave; if Chrome also runs the extension, `/chrome` → Select browser… → Brave. Claude Code must be signed in with `/login` (an API key turns browser tools off).
 
@@ -37,37 +37,67 @@ Recon needs the user's signed-in X session, so it runs through **Claude in Chrom
 
 ### 1. Read each list
 
-`navigate` to the list URL. Lists are newest first. Read the posts on screen, scroll down (`computer` scroll, about a screen at a time), read again, until the oldest post on screen is older than `hours_back` or you have `max_posts` posts. X only keeps the posts near the screen in the page, so read after **every** scroll and de-duplicate by post link.
+`navigate` to the list URL. Lists are newest first. X only keeps the posts near the screen in the page, so the posts must be collected while scrolling. Don't scroll and read by hand (two tool calls per screen, about 50 per list): the page scrolls and collects itself, in a few calls (2026-11-14).
 
-The fastest read is `javascript_tool` (it only reads the page; it clicks nothing):
+**a. Scroll passes.** Run this with `javascript_tool`, set `MAX` and `HOURS` (full recon: `max_posts` and `hours_back`; recon light: `posts_per_list` and `hours_back`). One pass scrolls about 15 screens (~25 s) and collects every post into `window.__recon`, de-duplicated by link. It only scrolls and reads; it clicks nothing. It returns one short line, because `javascript_tool` truncates long output. **Run it again until the line says `done`** (usually 2–3 passes for 125 posts). Run each pass as its own call, not several in one `browser_batch` (a long batch timed out and X showed "Something went wrong").
 
 ```js
-JSON.stringify([...document.querySelectorAll('article[data-testid="tweet"]')].map((a) => {
-  const time = a.querySelector("time");
-  return {
-    link: time?.closest("a")?.href ?? "",
-    time: time?.getAttribute("datetime") ?? "",
-    user: a.querySelector('[data-testid="User-Name"]')?.innerText.replace(/\n/g, " ") ?? "",
-    verified: !!a.querySelector('[data-testid="icon-verified"]'),
-    context: a.querySelector('[data-testid="socialContext"]')?.innerText ?? "", // "X reposted"
-    text: a.querySelector('[data-testid="tweetText"]')?.innerText ?? "",
-    card: a.querySelector('[data-testid="card.wrapper"] a')?.href ?? "",
-    stats: a.querySelector('[role="group"]')?.getAttribute("aria-label") ?? "", // replies, reposts, likes, views
-    // The user's own marks. Their repost button is green ("unretweet") on a post they reposted; a post whose author is
-    // the user (handle from the sidebar profile link) is theirs, and a quote shows the quoted post inside it.
-    repostedByMe: !!a.querySelector('[data-testid="unretweet"]'),
-    byMe: (() => {
-      const me = document.querySelector('[data-testid="AppTabBar_Profile_Link"]')?.getAttribute("href") ?? "";
-      const author = [...a.querySelectorAll('[data-testid="User-Name"] a[href^="/"]')][0]?.getAttribute("href") ?? "";
-      return !!me && author.toLowerCase() === me.toLowerCase();
-    })(),
-    quoted: [...a.querySelectorAll('[data-testid="User-Name"]')].slice(1).map((u) => u.innerText.replace(/
-/g, " ")).join(" | "),
-  };
-}))
+const MAX = 125, HOURS = 48, STEPS = 15;
+const R = (window.__recon ??= { posts: new Map(), done: false, why: "", idle: 0 });
+const cutoff = Date.now() - HOURS * 36e5;
+const me = (document.querySelector('[data-testid="AppTabBar_Profile_Link"]')?.getAttribute("href") ?? "").toLowerCase();
+const grab = () => {
+  for (const a of document.querySelectorAll('article[data-testid="tweet"]')) {
+    const time = a.querySelector("time");
+    const link = time?.closest("a")?.href;
+    if (!link || R.posts.has(link)) continue;
+    const context = a.querySelector('[data-testid="socialContext"]')?.innerText ?? ""; // "X reposted", "Pinned"
+    if (/pinned/i.test(context)) continue; // pinned posts don't count and don't trigger the time stop
+    const iso = time.getAttribute("datetime") ?? "";
+    // A repost shows the original's time, so only the list's own posts trigger the time stop.
+    if (!/reposted/i.test(context) && Date.parse(iso) < cutoff) { R.done = true; R.why = `${HOURS} h reached`; return; }
+    const names = [...a.querySelectorAll('[data-testid="User-Name"]')];
+    const author = names[0]?.querySelector('a[href^="/"]')?.getAttribute("href") ?? "";
+    R.posts.set(link, {
+      link, time: iso, context,
+      user: names[0]?.innerText.replace(/\s*\n\s*/g, " ") ?? "",
+      verified: !!a.querySelector('[data-testid="icon-verified"]'),
+      text: (a.querySelector('[data-testid="tweetText"]')?.innerText ?? "").slice(0, 400),
+      card: a.querySelector('[data-testid="card.wrapper"] a')?.href ?? "",
+      stats: a.querySelector('[role="group"]')?.getAttribute("aria-label") ?? "", // replies, reposts, likes, views
+      // The user's own marks: a green repost button ("unretweet") on a post they reposted; a post whose author is the
+      // user (handle from the sidebar profile link) is theirs; a quote shows the quoted post's author inside it.
+      repostedByMe: !!a.querySelector('[data-testid="unretweet"]'),
+      byMe: !!me && author.toLowerCase() === me,
+      quoted: names.slice(1).map((u) => u.innerText.replace(/\s*\n\s*/g, " ")).join(" | "),
+    });
+    if (R.posts.size >= MAX) { R.done = true; R.why = `${MAX} posts`; return; }
+  }
+};
+for (let i = 0; i < STEPS && !R.done; i++) {
+  const before = R.posts.size;
+  grab();
+  if (R.done) break;
+  R.idle = R.posts.size === before ? R.idle + 1 : 0;
+  if (R.idle >= 4) { R.done = true; R.why = "end of list"; break; }
+  window.scrollBy(0, innerHeight * 0.9);
+  await new Promise((r) => setTimeout(r, 1500));
+}
+`${R.posts.size} posts · ${R.done ? "done: " + R.why : "not done, run again"}`
 ```
 
-X changes its markup now and then. If this returns nothing or empty fields, use `get_page_text` instead and pull the same fields from the text. Keep for each post: link, author handle and name, verified or organization badge, time, text, any linked article, engagement, and the user's marks (`repostedByMe`, `byMe`, `quoted`, or a "You reposted" social context). If `repostedByMe` is never true on any page, check one post with `find` for its repost button's state before trusting it: X may have renamed the testid.
+**b. Dump and read.** In one `browser_batch`: this `javascript_tool` call, then `get_page_text` on the same tab. It replaces your own tab's local copy of the page with the collected posts as JSON, so `get_page_text` returns all of them whole. That's only your tab's DOM; nothing changes on X. The next list's `navigate` loads X again.
+
+```js
+const posts = [...(window.__recon?.posts.values() ?? [])];
+const dump = document.createElement("article");
+dump.textContent = JSON.stringify(posts);
+document.body.replaceChildren(dump);
+delete window.__recon;
+`dumped ${posts.length}`
+```
+
+X changes its markup now and then. If a pass collects nothing, or the dump has empty fields, check the `data-testid`s with `find`, or fall back to `get_page_text` after each `computer` scroll and pull the same fields from the text. Keep for each post: link, author handle and name, verified or organization badge, time, text, any linked article, engagement, and the user's marks (`repostedByMe`, `byMe`, `quoted`, or a "You reposted" social context). If `repostedByMe` is never true on any page, check one post with `find` for its repost button's state before trusting it: X may have renamed the testid.
 
 ### 1b. Your own reposts and quotes
 
@@ -91,11 +121,17 @@ X shows what people are **talking** about; YouTube shows what they **search for 
    - `?pageType=DEEPDIVE_TOP_RELEVANT_SEARCH_QUERIES`: **What people are looking for**, the searches YouTube picks for this channel's audience (about 12 terms).
    - `?pageType=FEED_PAGE`: **New videos to inspire you** (title, channel, views, age).
    - `?pageType=TOPIC_PAGE&topic=<url-encoded term>`, for up to `youtube_topics` of the strongest candidate stories (the clusters likely to make the list, then near misses). Use the plain 1–3 word term a viewer would type ("russell brand", "nvidia spy"). The page shows **Top searches for this topic**, each marked High, Medium or Low volume, and **What people are watching** (title, channel, views, age).
-2. **YouTube's search suggestions** for each of those terms, without the browser:
+
+   **Batch the pages** (2026-11-14): one `browser_batch` per **two** pages, each page a `navigate` followed by the `javascript_tool` read above: `[navigate A, read A, navigate B, read B]`. That's one call for two pages instead of four. No more than two pages per batch: long batches time out.
+2. **YouTube's search suggestions** for all of those terms, **in one Bash call**, without the browser:
+   ```bash
+   for q in "<term 1>" "<term 2>" "<term 3>"; do
+     printf '%s\t' "$q"
+     curl -s -A "BriefKit/1.0 (recon)" --get "https://suggestqueries.google.com/complete/search" --data-urlencode "client=firefox" --data-urlencode "ds=yt" --data-urlencode "q=$q"
+     echo
+   done
    ```
-   curl -s -A "BriefKit/1.0 (recon)" --get "https://suggestqueries.google.com/complete/search" --data-urlencode "client=firefox" --data-urlencode "ds=yt" --data-urlencode "q=<term>"
-   ```
-   It returns `["<term>", ["suggestion", …]]`: what people actually type after those words. A story with no suggestions isn't being searched yet.
+   Each line is the term, then `["<term>", ["suggestion", …]]`: what people actually type after those words. A story with no suggestions isn't being searched yet.
 3. Record per story: the best search term and its volume, the top suggestions, and the biggest recent video on it (channel, views, age). Skip any video or search that leads to a blocked outlet (CLAUDE.md rule 12) and don't open videos.
 
 Everything here is a lead, like X: video titles and view counts are not facts (CLAUDE.md rule 2).

@@ -8,7 +8,7 @@ const presetFor = (theme: string, carried?: Preset): Preset =>
   (theme === "frontier" || theme === "asked-claude") && (!carried || carried === "intense") ? (theme === "frontier" ? "tech" : "calm") : carried ?? "intense";
 
 // Music bed level for every new episode and Short (the user's standing setting; carried episodes are raised to it too).
-const MUSIC_LEVEL = 0.45;
+const MUSIC_LEVEL = 0.6;
 type Audio = NonNullable<EpisodeInput["audio"]>;
 /** A carried-over audio block without its voiceSpeed: new videos play the voice at 1.0x. */
 const withoutVoiceSpeed = ({ voiceSpeed: _speed, ...rest }: Audio): Omit<Audio, "voiceSpeed"> => rest;

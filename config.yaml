@@ -77,8 +77,8 @@ shorts:
   #          main video. Each Short is its own small episode: <slug>-short1, -short2, ...
   #   false: no Shorts unless you ask. A standalone Short (not from an episode) is always available:
   #          npm run new -- <slug> --format short
-  enabled: false
-  count: 2          # Shorts per episode, 1-3 (the producer picks the strongest items)
+  enabled: true  # since 2026-11-19: three clickbait Shorts per episode (the user's rule)
+  count: 3          # Shorts per episode, 1-3 (the producer picks the strongest items); 3 since 2026-11-19
   maxSeconds: 60    # target length; check warns above this (YouTube allows up to 3 minutes)
 
   # Long Shorts: vertical like any Short, but 1 to 2.5 minutes with 2-10 chapters, a chapter rail across the top,
@@ -88,7 +88,7 @@ shorts:
   long:
     minSeconds: 60    # check warns below this...
     maxSeconds: 150   # ...and above this (2:30)
-    musicLevel: 0.6   # audio.music.level in every new long Short (louder than the 0.45 episode default)
+    musicLevel: 0.6   # audio.music.level in every new long Short (the same as the episode default, 0.6 since 2026-11-19)
     voiceSpeed: 1.0   # audio.voiceSpeed: npm run voice plays the take back this much faster (pitch kept), then aligns
                       # 1.0 from 2026-11-01 (viewers found 1.1-1.2x too fast): ~2.6 words a second, ~155 words for 1:00, ~390 for 2:30
     voiceEngine: qwen # long Shorts are voiced with local Qwen3-TTS (the user's choice, 2026-11-01), not voice.engine
@@ -221,7 +221,8 @@ recon_light:
   # Quick recon (the recon-light skill; say "recon light"): the newest posts on each list in recon: lists plus the top
   # of the trending tab, read-only in your browser, and the whole output is one file, recon/light/<date>-<HHmm>.md,
   # with the top few things you might be interested in, shown in chat too. No trend dives, no News tab.
-  posts_per_list: 125 # newest posts read on each list (no time window; 100 until 2026-11-04)
+  posts_per_list: 125 # newest posts read on each list, up to hours_back (100 until 2026-11-04)
+  hours_back: 48      # ...or stop a list at its first post older than this, whichever comes first (2026-11-12)
   trends: 40          # first this many trends (20 until 2026-11-03) on x.com/explore/tabs/trending
   picks: 10           # items in the file (fewer if fewer are worth it; 5 until 2026-11-04)
   youtube: true       # quick YouTube check: what people search and watch, on every pick (2026-11-09)

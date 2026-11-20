@@ -24,7 +24,7 @@ npm run new -- <date>-<topic> --format asked-claude [--count N]   # N reasons, 1
 
 It writes the format's shape: the question, the short answer, the reasons, the best case against, where Claude lands,
 and an outro that asks for pushback. Brand comes from `config.yaml` `asked_claude.brand` (`ASKED CLAUDE`, `AN AI'S
-OPINION`), or from the latest Asked Claude episode. Sounds are `calm`, music at 0.45. `notes.md` has a checklist for
+OPINION`), or from the latest Asked Claude episode. Sounds are `calm`, music at 0.6. `notes.md` has a checklist for
 this format.
 
 **No length limit.** It runs as long as the answer needs. A simple question might take two minutes, a hard one eight.
@@ -124,7 +124,7 @@ made are in `voices/asked_claude_LICENSE.txt` and `voices/README.md`. Alternates
   real identifiable people, no fake record of a real event, no copy of a specific artwork. Each one carries
   `"note": "AI-GENERATED ILLUSTRATION"`. Prefer abstract or symbolic images over depicting a religion's sacred
   figures. Nothing is ever taken from the web.
-- **Music:** the compose-music prompt for `asked-claude` (compose-music skill table), at 0.45.
+- **Music:** the compose-music prompt for `asked-claude` (compose-music skill table), at 0.6.
 - **`summary`**: what question Claude answers and its answer in a sentence.
 - **`sources`** stays empty and `outro.sourcesCard` is `false` (the scaffold sets it). The credits roll still runs.
 
